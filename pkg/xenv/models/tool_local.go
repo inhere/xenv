@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/inhere/kite-go/pkg/util"
+	"github.com/inhere/xenv/internal/util"
 )
 
 // ToolsLocal 代表本地已安装的工具链信息. 会保存到 ~/.xenv/tools.local.json
@@ -69,15 +69,15 @@ func (lt *ToolsLocal) FindToolByName(name string) *InstalledTool {
 
 // InstalledTool 代表已安装的工具链信息
 type InstalledTool struct {
-	ID         string `json:"id"` // 唯一标识符，格式为 name:version
-	Name       string `json:"name"`
-	Version    string `json:"version"`
+	ID      string `json:"id"` // 唯一标识符，格式为 name:version
+	Name    string `json:"name"`
+	Version string `json:"version"`
 	// InstallDir 当前版本的工具安装目录路径
-	InstallDir string `json:"install_dir"`
-	Source    string    `json:"source"`
-	IsSDK     bool      `json:"is_sdk"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	InstallDir string    `json:"install_dir"`
+	Source     string    `json:"source"`
+	IsSDK      bool      `json:"is_sdk"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 	// 内部使用
 	Index  int        `json:"-"` // 表示在列表中的索引
 	Config *ToolChain `json:"-"` // 工具链配置

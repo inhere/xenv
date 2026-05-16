@@ -10,8 +10,8 @@ import (
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/kite-go/pkg/xenv/models"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 // StateManager manages the state data of the environment
@@ -39,9 +39,9 @@ func NewStateManager() *StateManager {
 	sessionFile := fsutil.ExpandHome(xenvcom.SessionFile())
 
 	return &StateManager{
-		merged: models.NewActivityState("MERGED"),
-		global:  models.NewActivityState(globalFile),
-		session: models.NewActivityState(sessionFile),
+		merged:    models.NewActivityState("MERGED"),
+		global:    models.NewActivityState(globalFile),
+		session:   models.NewActivityState(sessionFile),
 		dirStates: make([]*models.ActivityState, 0),
 	}
 }

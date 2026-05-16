@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/inhere/kite-go/internal/cli/xenvcmd"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenvcmd"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 // main xenv 程序入口

@@ -9,8 +9,8 @@ import (
 	"github.com/gookit/config/v2"
 	"github.com/gookit/config/v2/toml"
 	"github.com/gookit/config/v2/yaml"
-	"github.com/inhere/kite-go/pkg/xenv/models"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 // Manager handles loading and saving configuration
 type Manager struct {
 	cfgInit bool
-	Config *models.Configuration
+	Config  *models.Configuration
 }
 
 // Mgr is the global ConfigManager instance
@@ -41,10 +41,10 @@ func Config() *models.Configuration {
 func NewConfigManager() *Manager {
 	return &Manager{
 		Config: &models.Configuration{
-			BinDir:       DefaultBinDir,
-			InstallDir:   DefaultInstallDir,
+			BinDir:        DefaultBinDir,
+			InstallDir:    DefaultInstallDir,
 			ShellHooksDir: DefaultShellHooksDir,
-			ShellAliases: make(map[string]string),
+			ShellAliases:  make(map[string]string),
 			// env
 			GlobalEnv:   make(map[string]string),
 			GlobalPaths: []string{},
@@ -53,7 +53,7 @@ func NewConfigManager() *Manager {
 			Tools: []models.SimpleTool{},
 			// other
 			AllowUpMatch: xenvcom.UpMatchOne,
-			DownloadDir: DefaultInstallDir + "/cache",
+			DownloadDir:  DefaultInstallDir + "/cache",
 			DownloadExt: map[string]string{
 				"windows": "zip",
 				"linux":   "tar.gz",

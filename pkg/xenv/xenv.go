@@ -3,9 +3,9 @@ package xenv
 import (
 	"fmt"
 
-	"github.com/inhere/kite-go/pkg/xenv/config"
-	"github.com/inhere/kite-go/pkg/xenv/manager"
-	"github.com/inhere/kite-go/pkg/xenv/service"
+	"github.com/inhere/xenv/pkg/xenv/config"
+	"github.com/inhere/xenv/pkg/xenv/manager"
+	"github.com/inhere/xenv/pkg/xenv/service"
 )
 
 // ScriptMark 输出的脚本必须添加标记，前面部分为message, 后面部分为脚本

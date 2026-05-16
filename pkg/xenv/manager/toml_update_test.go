@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
-	"github.com/inhere/kite-go/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/models"
 )
 
 func TestTomlUpdater(t *testing.T) {

@@ -7,11 +7,11 @@ import (
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/x/ccolor"
-	"github.com/inhere/kite-go/pkg/xenv/manager"
-	"github.com/inhere/kite-go/pkg/xenv/models"
-	"github.com/inhere/kite-go/pkg/xenv/shell"
-	"github.com/inhere/kite-go/pkg/xenv/tools"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv/manager"
+	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/shell"
+	"github.com/inhere/xenv/pkg/xenv/tools"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 // ToolService handles tool chain management operations

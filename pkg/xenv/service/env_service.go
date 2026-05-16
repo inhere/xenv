@@ -8,9 +8,9 @@ import (
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/x/ccolor"
-	"github.com/inhere/kite-go/pkg/util"
-	"github.com/inhere/kite-go/pkg/xenv/manager"
-	"github.com/inhere/kite-go/pkg/xenv/models"
+	"github.com/inhere/xenv/internal/util"
+	"github.com/inhere/xenv/pkg/xenv/manager"
+	"github.com/inhere/xenv/pkg/xenv/models"
 )
 
 // EnvService handles environment variable and PATH management

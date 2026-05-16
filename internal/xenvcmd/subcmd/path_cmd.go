@@ -5,7 +5,7 @@ import (
 
 	"github.com/gookit/gcli/v3"
 	"github.com/gookit/goutil/x/ccolor"
-	"github.com/inhere/kite-go/pkg/xenv"
+	"github.com/inhere/xenv/pkg/xenv"
 )
 
 // PathCmd the xenv path command
@@ -113,7 +113,7 @@ func PathRemoveCmd() *gcli.Command {
 func PathListCmd() *gcli.Command {
 	return &gcli.Command{
 		Name:    "list",
-		Desc: "List PATH entries",
+		Desc:    "List PATH entries",
 		Aliases: []string{"ls"},
 		Func: func(c *gcli.Command, args []string) error {
 			return listEnvPaths()
@@ -146,7 +146,7 @@ func listEnvPaths() error {
 func PathSearchCmd() *gcli.Command {
 	return &gcli.Command{
 		Name:    "search",
-		Desc: "Search for a path in PATH",
+		Desc:    "Search for a path in PATH",
 		Aliases: []string{"s"},
 		Config: func(c *gcli.Command) {
 			c.AddArg("value", "value for search in PATH", true)

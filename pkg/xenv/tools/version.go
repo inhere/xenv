@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/inhere/kite-go/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/models"
 )
 
 var (

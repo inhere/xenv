@@ -2,8 +2,8 @@ package subcmd
 
 import (
 	"github.com/gookit/gcli/v3"
-	"github.com/inhere/kite-go/pkg/xenv"
-	"github.com/inhere/kite-go/pkg/xenv/shell"
+	"github.com/inhere/xenv/pkg/xenv"
+	"github.com/inhere/xenv/pkg/xenv/shell"
 )
 
 // NewUseCmd the xenv use command

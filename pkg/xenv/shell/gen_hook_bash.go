@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/kite-go/pkg/xenv/models"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 // generate bash script contents
@@ -29,16 +29,16 @@ func (sg *XenvScriptGenerator) generateBashScripts(ps *models.GenInitScriptParam
 //
 // Usage, .bashrc or .bash_profile add：
 //
-//	eval "$(kite xenv shell --type bash)"
+//	eval "$(xenv shell --type bash)"
 //
 // Test: . pkg/xenv/testdata/hook_bash.sh
 var BashHookTemplate = `#!/usr/bin/env bash
 #
-# kite xenv bash hook
+# xenv bash hook
 # This script enables xenv to work in bash shells
 #
 # Usage, .bashrc or .bash_profile add:
-#   eval "$(kite xenv shell --type bash)"
+#   eval "$(xenv shell --type bash)"
 #
 # Start to set up xenv in the current shell
 set -e
@@ -155,7 +155,7 @@ setup_xenv() {
 		fi
 	done
 	if [ "$XENV_DEBUG_MODE" = "true" ]; then
-		echo "✅ kite xenv bash script initialize completed"
+		echo "✅ xenv bash script initialize completed"
 	fi
 }
 

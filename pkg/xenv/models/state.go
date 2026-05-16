@@ -28,9 +28,9 @@ func (of OpFlag) String() string {
 }
 
 // ActivityState 代表用户当前激活的工具链和环境状态.
-//  - 全局的会保存到 ~/.config/xenv/global.toml
-//  - 目录级的会保存到 {pwd|parent}/.xenv.toml
-//  - 会话的会保存到 ~/.xenv/session/<session_id>.json
+//   - 全局的会保存到 ~/.config/xenv/global.toml
+//   - 目录级的会保存到 {pwd|parent}/.xenv.toml
+//   - 会话的会保存到 ~/.xenv/session/<session_id>.json
 type ActivityState struct {
 	// 激活的 ENV 路径列表
 	Paths []string `json:"paths" toml:"paths"`
@@ -81,7 +81,7 @@ type SessionState struct {
 // NewActivityState creates a new ActivityState
 func NewActivityState(filePath string) *ActivityState {
 	return &ActivityState{
-		File: filePath,
+		File:  filePath,
 		SDKs:  make(map[string]string),
 		Envs:  make(map[string]string),
 		Tools: make(map[string]string),

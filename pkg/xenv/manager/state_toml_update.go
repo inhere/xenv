@@ -12,7 +12,7 @@ import (
 	"github.com/gookit/goutil/byteutil"
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/kite-go/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/models"
 )
 
 type StateTomlUpdater struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gookit/gcli/v3"
-	"github.com/inhere/kite-go/pkg/xenv"
+	"github.com/inhere/xenv/pkg/xenv"
 )
 
 // ToolsCmd the xenv tools command TODO rename to sdks

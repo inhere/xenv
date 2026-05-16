@@ -5,7 +5,7 @@ import (
 
 	"github.com/gookit/cliui/show"
 	"github.com/gookit/gcli/v3"
-	"github.com/inhere/kite-go/pkg/xenv/config"
+	"github.com/inhere/xenv/pkg/xenv/config"
 )
 
 var configOpts = struct {

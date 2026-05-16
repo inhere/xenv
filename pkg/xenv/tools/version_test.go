@@ -40,9 +40,12 @@ func TestParseVersionSpec(t *testing.T) {
 			hasError: true,
 		},
 		{
-			input:    "go",
-			expected: nil,
-			hasError: true,
+			input: "go",
+			expected: &VersionSpec{
+				Name:    "go",
+				Version: "latest",
+			},
+			hasError: false,
 		},
 		{
 			input:    "go:",
@@ -107,10 +110,14 @@ func TestParseMultipleVersionSpecs(t *testing.T) {
 			hasError: false,
 		},
 		{
-			name:     "invalid spec in middle",
-			input:    []string{"go:1.21", "invalid", "java:11"},
-			expected: nil,
-			hasError: true,
+			name:  "version omitted defaults to latest",
+			input: []string{"go:1.21", "invalid", "java:11"},
+			expected: []*VersionSpec{
+				{Name: "go", Version: "1.21"},
+				{Name: "invalid", Version: "latest"},
+				{Name: "java", Version: "11"},
+			},
+			hasError: false,
 		},
 	}
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# kite xenv bash hook
+# xenv bash hook
 # This script enables xenv to work in bash shells
 #
 # Usage, .bashrc or .bash_profile add:
-#   eval "$(kite xenv shell --type bash)"
+#   eval "$(xenv shell --type bash)"
 #
 # Start to set up xenv in the current shell
 set -e
@@ -15,9 +15,9 @@ cd() {
     # echo "current path: $PWD"
     export PREV_PWD=$PWD
     builtin cd "$@" && {
-        if command -v kite >/dev/null 2>&1; then
+        if command -v xenv >/dev/null 2>&1; then
             # echo "current path: $PWD"
-            local result="$(kite xenv init-direnv)"
+            local result="$(xenv init-direnv)"
             local exit_code=$?
             # echo "result: $result"
             invoke_xenv_result "$result" $exit_code
@@ -37,8 +37,8 @@ invoke_xenv_result() {
             # 检查结果是否包含 '--Expression--' 分隔符
             if [[ "$result" == *"--Expression--"* ]]; then
                 # 使用 '--Expression--' 分割内容
-                local msg_part="$(kite str split --first -s $sep "$result")"
-                local expr_part="$(kite str split --last -s $sep "$result")"
+                local msg_part="$(${result%%--Expression--*})"
+                local expr_part="$(${result##*--Expression--})"
 
                 # 后面部分当做代码执行
                 if [ -n "$expr_part" ]; then
@@ -84,25 +84,25 @@ setup_xenv() {
         case "$command" in
             use|unuse|env|path)
                 # 对于这些命令，获取结果并评估
-                local result="$(kite xenv "$command" "$@")"
+                local result="$(xenv "$command" "$@")"
                 local exit_code=$?
                 invoke_xenv_result "$result" $exit_code
                 ;;
             set|unset)
                 # 对于环境变量设置/取消设置命令
-                local result="$(kite xenv env "$command" "$@")"
+                local result="$(xenv env "$command" "$@")"
                 local exit_code=$?
                 invoke_xenv_result "$result" $exit_code
                 ;;
             *)
                 # For other commands, just pass through to xenv
-                command kite xenv "$command" "$@"
+                command xenv "$command" "$@"
                 ;;
         esac
     }
 
     # fire xenv hooks to kite, use for generate code to exec TODO
-    local result_init="$(kite xenv shell-init-hook --type bash)"
+    local result_init="$(xenv shell-init-hook --type bash)"
     local exit_code=$?
     invoke_xenv_result "$result_init" $exit_code
 
@@ -120,7 +120,7 @@ setup_xenv() {
 			source "$file"
 		fi
 	done
-	echo "✅ kite xenv bash script initialize completed"
+	echo "✅ xenv bash script initialize completed"
 }
 
 # Call setup function to initialize xenv

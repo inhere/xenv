@@ -11,9 +11,9 @@ import (
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/x/ccolor"
-	"github.com/inhere/kite-go/pkg/xenv/models"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
-	"github.com/inhere/kite-go/pkg/xenv/xenvutil"
+	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv/xenvutil"
 )
 
 type ToolManager struct {
@@ -21,7 +21,7 @@ type ToolManager struct {
 	// config
 	config *models.Configuration
 	// local data file
-	localLoad bool
+	localLoad  bool
 	localFile  string
 	localTools *models.ToolsLocal
 	// tools register data - 从 config 配置中初始化 tools/config.json TODO
@@ -35,7 +35,7 @@ type ToolManager struct {
 func NewToolManager() *ToolManager {
 	return &ToolManager{
 		localTools: &models.ToolsLocal{Version: "v1"},
-		groupSdks: make(map[string][]models.InstalledTool),
+		groupSdks:  make(map[string][]models.InstalledTool),
 	}
 }
 
@@ -131,9 +131,9 @@ func (m *ToolManager) IndexLocalTools() error {
 
 				// build local installed tool info
 				m.localTools.SDKs = append(m.localTools.SDKs, models.InstalledTool{
-					ID:     fmt.Sprintf("%s:%s", sdkCfg.Name, version),
-					Name:   sdkCfg.Name,
-					IsSDK:  true,
+					ID:    fmt.Sprintf("%s:%s", sdkCfg.Name, version),
+					Name:  sdkCfg.Name,
+					IsSDK: true,
 					// version, install path
 					Version:    version,
 					InstallDir: installPath,

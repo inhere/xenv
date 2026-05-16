@@ -9,9 +9,9 @@ import (
 	"github.com/gookit/goutil/errorx"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/sysutil"
-	"github.com/inhere/kite-go/pkg/xenv"
-	"github.com/inhere/kite-go/pkg/xenv/shell"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv"
+	"github.com/inhere/xenv/pkg/xenv/shell"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 type shellOptions = struct {
@@ -34,29 +34,29 @@ func NewShellCmd() *gcli.Command {
 		Help: `
 <cyan>Auto Configure:</>
   # pwsh
-  kite xenv shell --install -t pwsh --profile $PROFILE.CurrentUserAllHosts
+  xenv shell --install -t pwsh --profile $PROFILE.CurrentUserAllHosts
   xenv shell --install -t pwsh --profile $PROFILE.CurrentUserAllHosts
   # bash, zsh
-  kite xenv shell --install -t $SHELL
+  xenv shell --install -t $SHELL
   xenv shell --install -t $SHELL
 
 <cyan>Config for Bash:</>
   // write to .bashrc OR .bash_profile
-  eval "$(kite xenv shell --type bash)"
+  eval "$(xenv shell --type bash)"
   eval "$(xenv shell --type bash)"
 
 <cyan>Config for Zsh:</>
   // write to .zshrc OR .zsh_profile
-  eval "$(kite xenv shell --type zsh)"
+  eval "$(xenv shell --type zsh)"
   eval "$(xenv shell --type zsh)"
 
 <cyan>Config for Pwsh:</>
   # write expr to profile. (find by: echo $PROFILE.CurrentUserAllHosts)
   # Method 1:
-  Invoke-Expression (&kite xenv shell --type pwsh)
+  Invoke-Expression (&xenv shell --type pwsh)
   Invoke-Expression (&xenv shell --type pwsh)
   # Method 2:
-  kite xenv shell --type pwsh | Out-String | Invoke-Expression
+  xenv shell --type pwsh | Out-String | Invoke-Expression
   xenv shell --type pwsh | Out-String | Invoke-Expression
 `,
 		Config: func(c *gcli.Command) {

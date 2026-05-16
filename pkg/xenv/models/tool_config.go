@@ -5,7 +5,7 @@ import (
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/kite-go/pkg/util"
+	"github.com/inhere/xenv/internal/util"
 )
 
 // ToolChain SDK 开发工具（如Go、Node.js等）配置，包含安装路径、别名等属性。
@@ -32,7 +32,7 @@ type ToolChain struct {
 	//  - value 可用使用一些内部变量，如 {version}，{install_dir}
 	ActiveEnv map[string]string `json:"active_env"`
 	// 该工具的 bin 文件目录名称，不设置就是真实的 install_dir 目录
-	BinDir   string   `json:"bin_dir"`
+	BinDir string `json:"bin_dir"`
 	// 安装完成后执行的shell hook脚本
 	PostInstall []string `json:"post_install"`
 	// 自定义版本安装目录,不在统一目录下 InstallDir 的版本

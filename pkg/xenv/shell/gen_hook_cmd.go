@@ -6,15 +6,15 @@ import (
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/kite-go/pkg/xenv/models"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 func (sg *XenvScriptGenerator) generateCmdScripts(ps *models.GenInitScriptParams) string {
 	var sb strings.Builder
 	// 添加全局环境变量
 	if len(ps.Envs) > 0 {
-		sb.WriteString("  -- Add global ENV variables from kite xenv\n")
+		sb.WriteString("  -- Add global ENV variables from xenv\n")
 		maputil.EachTypedMap(ps.Envs, func(key, value string) {
 			sb.WriteString(fmt.Sprintf(`os.setenv("%s", "%s")\n`, strings.ToUpper(key), value))
 		})
@@ -22,7 +22,7 @@ func (sg *XenvScriptGenerator) generateCmdScripts(ps *models.GenInitScriptParams
 
 	// 添加全局PATH条目
 	if len(ps.Paths) > 0 {
-		sb.WriteString("  -- Add global PATH variables from kite xenv\n")
+		sb.WriteString("  -- Add global PATH variables from xenv\n")
 		addPaths := strings.Join(ps.Paths, ";")
 		sb.WriteString(fmt.Sprintf(`os.setenv("PATH", "%s;%%PATH%%")\n`, addPaths))
 	}
@@ -49,7 +49,7 @@ func (sg *XenvScriptGenerator) generateCmdScripts(ps *models.GenInitScriptParams
 // 在 C:\Users\{username}\AppData\Local\clink 创建 profile.lua 文件。
 // 添加内容：
 //
-//	load(io.popen('kite xenv shell --type cmd'):read("*a"))()
+//	load(io.popen('xenv shell --type cmd'):read("*a"))()
 var CmdLuaHookTemplate = `-- xenv CMD hook
 -- This script enables xenv to work in CMD shells
 -- Usage:

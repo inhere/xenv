@@ -6,15 +6,15 @@ import (
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/kite-go/pkg/xenv/models"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 func (sg *XenvScriptGenerator) generatePwshScripts(ps *models.GenInitScriptParams) string {
 	var sb strings.Builder
 	// 添加全局环境变量
 	if len(ps.Envs) > 0 {
-		sb.WriteString("  # Add session ENV variables from kite xenv\n")
+		sb.WriteString("  # Add session ENV variables from xenv\n")
 		maputil.EachTypedMap(ps.Envs, func(key, value string) {
 			sb.WriteString(fmt.Sprintf("  $env:%s='%s'\n", strings.ToUpper(key), value))
 		})
@@ -22,14 +22,14 @@ func (sg *XenvScriptGenerator) generatePwshScripts(ps *models.GenInitScriptParam
 
 	// 添加全局PATH
 	if len(ps.Paths) > 0 {
-		sb.WriteString("  # Add session PATH variables from kite xenv\n")
+		sb.WriteString("  # Add session PATH variables from xenv\n")
 		paths := strings.Join(ps.Paths, ";")
 		sb.WriteString(fmt.Sprintf("  $env:PATH='%s;' + $env:PATH\n", paths))
 	}
 
 	// 添加全局别名
 	if len(ps.ShellAliases) > 0 {
-		sb.WriteString("  # Add global aliases from kite xenv\n")
+		sb.WriteString("  # Add global aliases from xenv\n")
 		maputil.EachTypedMap(ps.ShellAliases, func(key, value string) {
 			// 复杂 value, 封装为简易方法 eg: function ll { ls.exe -alh $args }
 			if strutil.ContainsByte(value, ' ') {
@@ -62,10 +62,10 @@ func (sg *XenvScriptGenerator) generatePwshScripts(ps *models.GenInitScriptParam
 //	 find by: echo $PROFILE.CurrentUserAllHosts
 //
 //	# Method 1:
-//	Invoke-Expression (&kite xenv shell --type pwsh)
+//	Invoke-Expression (&xenv shell --type pwsh)
 //
 //	# Method 2:
-//	kite xenv shell --type pwsh | Out-String | Invoke-Expression
+//	xenv shell --type pwsh | Out-String | Invoke-Expression
 var PwshHookTemplate = `# xenv PowerShell hook
 # This script enables xenv to work in PowerShell shells
 #
@@ -75,10 +75,10 @@ var PwshHookTemplate = `# xenv PowerShell hook
 #	 find by: echo $PROFILE.CurrentUserAllHosts
 #
 #	# Method 1:
-#	Invoke-Expression (&kite xenv shell --type pwsh)
+#	Invoke-Expression (&xenv shell --type pwsh)
 #
 #	# Method 2:
-#	kite xenv shell --type pwsh | Out-String | Invoke-Expression
+#	xenv shell --type pwsh | Out-String | Invoke-Expression
 
 # Helper function to evaluate xenv command results
 function Invoke-XenvResult {
@@ -158,7 +158,7 @@ function Set-Location {
 
     # Check if xenv is available and run init-direnv
     if (Get-Command {{BinName}} -ErrorAction SilentlyContinue) {
-        # Run kite xenv init-direnv, eval result scripts
+        # Run xenv init-direnv, eval result scripts
         $result = (& {{BinCommand}} init-direnv | Out-String)
         # Write-Output "DEBUG: \n$result"
         Invoke-XenvResult -CallFrom "Set-Location.init-direnv" -Result $result -ExitCode $LASTEXITCODE
@@ -194,7 +194,7 @@ function Setup-Xenv {
 
         switch ($Command) {
             { $_ -in @('use', 'unuse', 'env', 'path') } {
-                # Call kite command and evaluate the result
+                # Call xenv command and evaluate the result
                 $result = (& {{BinCommand}} $Command @Arguments | Out-String)
                 # Write-Output $result # DEBUG
                 Invoke-XenvResult -CallFrom "xenv.$Command" -Result $result -ExitCode $LASTEXITCODE
@@ -229,7 +229,7 @@ function Setup-Xenv {
         }
     }
     if ($env:XENV_DEBUG_MODE -eq "true") {
-        Write-Host "✅ kite xenv script initialize completed" -ForegroundColor Cyan
+        Write-Host "✅ xenv script initialize completed" -ForegroundColor Cyan
     }
 }
 

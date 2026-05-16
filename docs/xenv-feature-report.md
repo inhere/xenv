@@ -1,8 +1,8 @@
-# kite xenv 功能报告
+# xenv 功能报告
 
 ## 1. 模块定位
 
-`kite xenv` 是 Kite CLI 中用于管理本机开发环境的功能模块，目标类似 `mise`、`vfox`、`asdf`：
+`xenv` 是 xenv CLI 中用于管理本机开发环境的功能模块，目标类似 `mise`、`vfox`、`asdf`：
 
 - 管理本地 SDK/工具链的多版本安装与激活
 - 管理环境变量和 `PATH`
@@ -26,23 +26,23 @@
 常用命令：
 
 ```bash
-kite xenv tools list
-kite xenv tools index
-kite xenv tools install go:1.22.0
-kite xenv tools uninstall go:1.22.0
-kite xenv tools update go:1.22.0
-kite xenv tools show go
-kite xenv use go:1.22
-kite xenv unuse go:1.22
+xenv tools list
+xenv tools index
+xenv tools install go:1.22.0
+xenv tools uninstall go:1.22.0
+xenv tools update go:1.22.0
+xenv tools show go
+xenv use go:1.22
+xenv unuse go:1.22
 ```
 
 版本规格支持：
 
 ```bash
-kite xenv use go
-kite xenv use go:1.22
-kite xenv use go@1.22
-kite xenv use go:latest
+xenv use go
+xenv use go:1.22
+xenv use go@1.22
+xenv use go:latest
 ```
 
 说明：
@@ -56,30 +56,30 @@ kite xenv use go:latest
 支持设置、取消和查看环境变量。
 
 ```bash
-kite xenv env list
-kite xenv env set FOO bar
-kite xenv env unset FOO
+xenv env list
+xenv env set FOO bar
+xenv env unset FOO
 ```
 
 快捷写法：
 
 ```bash
-kite xenv set FOO bar
-kite xenv unset FOO
+xenv set FOO bar
+xenv unset FOO
 ```
 
 作用域参数：
 
 ```bash
 # 当前 shell 会话
-kite xenv env set FOO bar
+xenv env set FOO bar
 
 # 全局状态
-kite xenv env set -g FOO bar
+xenv env set -g FOO bar
 
 # 当前目录 .xenv.toml
-kite xenv env set -s FOO bar
-kite xenv env set -d FOO bar
+xenv env set -s FOO bar
+xenv env set -d FOO bar
 ```
 
 环境变量名称会被转换为大写，并校验是否为合法变量名。
@@ -89,17 +89,17 @@ kite xenv env set -d FOO bar
 支持添加、删除、搜索、查看 `PATH` 条目。
 
 ```bash
-kite xenv path list
-kite xenv path add ./bin
-kite xenv path remove ./bin
-kite xenv path search go
+xenv path list
+xenv path add ./bin
+xenv path remove ./bin
+xenv path search go
 ```
 
 作用域参数：
 
 ```bash
-kite xenv path add -g ~/.local/bin
-kite xenv path add -s ./bin
+xenv path add -g ~/.local/bin
+xenv path add -s ./bin
 ```
 
 说明：
@@ -115,33 +115,33 @@ kite xenv path add -s ./bin
 生成 hook：
 
 ```bash
-kite xenv shell --type bash
-kite xenv shell --type zsh
-kite xenv shell --type pwsh
+xenv shell --type bash
+xenv shell --type zsh
+xenv shell --type pwsh
 ```
 
 Bash：
 
 ```bash
-eval "$(kite xenv shell --type bash)"
+eval "$(xenv shell --type bash)"
 ```
 
 Zsh：
 
 ```bash
-eval "$(kite xenv shell --type zsh)"
+eval "$(xenv shell --type zsh)"
 ```
 
 PowerShell：
 
 ```powershell
-Invoke-Expression (& kite xenv shell --type pwsh)
+Invoke-Expression (& xenv shell --type pwsh)
 ```
 
 或者：
 
 ```powershell
-kite xenv shell --type pwsh | Out-String | Invoke-Expression
+xenv shell --type pwsh | Out-String | Invoke-Expression
 ```
 
 hook 会设置：
@@ -159,7 +159,7 @@ xenv set FOO bar
 xenv path add ./bin
 ```
 
-`xenv` 函数会执行 `kite xenv ...`，并解析输出中的 `--Expression--` 标记，将后半部分作为 shell 脚本在当前终端执行。
+`xenv` 函数会执行 `xenv ...`，并解析输出中的 `--Expression--` 标记，将后半部分作为 shell 脚本在当前终端执行。
 
 ### 2.5 目录级环境
 
@@ -195,7 +195,7 @@ xenv path add -s ./bin
 hook 会重写或包装 `cd` / `Set-Location`，进入目录后调用内部命令：
 
 ```bash
-kite xenv init-direnv
+xenv init-direnv
 ```
 
 然后根据最近的 `.xenv.toml` 激活 SDK、环境变量和路径。
@@ -300,8 +300,8 @@ ripgrep = "*"
 查看状态：
 
 ```bash
-kite xenv list activity
-kite xenv list activity -t
+xenv list activity
+xenv list activity -t
 ```
 
 ## 5. 初始化和推荐使用流程
@@ -309,7 +309,7 @@ kite xenv list activity -t
 ### 5.1 初始化
 
 ```bash
-kite xenv init
+xenv init
 ```
 
 该命令会：
@@ -339,13 +339,13 @@ sdks:
 索引本地工具：
 
 ```bash
-kite xenv tools index
+xenv tools index
 ```
 
 查看工具：
 
 ```bash
-kite xenv tools list
+xenv tools list
 ```
 
 激活版本：
@@ -371,7 +371,7 @@ xenv use -s go:1.22
 ### 6.1 主命令
 
 ```bash
-kite xenv
+xenv
 ```
 
 子命令：
@@ -400,13 +400,13 @@ shell-direnv
 ### 6.2 tools
 
 ```bash
-kite xenv tools install <name:version>...
-kite xenv tools uninstall <name:version>
-kite xenv tools update <name:version>...
-kite xenv tools show <name>
-kite xenv tools list
-kite xenv tools register
-kite xenv tools index
+xenv tools install <name:version>...
+xenv tools uninstall <name:version>
+xenv tools update <name:version>...
+xenv tools show <name>
+xenv tools list
+xenv tools register
+xenv tools index
 ```
 
 别名：
@@ -424,8 +424,8 @@ register: add, reg
 ### 6.3 use / unuse
 
 ```bash
-kite xenv use [-g] [-s|-d] <name:version>...
-kite xenv unuse [-g] [-s|-d] <name:version>...
+xenv use [-g] [-s|-d] <name:version>...
+xenv unuse [-g] [-s|-d] <name:version>...
 ```
 
 作用域：
@@ -439,27 +439,27 @@ kite xenv unuse [-g] [-s|-d] <name:version>...
 ### 6.4 env
 
 ```bash
-kite xenv env
-kite xenv env list
-kite xenv env set [-g] [-s|-d] <name> <value>
-kite xenv env unset [-g] [-s|-d] <name...>
+xenv env
+xenv env list
+xenv env set [-g] [-s|-d] <name> <value>
+xenv env unset [-g] [-s|-d] <name...>
 ```
 
 快捷命令：
 
 ```bash
-kite xenv set <name> <value>
-kite xenv unset <name...>
+xenv set <name> <value>
+xenv unset <name...>
 ```
 
 ### 6.5 path
 
 ```bash
-kite xenv path
-kite xenv path list
-kite xenv path add [-g] [-s|-d] <path>
-kite xenv path remove [-g] [-s|-d] <path>
-kite xenv path search <value>
+xenv path
+xenv path list
+xenv path add [-g] [-s|-d] <path>
+xenv path remove [-g] [-s|-d] <path>
+xenv path search <value>
 ```
 
 别名：
@@ -473,27 +473,27 @@ search: s
 ### 6.6 list
 
 ```bash
-kite xenv list
-kite xenv list tools
-kite xenv list env
-kite xenv list path
-kite xenv list activity
-kite xenv list all
+xenv list
+xenv list tools
+xenv list env
+xenv list path
+xenv list activity
+xenv list all
 ```
 
 说明：
 
-- `kite xenv list` 默认列出工具链。
+- `xenv list` 默认列出工具链。
 - `list all` 当前仍是占位实现。
 
 ### 6.7 config
 
 ```bash
-kite xenv config
-kite xenv config get <name>
-kite xenv config set <name> <value>
-kite xenv config export [zip|json]
-kite xenv config import <path>
+xenv config
+xenv config get <name>
+xenv config set <name> <value>
+xenv config export [zip|json]
+xenv config import <path>
 ```
 
 支持的 `get` / `set` 配置项：
@@ -550,33 +550,33 @@ make install-xenv
 PowerShell：
 
 ```powershell
-kite xenv init
-Invoke-Expression (& kite xenv shell --type pwsh)
+xenv init
+Invoke-Expression (& xenv shell --type pwsh)
 
-kite xenv tools index
-kite xenv tools list
+xenv tools index
+xenv tools list
 
 xenv use go:latest
 xenv set DEMO_ENV hello
 xenv path add ./bin
 
-kite xenv list activity
+xenv list activity
 ```
 
 Bash：
 
 ```bash
-kite xenv init
-eval "$(kite xenv shell --type bash)"
+xenv init
+eval "$(xenv shell --type bash)"
 
-kite xenv tools index
-kite xenv tools list
+xenv tools index
+xenv tools list
 
 xenv use go:latest
 xenv set DEMO_ENV hello
 xenv path add ./bin
 
-kite xenv list activity
+xenv list activity
 ```
 
 安装独立 `xenv` 二进制后，可以直接使用：
@@ -606,7 +606,7 @@ xenv path add -s ./bin
 
 - SDK 先通过系统包管理器或手动方式安装。
 - 在 `config.yaml` 中声明 SDK 安装目录。
-- 使用 `kite xenv tools index` 建立本地索引。
+- 使用 `xenv tools index` 建立本地索引。
 - 使用 shell hook 中的 `xenv use` 激活版本。
 - 使用 `.xenv.toml` 固化项目级环境。
 

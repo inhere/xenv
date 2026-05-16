@@ -2,9 +2,9 @@ package xenvcom
 
 // BinCommand is the command used inside generated shell hooks.
 //
-// In the embedded Kite CLI it should be "kite xenv". In the standalone xenv
+// In the embedded xenv CLI it should be "xenv". In the standalone xenv
 // binary it should be "xenv".
-var BinCommand = "kite xenv"
+var BinCommand = "xenv"
 
 // BinName is the executable name used for availability checks in shell hooks.
 var BinName = "kite"

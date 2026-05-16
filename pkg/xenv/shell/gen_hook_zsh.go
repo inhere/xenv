@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/kite-go/pkg/xenv/models"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 // generateBashScripts generates the zsh shell hook script
@@ -27,13 +27,13 @@ func (sg *XenvScriptGenerator) generateZshScripts(ps *models.GenInitScriptParams
 //
 // Usage, .zshrc or .zsh_profile 新增：
 //
-//	eval "$(kite xenv shell --type bash)"
+//	eval "$(xenv shell --type bash)"
 var ZshHookTemplate = `#
 # xenv zsh hook
 # This script enables xenv to work in zsh shells
 #
 # Usage, .bashrc or .bash_profile add:
-#   eval "$(kite xenv shell --type bash)"
+#   eval "$(xenv shell --type bash)"
 #
 
 # 使用 chpwd 钩子函数监听cd执行后
@@ -136,7 +136,7 @@ setup_xenv() {
 		fi
 	done
 	if [ "$XENV_DEBUG_MODE" = "true" ]; then
-		echo "✅ kite xenv zsh script initialize completed"
+		echo "✅ xenv zsh script initialize completed"
 	fi
 }
 

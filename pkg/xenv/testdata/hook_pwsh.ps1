@@ -7,10 +7,10 @@
 #	 find by: echo $PROFILE.CurrentUserAllHosts
 #
 #	# Method 1:
-#	Invoke-Expression (&kite xenv shell --type pwsh)
+#	Invoke-Expression (&xenv shell --type pwsh)
 #
 #	# Method 2:
-#	kite xenv shell --type pwsh | Out-String | Invoke-Expression
+#	xenv shell --type pwsh | Out-String | Invoke-Expression
 
 # Helper function to evaluate xenv command results
 function Invoke-XenvResult {
@@ -89,9 +89,9 @@ function Set-Location {
     #Write-Host "- Into: $currentPath" -ForegroundColor Cyan
 
     # Check if xenv is available and run init-direnv
-    if (Get-Command kite -ErrorAction SilentlyContinue) {
-        # Run kite xenv init-direnv, eval result scripts
-        $result = (& kite xenv init-direnv | Out-String)
+    if (Get-Command xenv -ErrorAction SilentlyContinue) {
+        # Run xenv init-direnv, eval result scripts
+        $result = (& xenv init-direnv | Out-String)
         # Write-Output "DEBUG: \n$result"
         Invoke-XenvResult -CallFrom "Set-Location.init-direnv" -Result $result -ExitCode $LASTEXITCODE
     }
@@ -126,24 +126,24 @@ function Setup-Xenv {
 
         switch ($Command) {
             { $_ -in @('use', 'unuse', 'env', 'path') } {
-                # Call kite command and evaluate the result
-                $result = (& kite xenv $Command @Arguments | Out-String)
+                # Call xenv command and evaluate the result
+                $result = (& xenv $Command @Arguments | Out-String)
                 # Write-Output $result # DEBUG
                 Invoke-XenvResult -CallFrom "xenv.$Command" -Result $result -ExitCode $LASTEXITCODE
             }
             { $_ -in @('set', 'unset') } {
-                $result = (& kite xenv env $Command @Arguments | Out-String)
+                $result = (& xenv env $Command @Arguments | Out-String)
                 Invoke-XenvResult -CallFrom "xenv.$Command" -Result $result -ExitCode $LASTEXITCODE
             }
             default {
                 # For other commands, just pass through to xenv
-                & kite xenv $Command @Arguments
+                & xenv $Command @Arguments
             }
         }
     }
 
     # fire xenv hooks to kite, use for generate code to exec TODO
-    $result_init_hook = & kite xenv shell-init-hook --type pwsh
+    $result_init_hook = & xenv shell-init-hook --type pwsh
     Invoke-XenvResult -CallFrom "Setup-Xenv.shell-init-hook" -Result $result_init_hook -ExitCode $LASTEXITCODE
 
     # Auto-initialize xenv if needed
@@ -161,7 +161,7 @@ function Setup-Xenv {
         }
     }
 
-    Write-Host "✅ kite pwsh xenv script initialize completed" -ForegroundColor Cyan
+    Write-Host "✅ xenv pwsh script initialize completed" -ForegroundColor Cyan
 }
 
 # Call setup function to initialize xenv

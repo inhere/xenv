@@ -9,7 +9,7 @@ import (
 
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/kite-go/pkg/util"
+	"github.com/inhere/xenv/internal/util"
 )
 
 // ListVersionDirs 列出SDK的已安装版本目录
@@ -41,7 +41,7 @@ func ListVersionDirs(installDir string) (map[string]string, error) {
 }
 
 // ParseGoVersion 实现简单的从 go.work/go.mod 文件解析go版本
-//  - 按行读取文件 找到 go {version} 所在行即停止，最多读取 10 行，找不到就返回
+//   - 按行读取文件 找到 go {version} 所在行即停止，最多读取 10 行，找不到就返回
 //
 // eg: goVer, err := ParseGoVersion("go.mod")
 func ParseGoVersion(modFile string) (string, error) {
@@ -103,8 +103,8 @@ func ParseToolVersions(toolFile string) (map[string]string, error) {
 
 // ParseNvmrcFile 实现从 .nvmrc 文件解析工具版本
 //
-//  - 纯文本，只包含一个 Node.js 版本号
-//  - 内容可能为：18.17.0, v14.18.1, lts/*, node(最新稳定版: node)
+//   - 纯文本，只包含一个 Node.js 版本号
+//   - 内容可能为：18.17.0, v14.18.1, lts/*, node(最新稳定版: node)
 func ParseNvmrcFile(nvmrcFile string) (string, error) {
 	contents, err := os.ReadFile(nvmrcFile)
 	if err != nil {
@@ -125,8 +125,8 @@ func ParseNvmrcFile(nvmrcFile string) (string, error) {
 }
 
 // ParsePythonVersion 实现从 .python-version 文件解析 Python 版本
-//  - 纯文本，只包含一个 Python
-//  - 内容可能为：3.11.4,
+//   - 纯文本，只包含一个 Python
+//   - 内容可能为：3.11.4,
 func ParsePythonVersion(versionFile string) (string, error) {
 	contents, err := os.ReadFile(versionFile)
 	if err != nil {

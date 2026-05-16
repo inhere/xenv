@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/gookit/goutil/arrutil"
-	"github.com/inhere/kite-go/pkg/util"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/util"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 // This file contains shell integration utilities

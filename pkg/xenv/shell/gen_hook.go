@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/maputil"
-	"github.com/inhere/kite-go/pkg/util"
-	"github.com/inhere/kite-go/pkg/xenv/models"
+	"github.com/inhere/xenv/internal/util"
+	"github.com/inhere/xenv/pkg/xenv/models"
 )
 
 // XenvScriptGenerator xenv Shell脚本生成器实现
@@ -55,9 +55,9 @@ func (sg *XenvScriptGenerator) InstallToProfile(pwshProfile string) error {
 }
 
 // installScriptsToProfile 安装 Shell Hook 脚本到配置文件(eg: .bashrc, .zshrc)
-//  - 检查文件是否存在，如果不存在则创建一个
-//  - 检查文件内容是否包含 xenv 脚本，如果存在则返回
-//  - 如果不存在内容则添加到文件的末尾
+//   - 检查文件是否存在，如果不存在则创建一个
+//   - 检查文件内容是否包含 xenv 脚本，如果存在则返回
+//   - 如果不存在内容则添加到文件的末尾
 func (sg *XenvScriptGenerator) installScriptsToProfile(script, profile string) error {
 
 	return nil
@@ -179,7 +179,6 @@ func (sg *XenvScriptGenerator) GenRemThenAddPaths(rmPaths, addPaths []string) (s
 	return
 }
 
-
 // endregion
 // region Helper methods
 //
@@ -187,7 +186,7 @@ func (sg *XenvScriptGenerator) GenRemThenAddPaths(rmPaths, addPaths []string) (s
 func (sg *XenvScriptGenerator) addCommonForLinuxShell(sb *strings.Builder, ps *models.GenInitScriptParams) {
 	// 添加全局环境变量
 	if len(ps.Envs) > 0 {
-		sb.WriteString("  # Add global ENV variables from kite xenv\n")
+		sb.WriteString("  # Add global ENV variables from xenv\n")
 		maputil.EachTypedMap(ps.Envs, func(key, value string) {
 			sb.WriteString(fmt.Sprintf("  export %s=%s\n", strings.ToUpper(key), value))
 		})
@@ -195,7 +194,7 @@ func (sg *XenvScriptGenerator) addCommonForLinuxShell(sb *strings.Builder, ps *m
 
 	// 添加全局PATH条目
 	if len(ps.Paths) > 0 {
-		sb.WriteString("  # Add global PATH from kite xenv\n")
+		sb.WriteString("  # Add global PATH from xenv\n")
 		var fmtPaths []string
 		for _, path := range ps.Paths {
 			// TODO Windows git-bash 将盘符 D:/ 转换成 /d/
@@ -206,7 +205,7 @@ func (sg *XenvScriptGenerator) addCommonForLinuxShell(sb *strings.Builder, ps *m
 
 	// 添加全局别名
 	if len(ps.ShellAliases) > 0 {
-		sb.WriteString("  # Add global aliases from kite xenv\n")
+		sb.WriteString("  # Add global aliases from xenv\n")
 		maputil.EachTypedMap(ps.ShellAliases, func(key, value string) {
 			sb.WriteString(fmt.Sprintf("  alias %s='%s'\n", key, value))
 		})

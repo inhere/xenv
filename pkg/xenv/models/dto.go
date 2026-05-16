@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/gookit/goutil/maputil"
-	"github.com/inhere/kite-go/pkg/util"
+	"github.com/inhere/xenv/internal/util"
 )
 
 type ActivateSDKsParams struct {
@@ -12,7 +12,7 @@ type ActivateSDKsParams struct {
 	// for  activate
 	AddPaths []string
 	AddEnvs  map[string]string
-	AddSdks map[string]string
+	AddSdks  map[string]string
 }
 
 // NewActivateSDKsParams creates a new ActivateSDKsParams instance

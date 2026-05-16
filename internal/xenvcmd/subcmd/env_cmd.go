@@ -5,8 +5,8 @@ import (
 
 	"github.com/gookit/gcli/v3"
 	"github.com/gookit/goutil/x/ccolor"
-	"github.com/inhere/kite-go/pkg/xenv"
-	"github.com/inhere/kite-go/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/pkg/xenv"
+	"github.com/inhere/xenv/pkg/xenv/xenvcom"
 )
 
 var (
@@ -35,7 +35,7 @@ var EnvCmd = &gcli.Command{
 // Test run:
 //
 //	// pwsh
-//	$env:XENV_HOOK_SHELL="pwsh"; kite xenv set TEST003 value003
+//	$env:XENV_HOOK_SHELL="pwsh"; xenv set TEST003 value003
 func EnvSetCmd() *gcli.Command {
 	return &gcli.Command{
 		Name: "set",
@@ -124,7 +124,7 @@ func EnvUnsetCmd() *gcli.Command {
 func EnvListCmd() *gcli.Command {
 	return &gcli.Command{
 		Name:    "list",
-		Desc: "List environment variables",
+		Desc:    "List environment variables",
 		Aliases: []string{"ls"},
 		Func: func(c *gcli.Command, args []string) error {
 			return listEnvs()

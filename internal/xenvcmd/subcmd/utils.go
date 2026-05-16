@@ -3,7 +3,7 @@ package subcmd
 import (
 	"fmt"
 
-	"github.com/inhere/kite-go/pkg/xenv/models"
+	"github.com/inhere/xenv/pkg/xenv/models"
 )
 
 // GetOpFlag 根据参数获取操作标识

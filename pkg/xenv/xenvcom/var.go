@@ -51,4 +51,3 @@ func Debugln(args ...any) {
 		ccolor.Println("<cyan>DEBUG</>: ", fmt.Sprint(args...))
 	}
 }
-
