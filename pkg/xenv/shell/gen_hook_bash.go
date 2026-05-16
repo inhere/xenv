@@ -51,7 +51,7 @@ cd() {
     builtin cd "$@" && {
         if command -v {{BinName}} >/dev/null 2>&1; then
             echo "current path: $PWD"
-            local result="$({{BinCommand}} init-direnv)"
+            local result="$(command {{BinCommand}} init-direnv)"
             local exit_code=$?
             # echo "result: $result"
             invoke_xenv_result "$result" $exit_code
@@ -118,13 +118,13 @@ setup_xenv() {
         case "$command" in
             use|unuse|env|path)
                 # 对于这些命令，获取结果并评估
-                local result="$({{BinCommand}} "$command" "$@")"
+                local result="$(command {{BinCommand}} "$command" "$@")"
                 local exit_code=$?
                 invoke_xenv_result "$result" $exit_code
                 ;;
             set|unset)
                 # 对于环境变量设置/取消设置命令
-                local result="$({{BinCommand}} env "$command" "$@")"
+                local result="$(command {{BinCommand}} env "$command" "$@")"
                 local exit_code=$?
                 invoke_xenv_result "$result" $exit_code
                 ;;
@@ -136,7 +136,7 @@ setup_xenv() {
     }
 
     # fire xenv hooks to kite, use for generate code to exec TODO
-    local result_init="$({{BinCommand}} shell-init-hook --type bash)"
+    local result_init="$(command {{BinCommand}} shell-init-hook --type bash)"
     local exit_code=$?
     invoke_xenv_result "$result_init" $exit_code
 

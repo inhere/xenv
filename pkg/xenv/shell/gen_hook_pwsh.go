@@ -121,6 +121,8 @@ function Invoke-XenvResult {
     }
 }
 
+$script:XenvBinCommand = (Get-Command {{BinCommand}} -CommandType Application -ErrorAction Stop).Source
+
 # 保存原始的 Set-Location
 $originalSetLocation = Get-Command Set-Location -CommandType Cmdlet
 #$originalSetLocation = $function:Set-Location
@@ -157,9 +159,9 @@ function Set-Location {
     #Write-Host "- Into: $currentPath" -ForegroundColor Cyan
 
     # Check if xenv is available and run init-direnv
-    if (Get-Command {{BinName}} -ErrorAction SilentlyContinue) {
+    if ($script:XenvBinCommand) {
         # Run xenv init-direnv, eval result scripts
-        $result = (& {{BinCommand}} init-direnv | Out-String)
+        $result = (& $script:XenvBinCommand init-direnv | Out-String)
         # Write-Output "DEBUG: \n$result"
         Invoke-XenvResult -CallFrom "Set-Location.init-direnv" -Result $result -ExitCode $LASTEXITCODE
     }
@@ -195,23 +197,23 @@ function Setup-Xenv {
         switch ($Command) {
             { $_ -in @('use', 'unuse', 'env', 'path') } {
                 # Call xenv command and evaluate the result
-                $result = (& {{BinCommand}} $Command @Arguments | Out-String)
+                $result = (& $script:XenvBinCommand $Command @Arguments | Out-String)
                 # Write-Output $result # DEBUG
                 Invoke-XenvResult -CallFrom "xenv.$Command" -Result $result -ExitCode $LASTEXITCODE
             }
             { $_ -in @('set', 'unset') } {
-                $result = (& {{BinCommand}} env $Command @Arguments | Out-String)
+                $result = (& $script:XenvBinCommand env $Command @Arguments | Out-String)
                 Invoke-XenvResult -CallFrom "xenv.$Command" -Result $result -ExitCode $LASTEXITCODE
             }
             default {
                 # For other commands, just pass through to xenv
-                & {{BinCommand}} $Command @Arguments
+                & $script:XenvBinCommand $Command @Arguments
             }
         }
     }
 
     # fire xenv hooks to kite, use for generate code to exec TODO
-    $result_init_hook = & {{BinCommand}} shell-init-hook --type pwsh
+    $result_init_hook = & $script:XenvBinCommand shell-init-hook --type pwsh
     Invoke-XenvResult -CallFrom "Setup-Xenv.shell-init-hook" -Result $result_init_hook -ExitCode $LASTEXITCODE
 
     # Auto-initialize xenv if needed

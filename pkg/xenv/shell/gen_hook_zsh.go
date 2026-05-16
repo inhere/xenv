@@ -39,7 +39,7 @@ var ZshHookTemplate = `#
 # 使用 chpwd 钩子函数监听cd执行后
 chpwd() {
     if (( $+commands[{{BinName}}] )); then
-        {{BinCommand}} init-direnv >/dev/null 2>&1
+        command {{BinCommand}} init-direnv >/dev/null 2>&1
     fi
 }
 
@@ -100,13 +100,13 @@ setup_xenv() {
         case "$command" in
             use|unuse|env|path)
                 # 对于这些命令，获取结果并评估
-                local result="$({{BinCommand}} "$command" "$@")"
+                local result="$(command {{BinCommand}} "$command" "$@")"
                 local exit_code=$?
                 invoke_xenv_result "$result" $exit_code
                 ;;
             set|unset)
                 # 对于环境变量设置/取消设置命令
-                local result="$({{BinCommand}} env "$command" "$@")"
+                local result="$(command {{BinCommand}} env "$command" "$@")"
                 local exit_code=$?
                 invoke_xenv_result "$result" $exit_code
                 ;;
@@ -118,7 +118,7 @@ setup_xenv() {
     }
 
     # XENV: fire xenv hooks to kite, use for generate code to exec TODO
-    local result_init="$({{BinCommand}} shell-init-hook --type zsh)"
+    local result_init="$(command {{BinCommand}} shell-init-hook --type zsh)"
     local exit_code=$?
     invoke_xenv_result "$result_init" $exit_code
 
