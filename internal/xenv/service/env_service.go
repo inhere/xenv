@@ -9,8 +9,8 @@ import (
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/xenv/internal/util"
-	"github.com/inhere/xenv/pkg/xenv/manager"
-	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/manager"
+	"github.com/inhere/xenv/internal/xenv/models"
 )
 
 // EnvService handles environment variable and PATH management

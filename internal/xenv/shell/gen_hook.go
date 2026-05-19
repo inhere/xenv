@@ -7,7 +7,7 @@ import (
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/inhere/xenv/internal/util"
-	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/models"
 )
 
 // XenvScriptGenerator xenv Shell脚本生成器实现

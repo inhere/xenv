@@ -11,9 +11,9 @@ import (
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/x/ccolor"
-	"github.com/inhere/xenv/pkg/xenv/models"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
-	"github.com/inhere/xenv/pkg/xenv/xenvutil"
+	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/xenvutil"
 )
 
 type ToolManager struct {

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/fsutil"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 // NormalizePath normalizes a path by expanding home directory and cleaning it.

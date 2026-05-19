@@ -5,10 +5,10 @@ import (
 
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/x/ccolor"
-	"github.com/inhere/xenv/pkg/xenv/models"
-	"github.com/inhere/xenv/pkg/xenv/shell"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
-	"github.com/inhere/xenv/pkg/xenv/xenvutil"
+	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/shell"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/xenvutil"
 )
 
 // getShellGenerator 获取当前shell的脚本生成器. 注意：不在shell hook环境，会返回nil

@@ -5,7 +5,7 @@ import (
 
 	"github.com/gookit/goutil/arrutil"
 	"github.com/inhere/xenv/internal/util"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 // This file contains shell integration utilities

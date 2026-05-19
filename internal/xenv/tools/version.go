@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/models"
 )
 
 var (

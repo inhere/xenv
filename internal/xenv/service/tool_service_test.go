@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/jsonutil"
-	"github.com/inhere/xenv/pkg/xenv/manager"
-	"github.com/inhere/xenv/pkg/xenv/models"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/manager"
+	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 func TestSetupDirenvDetectsGoModWithoutCreatingXenvToml(t *testing.T) {

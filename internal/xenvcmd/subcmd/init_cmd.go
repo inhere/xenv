@@ -7,7 +7,7 @@ import (
 
 	"github.com/gookit/gcli/v3"
 	"github.com/inhere/xenv/internal/util"
-	"github.com/inhere/xenv/pkg/xenv/config"
+	"github.com/inhere/xenv/internal/xenv/config"
 )
 
 // InitCmd the xenv init command

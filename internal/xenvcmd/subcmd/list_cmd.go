@@ -6,9 +6,9 @@ import (
 	"github.com/gookit/cliui/show/title"
 	"github.com/gookit/gcli/v3"
 	"github.com/gookit/goutil/x/ccolor"
-	"github.com/inhere/xenv/pkg/xenv"
-	"github.com/inhere/xenv/pkg/xenv/models"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv"
+	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 // ListCmd the xenv list command

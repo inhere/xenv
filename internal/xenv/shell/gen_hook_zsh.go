@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/xenv/pkg/xenv/models"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 // generateBashScripts generates the zsh shell hook script

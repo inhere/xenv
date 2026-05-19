@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/strutil"
-	"github.com/inhere/xenv/pkg/xenv/models"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 // generate bash script contents
@@ -30,7 +30,7 @@ func (sg *XenvScriptGenerator) generateBashScripts(ps *models.GenInitScriptParam
 //
 //	eval "$(xenv shell --type bash)"
 //
-// Test: . pkg/xenv/testdata/hook_bash.sh
+// Test: . internal/xenv/testdata/hook_bash.sh
 var BashHookTemplate = `#!/usr/bin/env bash
 #
 # xenv bash hook

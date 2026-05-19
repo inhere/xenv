@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/inhere/xenv/internal/xenvcmd"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 // main xenv 程序入口

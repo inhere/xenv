@@ -12,7 +12,7 @@ import (
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/strutil"
 	"github.com/inhere/xenv/internal/util"
-	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/models"
 )
 
 // Installer handles the actual installation of tools

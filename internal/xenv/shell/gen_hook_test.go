@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/inhere/xenv/pkg/xenv/models"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 func TestGeneratedHooksBypassXenvWrapper(t *testing.T) {

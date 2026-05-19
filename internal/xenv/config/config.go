@@ -9,8 +9,8 @@ import (
 	"github.com/gookit/config/v2"
 	"github.com/gookit/config/v2/toml"
 	"github.com/gookit/config/v2/yaml"
-	"github.com/inhere/xenv/pkg/xenv/models"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 const (

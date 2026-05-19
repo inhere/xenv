@@ -3,7 +3,7 @@ package xenvcmd
 import (
 	"github.com/gookit/gcli/v3"
 	"github.com/inhere/xenv/internal/xenvcmd/subcmd"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 // XEnvCmd the main xenv command

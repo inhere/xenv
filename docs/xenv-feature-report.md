@@ -13,7 +13,7 @@
 当前模块入口位于：
 
 - CLI 命令：`internal/cli/xenvcmd`
-- 核心能力：`pkg/xenv`
+- 核心能力：`internal/xenv`
 - 默认配置样例：`data/xenv/config.yaml`
 - 功能需求草稿：`docs/feat-craft/kite-xenv-spec-craft.md`
 

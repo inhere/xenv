@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/gookit/goutil/fsutil"
-	"github.com/inhere/xenv/pkg/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/models"
 )
 
 // Uninstaller handles uninstalling tools

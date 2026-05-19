@@ -9,9 +9,9 @@ import (
 	"github.com/gookit/goutil/errorx"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/sysutil"
-	"github.com/inhere/xenv/pkg/xenv"
-	"github.com/inhere/xenv/pkg/xenv/shell"
-	"github.com/inhere/xenv/pkg/xenv/xenvcom"
+	"github.com/inhere/xenv/internal/xenv"
+	"github.com/inhere/xenv/internal/xenv/shell"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 type shellOptions = struct {
