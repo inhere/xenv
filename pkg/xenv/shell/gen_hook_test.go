@@ -26,6 +26,7 @@ func TestGeneratedHooksBypassXenvWrapper(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		assertNotContains(t, script, `export XENV_SESSION_ID=`)
 		assertNotContains(t, script, `local result="$(xenv "$command" "$@")"`)
 		assertNotContains(t, script, `local result="$(xenv env "$command" "$@")"`)
 		assertContains(t, script, `local result="$(command xenv "$command" "$@")"`)
@@ -38,6 +39,7 @@ func TestGeneratedHooksBypassXenvWrapper(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		assertNotContains(t, script, `export XENV_SESSION_ID=`)
 		assertNotContains(t, script, `local result="$(xenv "$command" "$@")"`)
 		assertNotContains(t, script, `local result="$(xenv env "$command" "$@")"`)
 		assertContains(t, script, `local result="$(command xenv "$command" "$@")"`)
@@ -50,6 +52,7 @@ func TestGeneratedHooksBypassXenvWrapper(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		assertNotContains(t, script, `$env:XENV_SESSION_ID =`)
 		assertContains(t, script, `$script:XenvBinCommand = (Get-Command xenv -CommandType Application -ErrorAction Stop).Source`)
 		assertNotContains(t, script, `& xenv $Command @Arguments`)
 		assertNotContains(t, script, `& xenv env $Command @Arguments`)

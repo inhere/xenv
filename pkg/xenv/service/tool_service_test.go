@@ -28,7 +28,8 @@ func TestSetupDirenvDetectsGoModWithoutCreatingXenvToml(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(projectDir, ".xenv.toml")); !os.IsNotExist(err) {
 		t.Fatalf("expected .xenv.toml not to be created, stat err=%v", err)
 	}
-	if _, err := os.Stat(filepath.Join(tempHome, ".xenv", "session", "test-session.json")); err != nil {
+	sessionID := xenvcom.SessionIDForDir(projectDir)
+	if _, err := os.Stat(filepath.Join(tempHome, ".xenv", "session", sessionID+".json")); err != nil {
 		t.Fatalf("expected session state to be saved: %v", err)
 	}
 	if state.Nearest() != nil {
@@ -56,6 +57,39 @@ func TestSetupDirenvUsesExistingXenvTomlAsDirenvState(t *testing.T) {
 	}
 }
 
+func TestSetupDirenvDetectsProjectRootGoModFromSubdirectory(t *testing.T) {
+	tempHome, projectDir, svc, state := newDirenvTestService(t, "test-subdir", func(projectDir string) {
+		if err := os.WriteFile(filepath.Join(projectDir, "go.mod"), []byte("module example.com/test\n\ngo 1.24\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		subDir := filepath.Join(projectDir, "pkg", "service")
+		if err := os.MkdirAll(subDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chdir(subDir); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script == "" {
+		t.Fatal("expected setup direnv from subdirectory to detect project root go.mod")
+	}
+	if _, err := os.Stat(filepath.Join(projectDir, "pkg", "service", ".xenv.toml")); !os.IsNotExist(err) {
+		t.Fatalf("expected subdirectory .xenv.toml not to be created, stat err=%v", err)
+	}
+	sessionID := xenvcom.SessionIDForDir(projectDir)
+	if _, err := os.Stat(filepath.Join(tempHome, ".xenv", "session", sessionID+".json")); err != nil {
+		t.Fatalf("expected project-root session state to be saved: %v", err)
+	}
+	if state.Nearest() != nil {
+		t.Fatal("expected auto-detected project root files not to create direnv state")
+	}
+}
+
 func newDirenvTestService(t *testing.T, sessionID string, setupProject func(projectDir string)) (tempHome, projectDir string, svc *ToolService, state *manager.StateManager) {
 	t.Helper()
 
@@ -66,9 +100,8 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 	t.Setenv("HOME", tempHome)
 	t.Setenv("USERPROFILE", tempHome)
 	t.Setenv("XENV_HOOK_SHELL", "pwsh")
-	t.Setenv("XENV_SESSION_ID", sessionID)
 	xenvcom.SetHookShell("pwsh")
-	xenvcom.SetSessionID(sessionID)
+	xenvcom.SetSessionID("")
 	t.Cleanup(func() {
 		xenvcom.SetHookShell("")
 		xenvcom.SetSessionID("")

@@ -43,7 +43,6 @@ func (sg *XenvScriptGenerator) generatePwshScripts(ps *models.GenInitScriptParam
 
 	return strutil.Replaces(PwshHookTemplate, map[string]string{
 		"{{HooksDir}}":    ps.ShellHooksDir,
-		"{{SessionId}}":   xenvcom.SessionID(),
 		"{{BinCommand}}":  xenvcom.BinCommand,
 		"{{BinName}}":     xenvcom.BinName,
 		"#{{EnvAliases}}": sb.String(),
@@ -173,7 +172,7 @@ function Set-Location {
 function Setup-Xenv {
     # Mark hook enabled
     $env:XENV_HOOK_SHELL = "pwsh"
-    $env:XENV_SESSION_ID = "{{SessionId}}"
+    Remove-Item Env:XENV_SESSION_ID -ErrorAction SilentlyContinue
     # Set up the xenv shims directory in PATH
     $xenvShimsDir = if ($env:XENV_ROOT) { "$env:XENV_ROOT\shims" } else { "$HOME\.xenv\shims" }
 

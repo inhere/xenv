@@ -16,7 +16,6 @@ func (sg *XenvScriptGenerator) generateZshScripts(ps *models.GenInitScriptParams
 
 	return strutil.Replaces(ZshHookTemplate, map[string]string{
 		"{{HooksDir}}":    ps.ShellHooksDir,
-		"{{SessionId}}":   xenvcom.SessionID(),
 		"{{BinCommand}}":  xenvcom.BinCommand,
 		"{{BinName}}":     xenvcom.BinName,
 		"#{{EnvAliases}}": sb.String(),
@@ -80,7 +79,7 @@ invoke_xenv_result() {
 setup_xenv() {
     # Mark hook enabled
     export XENV_HOOK_SHELL=zsh
-    export XENV_SESSION_ID="{{SessionId}}"
+    unset XENV_SESSION_ID
     # Set up the xenv shims directory in PATH
     local xenv_shims_dir="${XENV_ROOT:-$HOME/.xenv}/shims"
 

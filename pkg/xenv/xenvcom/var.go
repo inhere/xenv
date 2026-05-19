@@ -1,9 +1,13 @@
 package xenvcom
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"os"
-	"time"
+	"path/filepath"
+	"strings"
+	"unicode"
 
 	"github.com/gookit/goutil/envutil"
 	"github.com/gookit/goutil/x/ccolor"
@@ -13,17 +17,74 @@ var sessionID = os.Getenv(SessIdEnvName)
 
 // SessionID 获取当前会话ID
 func SessionID() string {
-	// 为空时,将当前目录路径hash值作为sessionID
-	if sessionID == "" {
-		// 用时间会导致产生很多文件
-		sessionID = time.Now().Format("20060102_150405")
-		// TIP: 用目录也有问题，会按首次打开时生成。。。后续又会切换目录
-		// workdir := sysutil.Workdir()
-		// // 取出目录名的前4个字符作为前缀
-		// prefix := strutil.Substr(fsutil.Name(workdir), 0, 4)
-		// sessionID = prefix + "_" + strutil.ShortMd5(workdir)
+	if sessionID != "" {
+		return sessionID
 	}
-	return sessionID
+
+	workDir, err := os.Getwd()
+	if err != nil {
+		workDir = "."
+	}
+	return SessionIDForDir(SessionRootDir(workDir))
+}
+
+// SessionRootDir returns the project root used to scope session state.
+func SessionRootDir(start string) string {
+	dir, err := filepath.Abs(start)
+	if err != nil {
+		dir = start
+	}
+	dir = filepath.Clean(dir)
+
+	markers := []string{
+		LocalStateFile,
+		"go.work",
+		"go.mod",
+		".tool-versions",
+		"package.json",
+		".nvmrc",
+		".python-version",
+		".git",
+	}
+	for {
+		for _, marker := range markers {
+			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
+				return dir
+			}
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return filepath.Clean(start)
+		}
+		dir = parent
+	}
+}
+
+// SessionIDForDir returns a stable session ID for the given directory.
+func SessionIDForDir(dir string) string {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		absDir = dir
+	}
+	cleanDir := filepath.Clean(absDir)
+	baseName := sanitizeSessionIDPart(filepath.Base(cleanDir))
+	if baseName == "" {
+		baseName = "root"
+	}
+
+	hashSource := filepath.ToSlash(cleanDir)
+	hash := md5.Sum([]byte(strings.ToLower(hashSource)))
+	return baseName + "_" + hex.EncodeToString(hash[:])[:10]
+}
+
+func sanitizeSessionIDPart(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_' {
+			return r
+		}
+		return '_'
+	}, s)
 }
 
 // SessionFile 获取当前会话状态文件

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"path/filepath"
+
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/xenv/pkg/xenv/models"
@@ -26,17 +28,22 @@ func getShellGenerator(_ *models.Configuration) (*shell.XenvScriptGenerator, err
 }
 
 func sdkVersionsFromSpecifiedFiles(specMap map[string]*models.VersionSpec) {
+	sdkVersionsFromSpecifiedFilesInDir(specMap, xenvcom.SessionRootDir("."))
+}
+
+func sdkVersionsFromSpecifiedFilesInDir(specMap map[string]*models.VersionSpec, rootDir string) {
 	// 支持识别常用的工具配置 eg: go.mod, .tool-versions, .nvmrc, .python-version
 	toolsCfgFiles := []string{"go.work", "go.mod", ".tool-versions", ".nvmrc", ".python-version"}
 	for _, filename := range toolsCfgFiles {
-		if !fsutil.IsFile(filename) {
+		filePath := filepath.Join(rootDir, filename)
+		if !fsutil.IsFile(filePath) {
 			continue
 		}
 
 		switch filename {
 		case ".tool-versions":
 			// 识别 .tool-versions 文件
-			verMap, err := xenvutil.ParseToolVersions(filename)
+			verMap, err := xenvutil.ParseToolVersions(filePath)
 			if err != nil {
 				ccolor.Warnf("Failed to parse .tool-versions file: %v\n", err)
 				continue
@@ -50,7 +57,7 @@ func sdkVersionsFromSpecifiedFiles(specMap map[string]*models.VersionSpec) {
 				}
 			}
 		case "go.work", "go.mod":
-			goVer, err := xenvutil.ParseGoVersion(filename)
+			goVer, err := xenvutil.ParseGoVersion(filePath)
 			if err != nil {
 				ccolor.Warnf("Failed to parse go.mod file: %v\n", err)
 				continue
@@ -62,7 +69,7 @@ func sdkVersionsFromSpecifiedFiles(specMap map[string]*models.VersionSpec) {
 			}
 		case ".nvmrc":
 			// 识别 .nvmrc 文件
-			nodeVer, err := xenvutil.ParseNvmrcFile(filename)
+			nodeVer, err := xenvutil.ParseNvmrcFile(filePath)
 			if err != nil {
 				ccolor.Warnf("Failed to parse .nvmrc file: %v\n", err)
 				continue
@@ -74,7 +81,7 @@ func sdkVersionsFromSpecifiedFiles(specMap map[string]*models.VersionSpec) {
 			}
 		case ".python-version":
 			// 识别 .python-version 文件
-			pyVer, err := xenvutil.ParsePythonVersion(filename)
+			pyVer, err := xenvutil.ParsePythonVersion(filePath)
 			if err != nil {
 				ccolor.Warnf("Failed to parse .python-version file: %v\n", err)
 				continue

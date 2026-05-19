@@ -34,7 +34,6 @@ func (sg *XenvScriptGenerator) generateCmdScripts(ps *models.GenInitScriptParams
 
 	return strutil.Replaces(CmdLuaHookTemplate, map[string]string{
 		"{{HooksDir}}":   ps.ShellHooksDir,
-		"{{SessionId}}":  xenvcom.SessionID(),
 		"{{BinCommand}}": xenvcom.BinCommand,
 		"{{EnvAliases}}": sb.String(),
 	})
@@ -84,7 +83,7 @@ function setup_xenv()
 {
     -- Mark hook enabled
     os.setenv("XENV_HOOK_SHELL", "cmd")
-    os.setenv("XENV_SESSION_ID", "{{SessionId}}")
+    os.setenv("XENV_SESSION_ID", nil)
     -- Set up the xenv shims directory in PATH
     local xenv_shims_dir = os.getenv("XENV_ROOT") or os.getenv("USERPROFILE") .. "\\.xenv\\shims"
 
