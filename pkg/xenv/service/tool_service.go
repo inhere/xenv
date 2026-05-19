@@ -296,9 +296,11 @@ func (ts *ToolService) SetupDirenv() (string, error) {
 
 	// 使用 map 可以避免配置重复的SDK
 	var specMap = make(map[string]*models.VersionSpec)
+	opFlag := models.OpFlagSession
 
 	deState := ts.state.Nearest()
 	if deState != nil && !deState.IsEmpty() {
+		opFlag = models.OpFlagDirenv
 		ccolor.Infof("Detect xenv state file: %s\n", deState.File)
 		for name, ver := range deState.SDKs {
 			specMap[name] = &models.VersionSpec{
@@ -316,7 +318,7 @@ func (ts *ToolService) SetupDirenv() (string, error) {
 		for _, spec := range specMap {
 			sdkSpecs = append(sdkSpecs, spec)
 		}
-		return ts.activateSDKs(gen, sdkSpecs, models.OpFlagDirenv)
+		return ts.activateSDKs(gen, sdkSpecs, opFlag)
 	}
 	return "", nil // no state file found OR empty
 }
