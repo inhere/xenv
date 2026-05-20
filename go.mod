@@ -7,7 +7,7 @@ toolchain go1.24.6
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/goccy/go-json v0.10.6
-	github.com/gookit/cliui v0.2.3
+	github.com/gookit/cliui v0.3.0
 	github.com/gookit/config/v2 v2.2.8
 	github.com/gookit/gcli/v3 v3.3.1
 	github.com/gookit/goutil v0.7.5
