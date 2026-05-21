@@ -1,4 +1,4 @@
-package subcmd
+package cli
 
 import (
 	"github.com/gookit/gcli/v3"

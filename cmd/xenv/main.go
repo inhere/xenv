@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/inhere/xenv/internal/xenvcmd"
+	"github.com/inhere/xenv/internal/cli"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
@@ -21,33 +21,5 @@ func main() {
 	xenvcom.SetBinName("xenv")
 	xenvcom.SetBinCommand("xenv")
 
-	xe := xenvcmd.XEnvCmd
-	xe.Name = "xenv"
-	xe.Desc = "Manage local development environments and tools"
-	xe.Help = `
-Commands Usage:
-  use <sdk:version>...     Activate Name versions
-    -s, --save             Save configuration to project file
-  unuse <sdk>...           Deactivate SDKs
-  install <sdk:version>... Download and install Name versions
-  list [sdk]               List installed SDKs
-
-Examples:
-  xenv use node:18 go:1.21
-  xenv use -s node:lts
-  xenv unuse node
-  xenv tools install go:1.22
-  xenv list
-  xenv list go
-
-Supported SDKs:
-  go, node, java, flutter
-
-Version formats:
-  <sdk>:<version>         Exact version (go:1.21.5)
-  <sdk>:<major>           Latest patch version (node:18)
-  <sdk>:lts               Long-term support version
-  <sdk>:latest            Latest stable version
-`
-	xe.MustRun(nil)
+	cli.NewApp().Run(nil)
 }
