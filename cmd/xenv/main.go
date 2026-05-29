@@ -2,7 +2,13 @@ package main
 
 import (
 	"github.com/inhere/xenv/internal/cli"
-	"github.com/inhere/xenv/internal/xenv/xenvcom"
+)
+
+// Build-time variables injected via -ldflags
+var (
+	Version   = "dev"
+	GitHash   = "unknown"
+	BuildTime = "unknown"
 )
 
 // main xenv 程序入口
@@ -18,8 +24,7 @@ import (
 //	 // Windows PowerShell
 //		$env:KITE_VERBOSE="debug" go run ./cmd/xenv <CMD>
 func main() {
-	xenvcom.SetBinName("xenv")
-	xenvcom.SetBinCommand("xenv")
+	cli.SetBuildInfo(Version, GitHash, BuildTime)
 
 	cli.NewApp().Run(nil)
 }

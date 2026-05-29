@@ -43,7 +43,17 @@ run: build
 DIST_DIR := dist
 
 ## build-all: cross-compile for all platforms
-build-all: build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows
+build-all: build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest-yaml
+
+## latest-yaml: generate latest.yaml release metadata
+latest-yaml:
+	@mkdir -p $(DIST_DIR)
+	@{ \
+		echo "name: $(APP)"; \
+		echo "version: $(VERSION)"; \
+		echo "released_at: $(BUILD_TIME)"; \
+	} > $(DIST_DIR)/latest.yaml
+	@echo "   → $(DIST_DIR)/latest.yaml"
 
 ## build-linux: compile for Linux amd64
 build-linux:
@@ -91,14 +101,11 @@ release: build-all ## Create release archives for all platforms
 	@echo "Creating release archives..."
 	@mkdir -p release
 	@cd $(DIST_DIR) && \
-	for bin in $(APP); do \
-		zip ../release/$$bin-$(VERSION)-linux-amd64.zip $$bin-linux-amd64; \
-		zip ../release/$$bin-$(VERSION)-linux-arm64.zip $$bin-linux-arm64; \
-		zip ../release/$$bin-$(VERSION)-darwin-amd64.zip $$bin-darwin-amd64; \
-		zip ../release/$$bin-$(VERSION)-darwin-arm64.zip $$bin-darwin-arm64; \
-		zip ../release/$$bin-$(VERSION)-windows-amd64.zip $$bin-windows-amd64.exe; \
-		# zip ../release/$$bin-$(VERSION)-windows-arm64.zip $$bin-windows-arm64.exe; \
-	done
+	tar -czf ../release/$(APP)-$(VERSION)-linux-amd64.zip $(APP)-linux-amd64; \
+	tar -czf ../release/$(APP)-$(VERSION)-linux-arm64.zip $(APP)-linux-arm64; \
+	tar -czf ../release/$(APP)-$(VERSION)-darwin-amd64.zip $(APP)-darwin-amd64; \
+	tar -czf ../release/$(APP)-$(VERSION)-darwin-arm64.zip $(APP)-darwin-arm64; \
+	zip ../release/$(APP)-$(VERSION)-windows-amd64.zip $(APP)-windows-amd64.exe;
 	@echo "Release archives created in release/"
 
 ## clean: remove build artifacts
