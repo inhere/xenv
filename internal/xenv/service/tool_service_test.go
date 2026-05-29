@@ -90,7 +90,7 @@ func TestSetupDirenvDetectsProjectRootGoModFromSubdirectory(t *testing.T) {
 	}
 }
 
-func newDirenvTestService(t *testing.T, sessionID string, setupProject func(projectDir string)) (tempHome, projectDir string, svc *ToolService, state *manager.StateManager) {
+func newDirenvTestService(t *testing.T, sessionID string, setupProject func(projectDir string)) (tempHome, projectDir string, svc *SDKService, state *manager.StateManager) {
 	t.Helper()
 
 	tempHome = t.TempDir()
@@ -150,5 +150,5 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 	if err := toolMgr.Init(cfg); err != nil {
 		t.Fatal(err)
 	}
-	return tempHome, projectDir, NewToolService(cfg, state, toolMgr), state
+	return tempHome, projectDir, NewSDKService(cfg, state, toolMgr), state
 }

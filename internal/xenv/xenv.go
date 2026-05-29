@@ -66,11 +66,3 @@ func EnvService() (*service.EnvService, error) {
 	// Create env manager
 	return service.NewEnvService(config.Mgr.Config, stateMgr), nil
 }
-
-func ToolService() (*service.ToolService, error) {
-	if err := Init(); err != nil {
-		return nil, err
-	}
-
-	return service.NewToolService(config.Config(), stateMgr, sdkMgr), nil
-}
