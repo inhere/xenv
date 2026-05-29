@@ -198,11 +198,10 @@ func (ts *SDKService) checkActivateSDK(spec *models.VersionSpec) (*models.Instal
 	}
 
 	localSDKs := ts.sdks.ListSDKVersions(sdkCfg.Name)
-	if len(localSDKs) == 0 {
-		return nil, fmt.Errorf("sdk %s is not installed locally", spec.Name)
-	}
-
 	localSDK := ts.sdks.MatchSDKByVersion(localSDKs, spec.Version)
+	if localSDK == nil && ts.config.EgetEnable {
+		localSDK = ts.sdks.MatchSDKByVersion(ts.sdks.ListMergedSDKVersions(sdkCfg.Name), spec.Version)
+	}
 	if localSDK == nil {
 		return nil, fmt.Errorf("sdk %s is not installed locally", spec.ID())
 	}

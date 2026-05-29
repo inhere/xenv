@@ -136,6 +136,22 @@ func TestWhereSDKUsesXenvIndexWhenEgetHasSameVersion(t *testing.T) {
 	}
 }
 
+func TestWhereSDKUsesEgetWhenOnlyEgetHasVersion(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-where-eget-source", nil)
+	svc.config.EgetEnable = true
+	svc.sdks.SetEgetSource(manager.EgetStoreSource{
+		Path: writeTestEgetStore(t, "go", "1.25.0", "D:/eget/go1.25.0"),
+	})
+
+	got, err := svc.WhereSDK("go:1.25.0", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.ToSlash(got) != "D:/eget/go1.25.0" {
+		t.Fatalf("WhereSDK() = %q, want eget path", got)
+	}
+}
+
 func writeTestEgetStore(t *testing.T, name, version, installDir string) string {
 	t.Helper()
 
