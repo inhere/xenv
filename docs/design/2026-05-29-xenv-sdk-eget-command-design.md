@@ -62,6 +62,13 @@ eget_store_file: ""
 
 `eget_store_file` 不是必须项，但建议保留。原因是 `eget` 支持通过环境变量改变配置目录；如果用户有自定义配置目录，`xenv` 需要一个稳定、显式的读取路径。
 
+已确认决策：
+
+- `eget_store_file` 跟随 `eget_enable` 一起实现。
+- 当 `eget_enable: true` 且 `eget_store_file` 为空时，读取默认 `~/.config/eget/sdk.installed.json`。
+- 当 `eget_store_file` 非空时，优先读取该路径。
+- 不做“只实现 eget_enable、固定默认路径”的半成品，因为这会让自定义 eget 配置目录的用户无法完整使用该能力。
+
 ### 用户级目录
 
 `xenv` 的用户级配置和状态目录统一使用：
@@ -428,6 +435,13 @@ go
   1.21.5  xenv   D:/work/env/devsdk/go/go1.21.5
 ```
 
+已确认决策：
+
+- `eget_enable: false` 时，`xenv sdk list` 只显示 `xenv` 本地索引。
+- `eget_enable: true` 时，`xenv sdk list` 默认显示 `xenv` 本地索引与 `eget` SDK installed store 的合并结果。
+- 合并结果必须标注来源，例如 `xenv`、`eget`。
+- 如果同一 SDK 同一版本同时存在于两个来源，优先显示 `eget` 记录，或合并为一条并标注 `eget,xenv`。第一版建议优先显示 `eget`，避免重复版本干扰用户。
+
 ```bash
 xenv sdk show go
 ```
@@ -576,6 +590,13 @@ source_project_scripts: false
 - `.xenv.sh` / `.xenv.ps1` 是 xenv 自己的项目脚本约定，优先级应低于 `xenv` 生成的 SDK/env/path 激活脚本。
 - 如果同时存在 `.xenv.toml` 和 `.xenv.sh`，先应用 `.xenv.toml` 中的 SDK/env/path，再 source `.xenv.sh`，让项目脚本可以做最后补充。
 
+命名决策：
+
+- xenv 自有项目脚本使用 `.xenv.sh` / `.xenv.ps1`。
+- `.envrc` / `.envrc.ps1` 不作为 xenv 的主命名。
+- 原因是 `.envrc` 已经是 direnv 的强约定，用户会预期由 direnv 管理；xenv 如果默认接管 `.envrc`，容易和 direnv 行为、信任模型、allow 机制混淆。
+- 后续如确实需要兼容 `.envrc`，应通过单独配置开启，例如 `source_envrc: false`，并明确文档说明它是兼容模式。
+
 ## 与 eget 的用户工作流
 
 默认不启用 `eget`：
@@ -619,6 +640,12 @@ eget_enable: false
 ```text
 ~/.config/xenv/sdks.local.json
 ```
+
+已确认决策：
+
+- 本地索引文件名确定为 `sdks.local.json`。
+- 完整默认路径为 `~/.config/xenv/sdks.local.json`。
+- 如果设置 `XENV_CONFIG_DIR`，路径为 `$XENV_CONFIG_DIR/sdks.local.json`。
 
 索引结构只存 SDK，不再预留 `tools` 字段：
 
@@ -739,6 +766,11 @@ internal/cli/sdk_cmd.go
 
 同时将命名从 `ToolService`/`ToolManager` 收敛为 `SDKService`/`SDKManager`。由于不考虑兼容性，建议一次性完成命名清理，避免继续传播 `tool` 概念。
 
+已确认决策：
+
+- 接受一次性重命名 `ToolService`/`ToolManager` 为 `SDKService`/`SDKManager`。
+- 不保留旧命名兼容层。
+
 ### 删除代码
 
 可以删除或停止使用：
@@ -849,9 +881,5 @@ go run ./cmd/xenv check tools
 
 ## 待确认决策
 
-1. `xenv sdk list` 在启用 `eget_enable` 时，是否默认显示 xenv index 与 eget store 的合并结果。
-2. `eget_store_file` 是否需要首期实现，还是只实现 `eget_enable` 并固定读取默认路径。
-3. 本地索引文件名是否最终确定为 `~/.config/xenv/sdks.local.json`。
-4. 是否接受一次性重命名 `ToolService`/`ToolManager` 为 `SDKService`/`SDKManager`。
-5. `.xenv.toml [tools]` 第一版是否只支持简单 map，不支持 table 写法。
-6. `source_project_scripts` 是否默认关闭，并要求 `.xenv.toml` 存在才 source 项目脚本。
+1. `.xenv.toml [tools]` 第一版是否只支持简单 map，不支持 table 写法。
+2. `source_project_scripts` 是否默认关闭，并要求 `.xenv.toml` 存在才 source 项目脚本。
