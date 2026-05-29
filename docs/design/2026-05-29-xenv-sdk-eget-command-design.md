@@ -538,7 +538,7 @@ check_tools_on_direnv: false
 
 默认行为：
 
-- `xenv shell-direnv` 只做 SDK/env/path 激活。
+- `xenv init-direnv` 只做 SDK/env/path 激活和可选项目脚本 source 表达式生成。
 - 不执行 `[tools]` 版本检查。
 - 用户主动执行 `xenv check tools` 时才做完整检查。
 
@@ -582,7 +582,8 @@ source_project_scripts: false
 行为：
 
 - 默认 `source_project_scripts: false`，不自动 source 项目脚本。
-- 启用后，shell hook 在进入目录并完成 `xenv shell-direnv` 后，查找最近 `.xenv.toml` 所在目录中的项目脚本。
+- 启用后，shell hook 在进入目录时调用 `xenv init-direnv`，由 `init-direnv` 根据最近 `.xenv.toml` 所在目录决定是否返回项目脚本 source 表达式。
+- shell hook 不直接查找 `.xenv.sh` 或 `.xenv.ps1`，只负责 eval `init-direnv` 返回的表达式。
 - bash/zsh 只 source `.xenv.sh`。
 - PowerShell 只 dot-source `.xenv.ps1`。
 - 不跨 shell 执行脚本，例如 bash 不读取 `.xenv.ps1`。
@@ -738,14 +739,14 @@ type InstalledSDK struct {
 
 ```go
 type SDKSource interface {
-	ListSDKVersions(name string) ([]models.InstalledTool, error)
+	ListSDKVersions(name string) ([]models.InstalledSDK, error)
 }
 ```
 
 实现：
 
 - `XenvIndexSource`: 读取 `~/.config/xenv/sdks.local.json`。
-- `EgetStoreSource`: 读取 `eget` SDK installed store，并映射为 `models.InstalledTool`。
+- `EgetStoreSource`: 读取 `eget` SDK installed store，并映射为 `models.InstalledSDK`。
 - `CompositeSDKSource`: 当 `eget_enable` 为 true 时，先查 `EgetStoreSource`，再查 `XenvIndexSource`。
 
 `ToolManager` 或后续改名后的 `SDKManager` 负责版本匹配，不应让 `ToolService` 直接知道 JSON 文件格式。
@@ -833,7 +834,7 @@ internal/xenv/tools/version.go
 - `eget_enable: true` 时，优先返回 eget store 中的 SDK。
 - eget store 不存在时 fallback 到 xenv 本地索引。
 - eget store JSON 损坏时 fallback 到 xenv 本地索引，并返回 warning 或可诊断错误。
-- eget store 的 `path` 正确映射为 `models.InstalledTool.InstallDir`。
+- eget store 的 `path` 正确映射为 `models.InstalledSDK.InstallDir`。
 
 ### 命令测试
 
@@ -846,8 +847,8 @@ internal/xenv/tools/version.go
 - `xenv check tools` 可检查 `.xenv.toml [tools]`。
 - `xenv use go:1.22` 在只存在 xenv 本地索引时可激活。
 - `xenv use go:1.22` 在 `eget_enable: true` 且 eget 有记录时优先使用 eget 路径。
-- `source_project_scripts: true` 时，shell hook 会 source `.xenv.sh` 或 `.xenv.ps1`。
-- `source_project_scripts: false` 时，shell hook 不 source 项目脚本。
+- `source_project_scripts: true` 时，`xenv init-direnv` 会在最近 `.xenv.toml` 同目录存在项目脚本时返回 source 表达式，shell hook eval 该表达式。
+- `source_project_scripts: false` 时，`xenv init-direnv` 不返回项目脚本 source 表达式。
 
 ### 回归测试
 
