@@ -1057,7 +1057,7 @@ git commit -m "feat: support optional project xenv scripts"
 - Modify: `docs/design/2026-05-29-xenv-sdk-eget-command-design.md` if implementation differs
 - Test: `go test ./...`
 
-- [ ] Step 1: 更新 README
+- [x] Step 1: 更新 README
 
 更新命令示例：
 
@@ -1086,7 +1086,7 @@ xenv tools index
 ~/.config/xenv/sdks.local.json
 ```
 
-- [ ] Step 2: 更新 `config/config.yaml`
+- [x] Step 2: 更新 `config/config.yaml`
 
 保留示例：
 
@@ -1110,11 +1110,11 @@ sdks:
 
 删除下载字段和 `tools` 配置。
 
-- [ ] Step 3: 更新 feature report
+- [x] Step 3: 更新 feature report
 
 把 CLI 路径、命令结构、数据文件路径改到 `sdk` 和 `~/.config/xenv/sdks.local.json`。
 
-- [ ] Step 4: 全量测试
+- [x] Step 4: 全量测试
 
 Run:
 
@@ -1124,7 +1124,7 @@ go test ./...
 
 Expected: pass。
 
-- [ ] Step 5: CLI smoke test
+- [x] Step 5: CLI smoke test
 
 Run:
 
@@ -1144,7 +1144,7 @@ Expected:
 - `tools --help`: unknown command
 - `go test ./...`: pass
 
-- [ ] Step 6: 提交
+- [x] Step 6: 提交
 
 ```bash
 git add README.md config/config.yaml docs
