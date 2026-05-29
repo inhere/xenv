@@ -57,7 +57,7 @@
 - Modify: `internal/xenv/models/config.go`
 - Test: `go test ./internal/xenv/config`
 
-- [ ] Step 1: 写配置目录测试
+- [x] Step 1: 写配置目录测试
 
 在 `internal/xenv/config/paths_test.go` 中增加测试：
 
@@ -118,7 +118,7 @@ func TestDerivedPathsUseConfigDir(t *testing.T) {
 }
 ```
 
-- [ ] Step 2: 运行测试确认失败
+- [x] Step 2: 运行测试确认失败
 
 Run:
 
@@ -128,7 +128,7 @@ go test ./internal/xenv/config -run 'TestResolveDir|TestDerivedPaths' -count=1
 
 Expected: fail，提示 `ResolveDir`、`PathsForDir` 未定义。
 
-- [ ] Step 3: 实现配置目录解析
+- [x] Step 3: 实现配置目录解析
 
 在 `internal/xenv/config/paths.go` 中实现：
 
@@ -178,7 +178,7 @@ func DefaultPaths() Paths {
 }
 ```
 
-- [ ] Step 4: 修改配置模型
+- [x] Step 4: 修改配置模型
 
 在 `internal/xenv/models/config.go` 中：
 
@@ -219,7 +219,7 @@ BinDir string
 OtherVersions map[string]string
 ```
 
-- [ ] Step 5: 更新默认配置加载
+- [x] Step 5: 更新默认配置加载
 
 在 `internal/xenv/config/config.go`：
 
@@ -229,7 +229,7 @@ OtherVersions map[string]string
 - `GetDefaultConfigPath()` 返回 `DefaultPaths().ConfigFile`。
 - `GetDefaultConfigDir()` 返回 `DefaultPaths().ConfigDir`。
 
-- [ ] Step 6: 运行测试
+- [x] Step 6: 运行测试
 
 Run:
 
@@ -239,7 +239,7 @@ go test ./internal/xenv/config -count=1
 
 Expected: pass。
 
-- [ ] Step 7: 提交
+- [x] Step 7: 提交
 
 ```bash
 git add internal/xenv/config internal/xenv/models/config.go
