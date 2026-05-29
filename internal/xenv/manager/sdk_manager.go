@@ -45,7 +45,11 @@ func (m *SDKManager) Init(config *models.Configuration) error {
 	m.init = true
 	m.config = config
 	if m.egetSrc.Path == "" && config != nil {
-		m.egetSrc = EgetStoreSource{Path: config.EgetStoreFile}
+		storeFile := config.EgetStoreFile
+		if config.EgetEnable && storeFile == "" {
+			storeFile = DefaultEgetStoreFile()
+		}
+		m.egetSrc = EgetStoreSource{Path: storeFile}
 	}
 	return nil
 }

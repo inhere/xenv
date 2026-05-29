@@ -192,3 +192,19 @@ func TestSDKManagerListMergedSDKVersionsFallsBackWhenEgetStoreInvalid(t *testing
 		t.Fatalf("source = %q, want xenv", items[0].Source)
 	}
 }
+
+func TestSDKManagerUsesDefaultEgetStoreFileWhenEnabled(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	mgr := NewSDKManager(filepath.Join(t.TempDir(), "sdks.local.json"))
+	if err := mgr.Init(&models.Configuration{EgetEnable: true}); err != nil {
+		t.Fatal(err)
+	}
+
+	want := filepath.Join(home, ".config", "eget", "sdk.installed.json")
+	if mgr.egetSrc.Path != want {
+		t.Fatalf("eget source path = %q, want %q", mgr.egetSrc.Path, want)
+	}
+}

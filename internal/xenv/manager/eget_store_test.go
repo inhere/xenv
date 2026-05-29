@@ -53,3 +53,14 @@ func TestEgetStoreSourceEmptyPathReturnsEmpty(t *testing.T) {
 		t.Fatalf("items = %d, want 0", len(items))
 	}
 }
+
+func TestDefaultEgetStoreFileUsesHomeConfigDir(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	want := filepath.Join(home, ".config", "eget", "sdk.installed.json")
+	if got := DefaultEgetStoreFile(); got != want {
+		t.Fatalf("DefaultEgetStoreFile() = %q, want %q", got, want)
+	}
+}

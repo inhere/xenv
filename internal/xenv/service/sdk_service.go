@@ -61,11 +61,10 @@ func (ts *SDKService) ListSDKs(showAll bool) error {
 			continue
 		}
 
-		fmt.Print("  - Installed: ")
+		fmt.Println("  - Installed:")
 		for _, local := range locals {
-			ccolor.Infof("%s ", local.Version)
+			ccolor.Infof("    %s  %s  %s\n", local.Version, local.Source, local.InstallDir)
 		}
-		fmt.Println()
 	}
 	return nil
 }
@@ -91,11 +90,10 @@ func (ts *SDKService) ShowSDK(name string) error {
 		return nil
 	}
 
-	fmt.Print("  Installed:")
+	fmt.Println("  Installed:")
 	for _, local := range locals {
-		fmt.Printf(" %s", local.Version)
+		fmt.Printf("    %s  %s  %s\n", local.Version, local.Source, local.InstallDir)
 	}
-	fmt.Println()
 	return nil
 }
 

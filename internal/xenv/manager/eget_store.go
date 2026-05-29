@@ -3,6 +3,7 @@ package manager
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/inhere/xenv/internal/xenv/models"
@@ -10,6 +11,14 @@ import (
 
 type EgetStoreSource struct {
 	Path string
+}
+
+func DefaultEgetStoreFile() string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return filepath.Join(".config", "eget", "sdk.installed.json")
+	}
+	return filepath.Join(home, ".config", "eget", "sdk.installed.json")
 }
 
 type egetInstalledStore struct {
