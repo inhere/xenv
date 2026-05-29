@@ -1,7 +1,10 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -25,6 +28,29 @@ func TestResolveDirUsesXenvConfigDir(t *testing.T) {
 
 	if dir != custom {
 		t.Fatalf("ResolveDir() = %q, want %q", dir, custom)
+	}
+}
+
+func TestResolveDirFallsBackToUserConfigDirWhenHomeFails(t *testing.T) {
+	t.Setenv("XENV_CONFIG_DIR", "")
+	base := t.TempDir()
+
+	switch runtime.GOOS {
+	case "windows":
+		t.Setenv("APPDATA", base)
+	default:
+		t.Setenv("XDG_CONFIG_HOME", base)
+	}
+
+	wantBase, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatalf("os.UserConfigDir() unexpected error: %v", err)
+	}
+
+	dir := ResolveDir(func() (string, error) { return "", fmt.Errorf("boom") })
+	want := filepath.Join(wantBase, "xenv")
+	if dir != want {
+		t.Fatalf("ResolveDir() = %q, want %q", dir, want)
 	}
 }
 
