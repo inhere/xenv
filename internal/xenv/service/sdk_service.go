@@ -197,7 +197,7 @@ func (ts *SDKService) checkActivateSDK(spec *models.VersionSpec) (*models.Instal
 		return nil, fmt.Errorf("sdk %s config is not defined", spec.Name)
 	}
 
-	localSDKs := ts.sdks.ListMergedSDKVersions(sdkCfg.Name)
+	localSDKs := ts.sdks.ListSDKVersions(sdkCfg.Name)
 	if len(localSDKs) == 0 {
 		return nil, fmt.Errorf("sdk %s is not installed locally", spec.Name)
 	}
@@ -356,7 +356,7 @@ func (ts *SDKService) checkDeactivateSDK(spec *models.VersionSpec, opFlag models
 		return nil, fmt.Errorf("sdk %s config is not defined", spec.Name)
 	}
 
-	localSDKs := ts.sdks.ListMergedSDKVersions(sdkCfg.Name)
+	localSDKs := ts.sdks.ListSDKVersions(sdkCfg.Name)
 	if len(localSDKs) == 0 {
 		return nil, fmt.Errorf("sdk %s is not installed locally", spec.Name)
 	}

@@ -117,6 +117,49 @@ func TestActivateSDKsStoresMatchedVersion(t *testing.T) {
 	}
 }
 
+func TestWhereSDKUsesXenvIndexWhenEgetHasSameVersion(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-where-xenv-source", nil)
+	svc.config.EgetEnable = true
+	svc.sdks.SetEgetSource(manager.EgetStoreSource{
+		Path: writeTestEgetStore(t, "go", "1.24.0", "D:/eget/go1.24.0"),
+	})
+
+	got, err := svc.WhereSDK("go:1.24.0", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.ToSlash(got) == "D:/eget/go1.24.0" {
+		t.Fatalf("WhereSDK should use xenv local index for activation paths, got eget path %q", got)
+	}
+	if filepath.Base(got) != "1.24.0" {
+		t.Fatalf("WhereSDK() = %q, want local 1.24.0 path", got)
+	}
+}
+
+func writeTestEgetStore(t *testing.T, name, version, installDir string) string {
+	t.Helper()
+
+	storeFile := filepath.Join(t.TempDir(), "sdk.installed.json")
+	data := []byte(`{
+	  "schema": 1,
+	  "installed": {
+	    "` + name + `": {
+	      "versions": {
+	        "` + version + `": {
+	          "name": "` + name + `",
+	          "version": "` + version + `",
+	          "path": "` + installDir + `"
+	        }
+	      }
+	    }
+	  }
+	}`)
+	if err := os.WriteFile(storeFile, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return storeFile
+}
+
 func newDirenvTestService(t *testing.T, sessionID string, setupProject func(projectDir string)) (tempHome, projectDir string, svc *SDKService, state *manager.StateManager) {
 	t.Helper()
 
