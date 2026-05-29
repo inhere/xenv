@@ -18,12 +18,12 @@ import (
 type ToolService struct {
 	config  *models.Configuration
 	state   *manager.StateManager
-	toolMgr *manager.ToolManager
+	toolMgr *manager.SDKManager
 	// envMgr *manager.EnvManager
 }
 
 // NewToolService creates a new ToolService
-func NewToolService(config *models.Configuration, state *manager.StateManager, toolMgr *manager.ToolManager) *ToolService {
+func NewToolService(config *models.Configuration, state *manager.StateManager, toolMgr *manager.SDKManager) *ToolService {
 	return &ToolService{
 		config:  config,
 		state:   state,
@@ -74,7 +74,7 @@ func (ts *ToolService) ListAll(showAll bool) error {
 }
 
 func (ts *ToolService) IndexLocalTools() error {
-	return ts.toolMgr.IndexLocalTools()
+	return ts.toolMgr.IndexLocalSDKs()
 }
 
 // UpdateTool updates a tool to the specified version
@@ -112,7 +112,7 @@ func (ts *ToolService) InstallTool(name, version string) error {
 
 	// 查找 local.json 是否存在
 	id := fmt.Sprintf("%s:%s", name, version)
-	if ts.toolMgr.FindSdkByID(id) != nil {
+	if ts.toolMgr.FindSDKByID(id) != nil {
 		return fmt.Errorf("tool %s is already installed in local", id)
 	}
 
@@ -124,7 +124,7 @@ func (ts *ToolService) InstallTool(name, version string) error {
 	}
 
 	// save tool to local.json
-	return ts.toolMgr.AddSDKTool(name, version, installer.InstallDir)
+	return ts.toolMgr.AddSDK(name, version, installer.InstallDir)
 }
 
 // Uninstall uninstalls a sdk tool with the specified version
@@ -140,7 +140,7 @@ func (ts *ToolService) Uninstall(name, version string) error {
 	// TODO 从 state 里检测并删除
 
 	// 查找 local.json 是否存在
-	localTool := ts.toolMgr.FindSdkByID(id)
+	localTool := ts.toolMgr.FindSDKByID(id)
 	if localTool == nil {
 		return fmt.Errorf("tool %s:%s is not installed", name, version)
 	}
@@ -153,7 +153,7 @@ func (ts *ToolService) Uninstall(name, version string) error {
 	}
 
 	// remove from ts.localTools and save local.json
-	return ts.toolMgr.DeleteSDKTool(localTool)
+	return ts.toolMgr.DeleteSDK(localTool)
 }
 
 // endregion
@@ -202,7 +202,7 @@ func (ts *ToolService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*
 			// 	continue
 			// }
 
-			oldSdk := ts.toolMgr.MatchSdkByNameAndVersion(spec.Name, oldActiveVer)
+			oldSdk := ts.toolMgr.MatchSDKByNameAndVersion(spec.Name, oldActiveVer)
 			if oldSdk != nil {
 				oldSdk.Config = localSdk.Config
 				actParams.AddRemPath(oldSdk.BinDirPath())
@@ -256,7 +256,7 @@ func (ts *ToolService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*
 }
 
 // check for activates a specific tool version
-func (ts *ToolService) checkActivateSDK(spec *tools.VersionSpec) (*models.InstalledTool, error) {
+func (ts *ToolService) checkActivateSDK(spec *tools.VersionSpec) (*models.InstalledSDK, error) {
 	// Check if the tool is definition
 	toolCfg := ts.config.FindSDKConfig(spec.Name)
 	if toolCfg == nil {
@@ -269,7 +269,7 @@ func (ts *ToolService) checkActivateSDK(spec *tools.VersionSpec) (*models.Instal
 	}
 
 	// 根据版本匹配本地可用的sdk
-	localSdk := ts.toolMgr.MatchSdkByVersion(localSdks, spec.Version)
+	localSdk := ts.toolMgr.MatchSDKByVersion(localSdks, spec.Version)
 	if localSdk == nil {
 		return nil, fmt.Errorf("sdk tool %s is not installed locally", spec.ID())
 	}
@@ -442,7 +442,7 @@ func (ts *ToolService) DeactivateSDKs(deTools []string, opFlag models.OpFlag) (s
 }
 
 // deactivateTool deactivates a specific tool version
-func (ts *ToolService) checkDeactivateSDK(spec *tools.VersionSpec, opFlag models.OpFlag) (*models.InstalledTool, error) {
+func (ts *ToolService) checkDeactivateSDK(spec *tools.VersionSpec, opFlag models.OpFlag) (*models.InstalledSDK, error) {
 	// Check if the tool is definition
 	toolCfg := ts.config.FindSDKConfig(spec.Name)
 	if toolCfg == nil {
@@ -455,9 +455,9 @@ func (ts *ToolService) checkDeactivateSDK(spec *tools.VersionSpec, opFlag models
 	}
 
 	// 根据版本匹配本地可用的sdk
-	localSdk := ts.toolMgr.MatchSdkByVersion(localSdks, spec.Version)
+	localSdk := ts.toolMgr.MatchSDKByVersion(localSdks, spec.Version)
 	if localSdk == nil {
-		// installed := strings.Join(arrutil.Map1(localSdks, func(t models.InstalledTool) string {
+		// installed := strings.Join(arrutil.Map1(localSdks, func(t models.InstalledSDK) string {
 		// 	return t.ID
 		// }), ", ")
 		// return nil, fmt.Errorf("sdk %s is not installed locally(installed: %s)", spec.ID(), installed)

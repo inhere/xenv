@@ -121,18 +121,17 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 		setupProject(projectDir)
 	}
 
-	localToolsFile := filepath.Join(tempHome, ".xenv", "tools.local.json")
+	localToolsFile := filepath.Join(tempHome, ".config", "xenv", "sdks.local.json")
 	if err := os.MkdirAll(filepath.Dir(localToolsFile), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := jsonutil.WritePretty(localToolsFile, &models.ToolsLocal{
-		Version: "v1",
-		SDKs: []models.InstalledTool{{
+	if err := jsonutil.WritePretty(localToolsFile, &models.SDKLocalIndex{
+		Schema: 1,
+		SDKs: []models.InstalledSDK{{
 			ID:         "go:1.24",
 			Name:       "go",
 			Version:    "1.24",
 			InstallDir: installDir,
-			IsSDK:      true,
 		}},
 	}); err != nil {
 		t.Fatal(err)
@@ -147,7 +146,7 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 	if err := state.Init(); err != nil {
 		t.Fatal(err)
 	}
-	toolMgr := manager.NewToolManager()
+	toolMgr := manager.NewSDKManager(localToolsFile)
 	if err := toolMgr.Init(cfg); err != nil {
 		t.Fatal(err)
 	}

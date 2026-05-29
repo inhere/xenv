@@ -23,7 +23,7 @@ func Init() error {
 	}
 
 	if err := toolMgr.Init(config.Config()); err != nil {
-		return fmt.Errorf("failed to initialize tool manager: %w", err)
+		return fmt.Errorf("failed to initialize sdk manager: %w", err)
 	}
 	return nil
 }
@@ -40,9 +40,9 @@ func InitState() error {
 	return stateMgr.Init()
 }
 
-var toolMgr = manager.NewToolManager()
+var toolMgr = manager.NewSDKManager(config.DefaultPaths().SDKLocalIndexFile)
 
-func ToolMgr() *manager.ToolManager {
+func ToolMgr() *manager.SDKManager {
 	return toolMgr
 }
 
