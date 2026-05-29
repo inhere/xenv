@@ -187,7 +187,7 @@ func (u *StateTomlUpdater) Build(state *models.ActivityState) *StateTomlUpdater 
 			case "sdks":
 				newVal = state.SDKs[key]
 			case "tools":
-				newVal = state.Tools[key]
+				newVal = state.ToolRequirements[key]
 			default:
 				u.newBuf.WriteStr1Nl(line)
 			}
@@ -227,7 +227,7 @@ func (u *StateTomlUpdater) sectionAddNewKeys(state *models.ActivityState) {
 	case "envs":
 		kvMap = state.Envs
 	case "tools":
-		kvMap = state.Tools
+		kvMap = state.ToolRequirements
 	case "sdks":
 		kvMap = state.SDKs
 	}
@@ -257,7 +257,7 @@ func (u *StateTomlUpdater) addNewSections(state *models.ActivityState) {
 				u.newBuf.Writef("%s = %q\n", key, val)
 			}
 		case "tools":
-			for key, val := range state.Tools {
+			for key, val := range state.ToolRequirements {
 				u.newBuf.Writef("%s = %q\n", key, val)
 			}
 		case "sdks":

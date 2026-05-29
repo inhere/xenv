@@ -11,6 +11,7 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 
 	for _, name := range []string{
 		"sdk",
+		"check",
 		"use",
 		"unuse",
 		"env",

@@ -42,6 +42,7 @@ func NewApp() *gcli.App {
 
 	app.Add(
 		SDKCmd,
+		CheckCmd,
 		NewUseCmd(),
 		NewUnuseCmd(),
 		EnvSetCmd(),

@@ -45,7 +45,7 @@ type ActivityState struct {
 	//  - value 可以是 "*,required"
 	//  - value 可以是 ">1.2"
 	//  - value 可以是 ">1.2,required"
-	Tools map[string]string `json:"tools" toml:"tools"`
+	ToolRequirements map[string]string `json:"tools" toml:"tools"`
 	// state file path OR ID string.
 	File string `json:"-" toml:"-"`
 	// 是否有更新 - 内部使用，用于标识状态数据是否需要更新
@@ -84,7 +84,7 @@ func NewActivityState(filePath string) *ActivityState {
 		File:  filePath,
 		SDKs:  make(map[string]string),
 		Envs:  make(map[string]string),
-		Tools: make(map[string]string),
+		ToolRequirements: make(map[string]string),
 		Paths: []string{},
 		// CreatedAt: time.Now(),
 		// UpdatedAt: time.Now(),
@@ -122,10 +122,10 @@ func (as *ActivityState) AddEnvs(envs map[string]string) *ActivityState {
 	return as
 }
 
-// AddTools 新增激活工具
-func (as *ActivityState) AddTools(tools map[string]string) *ActivityState {
+// AddToolRequirements 新增工具需求
+func (as *ActivityState) AddToolRequirements(tools map[string]string) *ActivityState {
 	for name, version := range tools {
-		as.Tools[name] = version
+		as.ToolRequirements[name] = version
 	}
 	as.HasUpdate = true
 	return as
@@ -144,7 +144,7 @@ func (as *ActivityState) Merge(other *ActivityState) {
 	if other == nil || other.IsEmpty() {
 		return
 	}
-	as.AddSDKs(other.SDKs).AddEnvs(other.Envs).AddTools(other.Tools).AddPaths(other.Paths)
+	as.AddSDKs(other.SDKs).AddEnvs(other.Envs).AddToolRequirements(other.ToolRequirements).AddPaths(other.Paths)
 }
 
 // DelSDKsEnvsPaths 删除激活工具和相关的 ENV, PATH
@@ -186,12 +186,12 @@ func (as *ActivityState) DelEnvs(names []string) {
 	}
 }
 
-// DelTool 删除激活的工具
-func (as *ActivityState) DelTool(name string) bool {
-	_, exists := as.Tools[name]
+// DelToolRequirement 删除工具需求
+func (as *ActivityState) DelToolRequirement(name string) bool {
+	_, exists := as.ToolRequirements[name]
 	if exists {
 		as.HasUpdate = true
-		delete(as.Tools, name)
+		delete(as.ToolRequirements, name)
 	}
 	return exists
 }
@@ -247,7 +247,7 @@ func (as *ActivityState) IsEmpty() bool {
 	return len(as.SDKs) == 0 &&
 		len(as.Envs) == 0 &&
 		len(as.Paths) == 0 &&
-		len(as.Tools) == 0
+		len(as.ToolRequirements) == 0
 }
 
 // AddDirState 添加目录状态数据
