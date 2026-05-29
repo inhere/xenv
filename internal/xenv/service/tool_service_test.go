@@ -59,6 +59,49 @@ func TestSetupDirenvUsesExistingXenvTomlAsDirenvState(t *testing.T) {
 	}
 }
 
+func TestSetupDirenvGeneratesEnvAndPathWithoutSDK(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-existing-env-path-no-sdk", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = [\"./bin\"]\n\n[envs]\n  foo = \"bar\"\n\n[tools]\n"
+		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsNormalized(script, "./bin") {
+		t.Fatalf("expected setup direnv script to add project path, got %q", script)
+	}
+	if !strings.Contains(script, "$Env:FOO='bar';") {
+		t.Fatalf("expected setup direnv script to set project env, got %q", script)
+	}
+}
+
+func TestSetupDirenvAppendsProjectScriptWithoutSDK(t *testing.T) {
+	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-no-sdk", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		if err := os.WriteFile(xenvToml, []byte("paths = []\n\n[envs]\n\n[tools]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDir, ".xenv.ps1"), []byte("# project hook\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+	svc.config.SourceProjectScripts = true
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `. "` + filepath.ToSlash(projectDir) + `/.xenv.ps1"`
+	if !containsNormalized(script, want) {
+		t.Fatalf("expected setup direnv script to source project pwsh script without SDK, want %q, got %q", want, script)
+	}
+}
+
 func TestSetupDirenvAppendsProjectScriptForPwsh(t *testing.T) {
 	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-pwsh", func(projectDir string) {
 		xenvToml := filepath.Join(projectDir, ".xenv.toml")
