@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gookit/goutil/jsonutil"
@@ -55,6 +56,72 @@ func TestSetupDirenvUsesExistingXenvTomlAsDirenvState(t *testing.T) {
 	}
 	if state.Nearest() == nil {
 		t.Fatal("expected existing .xenv.toml to be loaded as direnv state")
+	}
+}
+
+func TestSetupDirenvAppendsProjectScriptForPwsh(t *testing.T) {
+	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-pwsh", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		if err := os.WriteFile(xenvToml, []byte("paths = []\n\n[sdks]\n  go = \"1.24\"\n\n[envs]\n\n[tools]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDir, ".xenv.ps1"), []byte("# project hook\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+	svc.config.SourceProjectScripts = true
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `. "` + filepath.ToSlash(projectDir) + `/.xenv.ps1"`
+	if !containsNormalized(script, want) {
+		t.Fatalf("expected setup direnv script to source project pwsh script, want %q, got %q", want, script)
+	}
+}
+
+func TestSetupDirenvAppendsProjectScriptForBash(t *testing.T) {
+	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-bash", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		if err := os.WriteFile(xenvToml, []byte("paths = []\n\n[sdks]\n  go = \"1.24\"\n\n[envs]\n\n[tools]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDir, ".xenv.sh"), []byte("# project hook\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("XENV_HOOK_SHELL", "bash")
+		xenvcom.SetHookShell("bash")
+	})
+	svc.config.SourceProjectScripts = true
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `source "` + filepath.ToSlash(projectDir) + `/.xenv.sh"`
+	if !containsNormalized(script, want) {
+		t.Fatalf("expected setup direnv script to source project bash script, want %q, got %q", want, script)
+	}
+}
+
+func TestSetupDirenvSkipsProjectScriptWithoutDirenvState(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-no-direnv-script", func(projectDir string) {
+		if err := os.WriteFile(filepath.Join(projectDir, "go.mod"), []byte("module example.com/test\n\ngo 1.24\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDir, ".xenv.ps1"), []byte("# project hook\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+	svc.config.SourceProjectScripts = true
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsNormalized(script, ".xenv.ps1") || containsNormalized(script, ".xenv.sh") {
+		t.Fatalf("expected setup direnv script not to source project script without direnv state, got %q", script)
 	}
 }
 
@@ -237,4 +304,8 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 		t.Fatal(err)
 	}
 	return tempHome, projectDir, NewSDKService(cfg, state, toolMgr), state
+}
+
+func containsNormalized(s, substr string) bool {
+	return strings.Contains(filepath.ToSlash(s), filepath.ToSlash(substr))
 }

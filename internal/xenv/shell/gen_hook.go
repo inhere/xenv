@@ -3,6 +3,7 @@ package shell
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gookit/goutil/maputil"
@@ -36,6 +37,18 @@ func (sg *XenvScriptGenerator) GenHookScripts(ps *models.GenInitScriptParams) (s
 		return sg.generatePwshScripts(ps), nil
 	default:
 		return sg.generateCmdScripts(ps), nil
+	}
+}
+
+func (sg *XenvScriptGenerator) GenSourceProjectScript(projectDir string) string {
+	projectDir = filepath.ToSlash(projectDir)
+	switch sg.shell {
+	case Bash, Zsh:
+		return fmt.Sprintf("source \"%s/.xenv.sh\"\n", projectDir)
+	case Pwsh:
+		return fmt.Sprintf(". \"%s/.xenv.ps1\"\n", projectDir)
+	default:
+		return ""
 	}
 }
 

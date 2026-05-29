@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
@@ -243,7 +245,14 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 		for _, spec := range specMap {
 			sdkSpecs = append(sdkSpecs, spec)
 		}
-		return ts.activateSDKs(gen, sdkSpecs, opFlag)
+		script, err := ts.activateSDKs(gen, sdkSpecs, opFlag)
+		if err != nil {
+			return "", err
+		}
+		if projectScript := ts.genProjectScriptForDirenv(gen, deState); projectScript != "" {
+			script += projectScript
+		}
+		return script, nil
 	}
 	return "", nil
 }
@@ -286,6 +295,25 @@ func (ts *SDKService) GenHookScripts(st shell.ShType) (string, error) {
 	}
 
 	return gen.GenHookScripts(params)
+}
+
+func (ts *SDKService) genProjectScriptForDirenv(gen *shell.XenvScriptGenerator, deState *models.ActivityState) string {
+	if !ts.config.SourceProjectScripts || deState == nil || deState.File == "" {
+		return ""
+	}
+
+	projectDir := filepath.Dir(deState.File)
+	switch xenvcom.HookShell() {
+	case "bash", "zsh":
+		if _, err := os.Stat(filepath.Join(projectDir, ".xenv.sh")); err == nil {
+			return gen.GenSourceProjectScript(projectDir)
+		}
+	case "pwsh":
+		if _, err := os.Stat(filepath.Join(projectDir, ".xenv.ps1")); err == nil {
+			return gen.GenSourceProjectScript(projectDir)
+		}
+	}
+	return ""
 }
 
 func (ts *SDKService) DeactivateSDKs(deSDKs []string, opFlag models.OpFlag) (script string, err error) {

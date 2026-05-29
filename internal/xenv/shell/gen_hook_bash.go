@@ -19,6 +19,9 @@ func (sg *XenvScriptGenerator) generateBashScripts(ps *models.GenInitScriptParam
 		"{{BinCommand}}":  xenvcom.BinCommand,
 		"{{BinName}}":     xenvcom.BinName,
 		"#{{EnvAliases}}": sb.String(),
+		"{{ProjectScriptHint}}": strutil.OrCond(ps.SourceProjectScripts,
+			"# project scripts are sourced by init-direnv when present: .xenv.sh",
+			""),
 	})
 }
 
@@ -108,6 +111,7 @@ setup_xenv() {
     esac
 
 #{{EnvAliases}}
+    {{ProjectScriptHint}}
 
     # Define the xenv function to activate tools
     xenv() {

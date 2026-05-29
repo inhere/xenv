@@ -80,6 +80,8 @@ type GenInitScriptParams struct {
 	ShellAliases map[string]string
 	// ShellHooksDir shell hooks directory path
 	ShellHooksDir string
+	// SourceProjectScripts enables project-level xenv scripts sourced by init-direnv output.
+	SourceProjectScripts bool
 }
 
 // AddPath 添加环境PATH

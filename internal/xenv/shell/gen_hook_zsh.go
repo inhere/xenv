@@ -19,6 +19,9 @@ func (sg *XenvScriptGenerator) generateZshScripts(ps *models.GenInitScriptParams
 		"{{BinCommand}}":  xenvcom.BinCommand,
 		"{{BinName}}":     xenvcom.BinName,
 		"#{{EnvAliases}}": sb.String(),
+		"{{ProjectScriptHint}}": strutil.OrCond(ps.SourceProjectScripts,
+			"# project scripts are sourced by init-direnv when present: .xenv.sh",
+			""),
 	})
 }
 
@@ -38,7 +41,9 @@ var ZshHookTemplate = `#
 # 使用 chpwd 钩子函数监听cd执行后
 chpwd() {
     if (( $+commands[{{BinName}}] )); then
-        command {{BinCommand}} init-direnv >/dev/null 2>&1
+        local result="$(command {{BinCommand}} init-direnv)"
+        local exit_code=$?
+        invoke_xenv_result "$result" $exit_code
     fi
 }
 
@@ -90,6 +95,7 @@ setup_xenv() {
     esac
 
 #{{EnvAliases}}
+    {{ProjectScriptHint}}
 
     # Define the xenv function to activate tools
     xenv() {
