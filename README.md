@@ -1,10 +1,10 @@
 # xenv
 
-`xenv` is a local development environment and SDK manager.
+`xenv` is a local development environment and SDK activator.
 
 It manages:
 
-- SDK/toolchain activation, such as Go and Node.js
+- SDK/toolchain discovery and activation, such as Go and Node.js
 - Environment variables
 - `PATH` entries
 - Project-local environment state through `.xenv.toml`
@@ -44,16 +44,36 @@ PowerShell:
 Invoke-Expression (& xenv shell --type pwsh)
 ```
 
-List configured SDKs:
-
-```bash
-xenv tools list
-```
-
 Index locally installed SDKs:
 
 ```bash
-xenv tools index
+xenv sdk index
+```
+
+Other equivalent commands:
+
+```bash
+xenv sdk refresh
+xenv sdk scan
+```
+
+List configured SDKs:
+
+```bash
+xenv sdk list
+```
+
+Show or locate a specific SDK:
+
+```bash
+xenv sdk where go:1.22
+xenv sdk which go:1.22
+```
+
+Check project tool requirements from `.xenv.toml`:
+
+```bash
+xenv check tools
 ```
 
 Activate a version:
@@ -102,6 +122,14 @@ node = "20"
 APP_ENV = "local"
 ```
 
+Optional project tool requirements:
+
+```toml
+[tools]
+rg = "*"
+golangci-lint = "latest"
+```
+
 ## Configuration
 
 Default configuration path:
@@ -114,13 +142,13 @@ Default state files:
 
 ```text
 ~/.config/xenv/global.toml
-~/.xenv/session/<session_id>.json
+~/.config/xenv/session/<session_id>.json
 ```
 
 Local SDK index:
 
 ```text
-~/.xenv/tools.local.json
+~/.config/xenv/sdks.local.json
 ```
 
 ## Development

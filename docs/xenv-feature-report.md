@@ -2,39 +2,45 @@
 
 ## 1. 模块定位
 
-`xenv` 是 xenv CLI 中用于管理本机开发环境的功能模块，目标类似 `mise`、`vfox`、`asdf`：
+`xenv` 是一个本地开发环境管理和 SDK 激活工具，当前职责聚焦在：
 
-- 管理本地 SDK/工具链的多版本安装与激活
+- 管理本地已安装 SDK 的索引、查询和激活
 - 管理环境变量和 `PATH`
 - 支持全局、当前 shell 会话、项目目录三种作用域
 - 通过 shell hook 让环境变更立即作用于当前终端
-- 支持通过 `.xenv.toml` 实现目录级开发环境配置
+- 通过 `.xenv.toml` 管理项目级开发环境声明
 
 当前模块入口位于：
 
 - CLI 命令：`internal/cli`
-- 核心能力：`internal/xenv`
-- 默认配置样例：`data/xenv/config.yaml`
-- 功能需求草稿：`docs/feat-craft/kite-xenv-spec-craft.md`
+- 默认配置样例：`config/config.yaml`
+- 功能设计：`docs/design/2026-05-29-xenv-sdk-eget-command-design.md`
 
 ## 2. 功能总览
 
-### 2.1 SDK/工具链管理
+### 2.1 SDK 管理
 
-`xenv` 支持管理 Go、Node、Flutter、Python 等可多版本共存的 SDK 工具链。
+`xenv` 使用 `sdk` 命名空间管理本地 SDK 发现和查询，不再提供 `tools` 命令。
 
 常用命令：
 
 ```bash
-xenv tools list
-xenv tools index
-xenv tools install go:1.22.0
-xenv tools uninstall go:1.22.0
-xenv tools update go:1.22.0
-xenv tools show go
+xenv sdk index
+xenv sdk refresh
+xenv sdk scan
+xenv sdk list
+xenv sdk show go
+xenv sdk where go:1.22
+xenv sdk which go:1.22
 xenv use go:1.22
 xenv unuse go:1.22
 ```
+
+说明：
+
+- `index`、`refresh`、`scan` 等价，都会按 `sdks[].install_dir` 扫描本地目录。
+- `which` 是 `where` 的别名；默认输出 SDK 安装目录，可配合 `--bin` 输出 bin 目录。
+- 本地已安装 SDK 元数据保存在 `~/.config/xenv/sdks.local.json`。
 
 版本规格支持：
 
@@ -45,13 +51,31 @@ xenv use go@1.22
 xenv use go:latest
 ```
 
+### 2.2 Tool Requirement 检查
+
+项目级 `.xenv.toml` 可以声明 `[tools]`，用于描述项目依赖的外部 CLI 工具：
+
+```toml
+[tools]
+rg = "*"
+golangci-lint = "latest"
+```
+
+检查命令：
+
+```bash
+xenv check
+xenv check sdk
+xenv check tools
+```
+
 说明：
 
-- `use` / `unuse` 通过 `tools.ParseVersionSpec()` 解析版本，支持 `name`、`name:version`、`name@version`。
-- `tools install`、`tools uninstall`、`tools update` 当前 CLI 参数解析更严格，要求 `name:version` 格式。
-- 本地已安装 SDK 元数据保存到 `~/.xenv/tools.local.json`。
+- `xenv check` 会同时执行 SDK 检查和工具检查。
+- `xenv check tools` 会读取合并后的项目状态，检查工具是否存在，并在显式执行时检查版本。
+- `[tools]` 只参与检查，不参与 `sdk index`，也不会写入 `sdks.local.json`。
 
-### 2.2 环境变量管理
+### 2.3 环境变量管理
 
 支持设置、取消和查看环境变量。
 
@@ -71,20 +95,13 @@ xenv unset FOO
 作用域参数：
 
 ```bash
-# 当前 shell 会话
 xenv env set FOO bar
-
-# 全局状态
 xenv env set -g FOO bar
-
-# 当前目录 .xenv.toml
 xenv env set -s FOO bar
 xenv env set -d FOO bar
 ```
 
-环境变量名称会被转换为大写，并校验是否为合法变量名。
-
-### 2.3 PATH 管理
+### 2.4 PATH 管理
 
 支持添加、删除、搜索、查看 `PATH` 条目。
 
@@ -95,22 +112,7 @@ xenv path remove ./bin
 xenv path search go
 ```
 
-作用域参数：
-
-```bash
-xenv path add -g ~/.local/bin
-xenv path add -s ./bin
-```
-
-说明：
-
-- `path add` 会先规范化路径，并检查目录是否存在。
-- `path remove` 当前会检查路径是否存在于当前进程的 `PATH` 中。
-- 添加路径时会放到 `PATH` 前部，使其拥有更高优先级。
-
-### 2.4 Shell Hook 集成
-
-`xenv` 的核心使用方式依赖 shell hook。未配置 shell hook 时，`env`、`path`、`use` 命令可以更新状态文件，但不能直接修改当前终端环境。
+### 2.5 Shell Hook 集成
 
 生成 hook：
 
@@ -126,22 +128,10 @@ Bash：
 eval "$(xenv shell --type bash)"
 ```
 
-Zsh：
-
-```bash
-eval "$(xenv shell --type zsh)"
-```
-
 PowerShell：
 
 ```powershell
 Invoke-Expression (& xenv shell --type pwsh)
-```
-
-或者：
-
-```powershell
-xenv shell --type pwsh | Out-String | Invoke-Expression
 ```
 
 hook 会设置：
@@ -151,17 +141,7 @@ XENV_HOOK_SHELL
 XENV_SESSION_ID
 ```
 
-配置 hook 后，推荐使用注入到 shell 的 `xenv` 函数：
-
-```bash
-xenv use go:1.22
-xenv set FOO bar
-xenv path add ./bin
-```
-
-`xenv` 函数会执行 `xenv ...`，并解析输出中的 `--Expression--` 标记，将后半部分作为 shell 脚本在当前终端执行。
-
-### 2.5 目录级环境
+### 2.6 目录级环境
 
 `xenv` 支持当前目录或父目录中的 `.xenv.toml`，用于项目级环境配置。
 
@@ -181,7 +161,7 @@ APP_ENV = "local"
 DEBUG = "true"
 
 [tools]
-ripgrep = "*"
+rg = "*"
 ```
 
 保存到目录配置：
@@ -191,16 +171,6 @@ xenv use -s go:1.22
 xenv set -s APP_ENV local
 xenv path add -s ./bin
 ```
-
-hook 会重写或包装 `cd` / `Set-Location`，进入目录后调用内部命令：
-
-```bash
-xenv init-direnv
-```
-
-然后根据最近的 `.xenv.toml` 激活 SDK、环境变量和路径。
-
-当前实现只查找最近的一个 `.xenv.toml`，尚未实现多层目录状态叠加。
 
 ## 3. 配置文件
 
@@ -216,53 +186,40 @@ xenv init-direnv
 ~/.config/xenv/
 ```
 
-默认状态和工具索引：
+默认状态和索引文件：
 
 ```text
 ~/.config/xenv/global.toml
-~/.xenv/session/<session_id>.json
-~/.xenv/tools.local.json
+~/.config/xenv/session/<session_id>.json
+~/.config/xenv/sdks.local.json
 ```
 
-默认配置项：
+默认配置项示例：
 
 ```yaml
-bin_dir: "~/.local/bin"
-install_dir: "~/.xenv/tools"
-shell_hooks_dir: "~/.config/xenv/hooks/"
+eget_enable: false
+eget_store_file: ""
+check_tools_on_direnv: false
+source_project_scripts: false
+allow_up_match: 1
+shell_hooks_dir: "~/.config/xenv/hooks"
 global_env: {}
 global_paths: []
-shell_aliases: {}
-download_ext:
-  windows: zip
-  linux: tar.gz
-  darwin: tar.gz
-sdks: []
-tools: []
-```
-
-SDK 配置示例：
-
-```yaml
 sdks:
   - name: go
     alias: golang
-    install_url: "https://golang.org/dl/go{version}.{os}-{arch}.{download_ext}"
     install_dir: "D:/work/env/devsdk/gosdk/go{version}"
+    bin_dir: "bin"
     active_env:
-      GO111MODULE: auto
-    bin_dir: bin
-    other_versions:
-      latest: "C:/Users/inhere/scoop/apps/go/current"
-
-  - name: node
-    install_url: "https://cdn.npmmirror.com/binaries/node/v{version}/node-v{version}-{os}-{arch}.{download_ext}"
-    install_dir: "D:/work/env/devsdk/nodejs/node-v{version}-win-x64"
-    download_ext:
-      windows: zip
+      GOROOT: "{install_dir}"
 ```
 
-注意：当前模型字段是 `other_versions`。`data/xenv/config.yaml` 中存在 `local_versions` 示例字段，按当前代码应优先使用 `other_versions`。
+说明：
+
+- `sdks[].install_dir` 描述本地已安装 SDK 的目录规则。
+- `eget_enable` 和 `eget_store_file` 用于是否合并 `eget` 的 installed store 信息。
+- `source_project_scripts` 控制是否允许加载项目级 shell 脚本。
+- `allow_up_match` 控制版本向上匹配策略。
 
 ## 4. 状态模型
 
@@ -271,7 +228,7 @@ sdks:
 ```text
 全局状态: ~/.config/xenv/global.toml
 目录状态: 当前目录或父目录的 .xenv.toml
-会话状态: ~/.xenv/session/<session_id>.json
+会话状态: ~/.config/xenv/session/<session_id>.json
 ```
 
 加载顺序：
@@ -279,8 +236,6 @@ sdks:
 ```text
 global -> direnv -> session
 ```
-
-合并后的状态用于生成 shell 初始化脚本和激活 SDK。
 
 状态内容主要包含：
 
@@ -294,17 +249,10 @@ go = "1.22"
 APP_ENV = "local"
 
 [tools]
-ripgrep = "*"
+rg = "*"
 ```
 
-查看状态：
-
-```bash
-xenv list activity
-xenv list activity -t
-```
-
-## 5. 初始化和推荐使用流程
+## 5. 推荐使用流程
 
 ### 5.1 初始化
 
@@ -312,16 +260,9 @@ xenv list activity -t
 xenv init
 ```
 
-该命令会：
-
-- 加载或创建 `~/.config/xenv/config.yaml`
-- 创建 `bin_dir`
-- 创建 `install_dir`
-- 创建 `shell_hooks_dir`
+该命令会初始化配置文件和运行目录。
 
 ### 5.2 手动安装 SDK 后纳入管理
-
-当前 SDK 自动下载安装仍不完整，推荐先手动安装 SDK，再让 `xenv` 索引。
 
 配置 `~/.config/xenv/config.yaml`：
 
@@ -329,23 +270,28 @@ xenv init
 sdks:
   - name: go
     install_dir: "D:/work/env/devsdk/gosdk/go{version}"
+    bin_dir: "bin"
     active_env:
-      GO111MODULE: auto
-    bin_dir: bin
-    other_versions:
-      latest: "C:/Users/inhere/scoop/apps/go/current"
+      GOROOT: "{install_dir}"
 ```
 
-索引本地工具：
+索引本地 SDK：
 
 ```bash
-xenv tools index
+xenv sdk index
 ```
 
-查看工具：
+查看 SDK：
 
 ```bash
-xenv tools list
+xenv sdk list
+```
+
+定位 SDK：
+
+```bash
+xenv sdk where go:1.22
+xenv sdk which go:1.22
 ```
 
 激活版本：
@@ -366,18 +312,21 @@ xenv use -g go:1.22
 xenv use -s go:1.22
 ```
 
+### 5.3 检查项目工具需求
+
+```bash
+xenv check tools
+```
+
+如果项目定义了 `[tools]`，该命令会检查工具是否存在，以及在显式执行时校验版本信息。
+
 ## 6. 命令清单
 
 ### 6.1 主命令
 
-```bash
-xenv
-```
-
-子命令：
-
 ```text
-tools
+sdk
+check
 use
 unuse
 env
@@ -390,53 +339,34 @@ shell-init-hook
 shell-direnv
 ```
 
-隐藏内部命令：
-
-```text
-shell-init-hook
-shell-direnv
-```
-
-### 6.2 tools
+### 6.2 sdk
 
 ```bash
-xenv tools install <name:version>...
-xenv tools uninstall <name:version>
-xenv tools update <name:version>...
-xenv tools show <name>
-xenv tools list
-xenv tools register
-xenv tools index
+xenv sdk index
+xenv sdk refresh
+xenv sdk scan
+xenv sdk list
+xenv sdk show <name>
+xenv sdk where [--bin] <name:version>
+xenv sdk which [--bin] <name:version>
 ```
 
-别名：
+### 6.3 check
 
-```text
-tools: t, tool, sdks, sdk
-install: i, in
-uninstall: un, rm, remove
-update: up
-list: ls
-index: idx
-register: add, reg
+```bash
+xenv check
+xenv check sdk
+xenv check tools
 ```
 
-### 6.3 use / unuse
+### 6.4 use / unuse
 
 ```bash
 xenv use [-g] [-s|-d] <name:version>...
 xenv unuse [-g] [-s|-d] <name:version>...
 ```
 
-作用域：
-
-```text
-默认: 当前会话
--g: 全局
--s, -d: 当前目录 .xenv.toml
-```
-
-### 6.4 env
+### 6.5 env
 
 ```bash
 xenv env
@@ -445,14 +375,7 @@ xenv env set [-g] [-s|-d] <name> <value>
 xenv env unset [-g] [-s|-d] <name...>
 ```
 
-快捷命令：
-
-```bash
-xenv set <name> <value>
-xenv unset <name...>
-```
-
-### 6.5 path
+### 6.6 path
 
 ```bash
 xenv path
@@ -462,73 +385,25 @@ xenv path remove [-g] [-s|-d] <path>
 xenv path search <value>
 ```
 
-别名：
-
-```text
-remove: rm, delete
-list: ls
-search: s
-```
-
-### 6.6 list
-
-```bash
-xenv list
-xenv list tools
-xenv list env
-xenv list path
-xenv list activity
-xenv list all
-```
-
-说明：
-
-- `xenv list` 默认列出工具链。
-- `list all` 当前仍是占位实现。
-
-### 6.7 config
-
-```bash
-xenv config
-xenv config get <name>
-xenv config set <name> <value>
-xenv config export [zip|json]
-xenv config import <path>
-```
-
-支持的 `get` / `set` 配置项：
-
-```text
-bin_dir
-install_dir
-shell_hooks_dir
-```
-
-注意：当前 `config set` 和 `config import` 的保存写回逻辑仍是 TODO，执行后需要核对配置文件是否实际更新。
-
 ## 7. 当前实现完成度
 
 可用度较高：
 
 - `xenv init`
 - shell hook 脚本生成
-- 当前 shell 中的 `xenv` 包装函数
 - 环境变量设置、删除、查看
 - `PATH` 添加、删除、搜索、查看
 - `.xenv.toml` 目录状态加载和保存
-- 本地 SDK 索引 `tools index`
-- SDK 列表 `tools list`
+- 本地 SDK 索引 `sdk index/refresh/scan`
+- SDK 查询 `sdk list/show/where/which`
+- `check tools`
 - 激活本地已索引 SDK `use`
 
-仍需完善：
+仍需关注：
 
-- `shell --install` 调用的 `InstallToProfile()` 当前基本为空实现，建议手动写入 shell profile。
-- `tools install` 的 zip/tar.gz 解压函数仍是 TODO。
-- `config set`、`config import` 的保存写回逻辑仍是 TODO。
-- `tools register` 当前返回 TODO。
-- `list all` 当前是占位输出。
-- `unuse` 对状态中 SDK key 的删除逻辑需要进一步验证。
-- `.envrc` / `.envrc.ps1` 目前有发现逻辑，但实际执行集成仍不完整。
+- `config set`、`config import` 的保存写回逻辑仍需单独验证
+- shell profile 自动写入能力仍不应作为主流程依赖
+- 项目脚本加载和 direnv 相关行为需要按实际 shell 场景继续验证
 
 ## 8. 最小可用示例
 
@@ -536,15 +411,8 @@ shell_hooks_dir
 
 ```bash
 go run ./cmd/xenv init
-go run ./cmd/xenv tools list
+go run ./cmd/xenv sdk list
 go run ./cmd/xenv shell --type bash
-```
-
-构建独立二进制：
-
-```bash
-make build-xenv
-make install-xenv
 ```
 
 PowerShell：
@@ -553,14 +421,10 @@ PowerShell：
 xenv init
 Invoke-Expression (& xenv shell --type pwsh)
 
-xenv tools index
-xenv tools list
-
+xenv sdk index
+xenv sdk list
 xenv use go:latest
-xenv set DEMO_ENV hello
-xenv path add ./bin
-
-xenv list activity
+xenv check tools
 ```
 
 Bash：
@@ -569,25 +433,10 @@ Bash：
 xenv init
 eval "$(xenv shell --type bash)"
 
-xenv tools index
-xenv tools list
-
+xenv sdk index
+xenv sdk list
 xenv use go:latest
-xenv set DEMO_ENV hello
-xenv path add ./bin
-
-xenv list activity
-```
-
-安装独立 `xenv` 二进制后，可以直接使用：
-
-```bash
-xenv init
-eval "$(xenv shell --type bash)"
-
-xenv tools index
-xenv tools list
-xenv use go:latest
+xenv check tools
 ```
 
 项目目录专用环境：
@@ -598,16 +447,14 @@ xenv set -s APP_ENV local
 xenv path add -s ./bin
 ```
 
-执行后会生成或更新当前目录的 `.xenv.toml`。
-
 ## 9. 使用建议
 
 现阶段推荐将 `xenv` 用作“本地已安装 SDK 的激活器”和“项目环境变量/PATH 管理器”：
 
-- SDK 先通过系统包管理器或手动方式安装。
-- 在 `config.yaml` 中声明 SDK 安装目录。
-- 使用 `xenv tools index` 建立本地索引。
+- SDK 先通过系统包管理器、手动安装或 `eget` 管理。
+- 在 `config.yaml` 中声明 SDK 安装目录规则。
+- 使用 `xenv sdk index` 建立本地索引。
+- 使用 `xenv sdk where` / `xenv sdk which` 查询路径。
 - 使用 shell hook 中的 `xenv use` 激活版本。
+- 使用 `xenv check tools` 检查项目工具依赖。
 - 使用 `.xenv.toml` 固化项目级环境。
-
-自动下载安装、配置导入导出和 profile 自动写入能力已经有结构和命令入口，但仍需要补齐实现后再作为主流程使用。
