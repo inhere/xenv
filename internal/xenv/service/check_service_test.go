@@ -35,3 +35,16 @@ func TestActivityStateUsesToolRequirementsField(t *testing.T) {
 		t.Fatal("state with tool requirements must not be empty")
 	}
 }
+
+func TestCheckToolsCanSkipVersionCommand(t *testing.T) {
+	state := models.NewActivityState(".xenv.toml")
+	state.ToolRequirements["go"] = ">=999.0"
+
+	results := NewCheckService(nil).CheckTools(state, false)
+	if len(results) != 1 {
+		t.Fatalf("results = %d, want 1", len(results))
+	}
+	if results[0].Status != CheckStatusOK {
+		t.Fatalf("status = %s, want ok: %+v", results[0].Status, results[0])
+	}
+}

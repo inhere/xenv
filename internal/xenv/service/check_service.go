@@ -12,9 +12,9 @@ import (
 type CheckStatus string
 
 const (
-	CheckStatusOK      CheckStatus = "ok"
-	CheckStatusWarn    CheckStatus = "warn"
-	CheckStatusError   CheckStatus = "error"
+	CheckStatusOK    CheckStatus = "ok"
+	CheckStatusWarn  CheckStatus = "warn"
+	CheckStatusError CheckStatus = "error"
 )
 
 type ToolRequirement struct {
@@ -81,7 +81,7 @@ func ParseToolRequirement(raw string) (ToolRequirement, error) {
 	return req, nil
 }
 
-func (s *CheckService) CheckTools(state *models.ActivityState) []CheckResult {
+func (s *CheckService) CheckTools(state *models.ActivityState, checkVersion bool) []CheckResult {
 	results := make([]CheckResult, 0, len(state.ToolRequirements))
 	for name, raw := range state.ToolRequirements {
 		req, err := ParseToolRequirement(raw)
@@ -109,7 +109,7 @@ func (s *CheckService) CheckTools(state *models.ActivityState) []CheckResult {
 		}
 
 		msg := "found at " + path
-		if req.MinVersion != "" {
+		if req.MinVersion != "" && checkVersion {
 			verOut, verErr := exec.Command(name, "--version").CombinedOutput()
 			if verErr != nil {
 				results = append(results, CheckResult{
@@ -142,6 +142,8 @@ func (s *CheckService) CheckTools(state *models.ActivityState) []CheckResult {
 				continue
 			}
 			msg = fmt.Sprintf("%s, version %s", msg, current)
+		} else if req.MinVersion != "" {
+			msg = fmt.Sprintf("%s, version requirement >=%s not checked", msg, req.MinVersion)
 		}
 
 		results = append(results, CheckResult{

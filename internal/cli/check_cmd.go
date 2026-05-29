@@ -19,7 +19,7 @@ var CheckCmd = &gcli.Command{
 		if err := runSDKChecks(); err != nil {
 			return err
 		}
-		return runToolChecks()
+		return runToolChecks(false)
 	},
 }
 
@@ -38,7 +38,7 @@ func CheckToolsCmd() *gcli.Command {
 		Name: "tools",
 		Desc: "Check project tool requirements from .xenv.toml",
 		Func: func(c *gcli.Command, args []string) error {
-			return runToolChecks()
+			return runToolChecks(true)
 		},
 	}
 }
@@ -55,13 +55,13 @@ func runSDKChecks() error {
 	return firstCheckError(results)
 }
 
-func runToolChecks() error {
+func runToolChecks(checkVersion bool) error {
 	if err := xenv.InitState(); err != nil {
 		return err
 	}
 
 	checkSvc := service.NewCheckService(nil)
-	results := checkSvc.CheckTools(xenv.State().Merged())
+	results := checkSvc.CheckTools(xenv.State().Merged(), checkVersion)
 	printCheckResults("Tool", results)
 	return firstCheckError(results)
 }

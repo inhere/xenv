@@ -142,6 +142,11 @@ func listActivity(state *models.ActivityState) {
 	for i, path := range state.Paths {
 		ccolor.Printf("  <green>%d</>. %s\n", i+1, path)
 	}
+
+	ccolor.Cyanln("\nTool Requirements:")
+	for name, requirement := range state.ToolRequirements {
+		ccolor.Printf("  <green>%s</> => %s\n", name, requirement)
+	}
 }
 
 // ListAllCmd lists everything
