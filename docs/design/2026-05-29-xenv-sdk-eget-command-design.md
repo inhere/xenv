@@ -13,7 +13,8 @@
 3. 保留本地 SDK 安装目录规则扫描能力，也就是保留 index 能力。
 4. 新增配置项 `eget_enable bool`，仅启用后才优先读取 `eget` 的 SDK 安装记录。
 5. 用户级配置和状态目录统一收敛到 `~/.config/xenv`。
-6. 重新整理 CLI 命令结构，让 `xenv` 的定位从“安装工具”变为“激活本地 SDK 和环境”。
+6. 支持 `XENV_CONFIG_DIR` 自定义用户级配置和状态目录。
+7. 重新整理 CLI 命令结构，让 `xenv` 的定位从“安装工具”变为“激活本地 SDK 和环境”。
 
 ## 非目标
 
@@ -69,6 +70,18 @@ eget_store_file: ""
 ~/.config/xenv/
 ```
 
+可通过环境变量覆盖：
+
+```bash
+export XENV_CONFIG_DIR="$HOME/.config/xenv-dev"
+```
+
+PowerShell:
+
+```powershell
+$env:XENV_CONFIG_DIR = "$HOME\.config\xenv-dev"
+```
+
 最终路径：
 
 ```text
@@ -77,6 +90,16 @@ eget_store_file: ""
 ~/.config/xenv/session/<session_id>.json
 ~/.config/xenv/sdks.local.json
 ~/.config/xenv/hooks/
+```
+
+当 `XENV_CONFIG_DIR` 存在时，上述路径全部相对该目录计算：
+
+```text
+$XENV_CONFIG_DIR/config.yaml
+$XENV_CONFIG_DIR/global.toml
+$XENV_CONFIG_DIR/session/<session_id>.json
+$XENV_CONFIG_DIR/sdks.local.json
+$XENV_CONFIG_DIR/hooks/
 ```
 
 不再使用：
@@ -96,6 +119,7 @@ eget_store_file: ""
 原因：
 
 - `~/.config/xenv` 是用户级配置和状态目录。
+- `XENV_CONFIG_DIR` 便于测试、多配置隔离和临时环境验证。
 - `.xenv.toml` 是项目级环境声明文件，应该跟随项目。
 - `session`、`global.toml`、`sdks.local.json` 都是用户机器上的运行状态，不应该散落在 `~/.xenv`。
 
@@ -332,10 +356,11 @@ xenv
   unuse <sdk>...
   sdk
     index
+    refresh
+    scan
     list [name]
     show <name>
     where <sdk:version>
-    refresh
   check
     sdk
     tools
@@ -384,9 +409,11 @@ xenv unuse go
 
 ```bash
 xenv sdk index
+xenv sdk refresh
+xenv sdk scan
 ```
 
-按 `sdks[].install_dir` 和 `sdks[].other_versions` 扫描本地 SDK，生成 `~/.config/xenv/sdks.local.json`。
+三者等价，按 `sdks[].install_dir` 和 `sdks[].other_versions` 扫描本地 SDK，生成 `~/.config/xenv/sdks.local.json`。
 
 ```bash
 xenv sdk list
@@ -417,11 +444,7 @@ xenv sdk where go:1.22
 xenv sdk where --bin go:1.22
 ```
 
-```bash
-xenv sdk refresh
-```
-
-作为 `xenv sdk index` 的 alias，语义上更适合用户理解“刷新本地可用 SDK 列表”。
+`refresh` 强调刷新本地可用 SDK 列表，`scan` 强调重新扫描安装目录。二者都是 `index` 的别名，不引入新行为。
 
 ### 删除 tools 命名空间
 
@@ -506,6 +529,52 @@ check_tools_on_direnv: true
 - 不默认执行 `<tool> --version`。
 - 缺失 required 工具时输出 warning。
 - 不阻止 SDK/env/path 激活。
+
+### 项目脚本自动 source
+
+当前 shell hook 已经设计为加载用户级 hooks 目录：
+
+```text
+~/.config/xenv/hooks/*.sh
+~/.config/xenv/hooks/*.ps1
+```
+
+当前代码中也有 `.envrc` / `.envrc.ps1` 的检测占位，但未看到自动 source 项目目录下 `.xenv.sh` / `.xenv.ps1` 的完整实现。因此设计上将该能力作为显式、可配置的项目脚本加载功能，而不是默认无条件执行。
+
+新增配置项：
+
+```yaml
+source_project_scripts: false
+```
+
+支持的项目脚本文件：
+
+```text
+.xenv.sh   # bash/zsh
+.xenv.ps1  # PowerShell
+```
+
+行为：
+
+- 默认 `source_project_scripts: false`，不自动 source 项目脚本。
+- 启用后，shell hook 在进入目录并完成 `xenv shell-direnv` 后，查找最近 `.xenv.toml` 所在目录中的项目脚本。
+- bash/zsh 只 source `.xenv.sh`。
+- PowerShell 只 dot-source `.xenv.ps1`。
+- 不跨 shell 执行脚本，例如 bash 不读取 `.xenv.ps1`。
+- 只 source 与当前项目状态文件同目录的脚本，避免向上递归时加载到不相关父目录脚本。
+- 如果没有 `.xenv.toml`，不自动 source `.xenv.sh/.xenv.ps1`。这样可以把项目脚本执行和显式 xenv 项目声明绑定起来。
+
+安全约束：
+
+- 第一次发现项目脚本时应提示风险，或至少在 debug/warn 中明确显示正在 source 的文件路径。
+- 不建议默认开启，因为 source 项目脚本等价于执行项目代码。
+- 项目脚本加载只属于 shell hook 行为，不应由普通 `xenv check`、`xenv sdk list` 等命令触发。
+
+与 `.envrc` 的关系：
+
+- `.envrc` / `.envrc.ps1` 属于 direnv 生态兼容项，可以后续单独设计。
+- `.xenv.sh` / `.xenv.ps1` 是 xenv 自己的项目脚本约定，优先级应低于 `xenv` 生成的 SDK/env/path 激活脚本。
+- 如果同时存在 `.xenv.toml` 和 `.xenv.sh`，先应用 `.xenv.toml` 中的 SDK/env/path，再 source `.xenv.sh`，让项目脚本可以做最后补充。
 
 ## 与 eget 的用户工作流
 
@@ -608,8 +677,16 @@ type InstalledSDK struct {
 - 新增 `EgetEnable bool json:"eget_enable"`。
 - 新增 `EgetStoreFile string json:"eget_store_file"`。
 - 新增 `CheckToolsOnDirenv bool json:"check_tools_on_direnv"`。
+- 新增 `SourceProjectScripts bool json:"source_project_scripts"`。
 - 删除 `DownloadExt`、`DownloadDir`、顶层 `InstallDir`、`Tools`。
 - 删除 `ToolChain.InstallURL`、`ToolChain.DownloadExt`、`ToolChain.PostInstall`。
+
+配置目录解析新增：
+
+- 优先读取 `XENV_CONFIG_DIR`。
+- 如果 `XENV_CONFIG_DIR` 为空，使用 `~/.config/xenv`。
+- `config.yaml`、`global.toml`、`session`、`sdks.local.json`、`hooks` 都从同一个配置目录派生。
+- `XENV_CONFIG_DIR` 应在测试中可注入，避免测试写入真实用户目录。
 
 ### SDK 查找源
 
@@ -689,6 +766,9 @@ internal/xenv/tools/version.go
 - 配置文件可以读取 `eget_enable: true`。
 - 配置文件可以读取自定义 `eget_store_file`。
 - 默认 `check_tools_on_direnv` 为 false。
+- 默认 `source_project_scripts` 为 false。
+- `XENV_CONFIG_DIR` 可以覆盖用户级配置目录。
+- `XENV_CONFIG_DIR` 为空时默认使用 `~/.config/xenv`。
 - 删除下载字段后，默认配置示例不再包含下载配置。
 - 用户级状态文件默认写入 `~/.config/xenv`。
 
@@ -710,10 +790,14 @@ internal/xenv/tools/version.go
 
 - `xenv sdk --help` 不显示 install/update/uninstall/register。
 - `xenv sdk index` 可运行。
+- `xenv sdk refresh` 行为等价于 `xenv sdk index`。
+- `xenv sdk scan` 行为等价于 `xenv sdk index`。
 - `xenv tools --help` 应返回未知命令。
 - `xenv check tools` 可检查 `.xenv.toml [tools]`。
 - `xenv use go:1.22` 在只存在 xenv 本地索引时可激活。
 - `xenv use go:1.22` 在 `eget_enable: true` 且 eget 有记录时优先使用 eget 路径。
+- `source_project_scripts: true` 时，shell hook 会 source `.xenv.sh` 或 `.xenv.ps1`。
+- `source_project_scripts: false` 时，shell hook 不 source 项目脚本。
 
 ### 回归测试
 
@@ -729,6 +813,8 @@ go test ./...
 go run ./cmd/xenv sdk --help
 go run ./cmd/xenv tools --help # expected: unknown command
 go run ./cmd/xenv sdk index
+go run ./cmd/xenv sdk refresh
+go run ./cmd/xenv sdk scan
 go run ./cmd/xenv sdk list
 go run ./cmd/xenv check tools
 ```
@@ -739,6 +825,8 @@ go run ./cmd/xenv check tools
 
 - 新增 `eget_enable` 和 `eget_store_file` 配置项。
 - 新增 `check_tools_on_direnv` 配置项。
+- 新增 `source_project_scripts` 配置项。
+- 新增 `XENV_CONFIG_DIR` 配置目录覆盖。
 - 新增 `sdk` 命令。
 - 新增 `check` 命令。
 - 删除 `tools` 命名空间。
@@ -766,3 +854,4 @@ go run ./cmd/xenv check tools
 3. 本地索引文件名是否最终确定为 `~/.config/xenv/sdks.local.json`。
 4. 是否接受一次性重命名 `ToolService`/`ToolManager` 为 `SDKService`/`SDKManager`。
 5. `.xenv.toml [tools]` 第一版是否只支持简单 map，不支持 table 写法。
+6. `source_project_scripts` 是否默认关闭，并要求 `.xenv.toml` 存在才 source 项目脚本。
