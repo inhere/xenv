@@ -12,7 +12,8 @@
 2. 删除 `tools` 命名空间以及下载、安装、更新、卸载类命令。
 3. 保留本地 SDK 安装目录规则扫描能力，也就是保留 index 能力。
 4. 新增配置项 `eget_enable bool`，仅启用后才优先读取 `eget` 的 SDK 安装记录。
-5. 重新整理 CLI 命令结构，让 `xenv` 的定位从“安装工具”变为“激活本地 SDK 和环境”。
+5. 用户级配置和状态目录统一收敛到 `~/.config/xenv`。
+6. 重新整理 CLI 命令结构，让 `xenv` 的定位从“安装工具”变为“激活本地 SDK 和环境”。
 
 ## 非目标
 
@@ -28,11 +29,12 @@
 
 - 定义本地 SDK 的激活规则。
 - 根据配置中的安装目录规则扫描本地 SDK。
-- 维护 `~/.xenv/sdks.local.json` 本地 SDK 索引。
+- 维护 `~/.config/xenv/sdks.local.json` 本地 SDK 索引。
 - 读取 `.xenv.toml`、global/session state。
 - 激活 SDK，向当前 shell 注入 PATH 和环境变量。
 - 取消激活 SDK，从当前 shell 移除 PATH 和环境变量。
 - 管理 `env`、`path`、`shell`、`config` 相关能力。
+- 检查项目声明的外部 CLI 工具是否存在或满足版本要求。
 
 ### eget 负责
 
@@ -58,6 +60,44 @@ eget_store_file: ""
 - `eget_store_file`: 可选，自定义 `eget` SDK installed store 路径。为空时使用默认路径 `~/.config/eget/sdk.installed.json`。
 
 `eget_store_file` 不是必须项，但建议保留。原因是 `eget` 支持通过环境变量改变配置目录；如果用户有自定义配置目录，`xenv` 需要一个稳定、显式的读取路径。
+
+### 用户级目录
+
+`xenv` 的用户级配置和状态目录统一使用：
+
+```text
+~/.config/xenv/
+```
+
+最终路径：
+
+```text
+~/.config/xenv/config.yaml
+~/.config/xenv/global.toml
+~/.config/xenv/session/<session_id>.json
+~/.config/xenv/sdks.local.json
+~/.config/xenv/hooks/
+```
+
+不再使用：
+
+```text
+~/.xenv/session/<session_id>.json
+~/.xenv/tools.local.json
+~/.xenv/sdks.local.json
+```
+
+项目级状态文件不迁移，仍然是当前项目目录或父目录中的：
+
+```text
+.xenv.toml
+```
+
+原因：
+
+- `~/.config/xenv` 是用户级配置和状态目录。
+- `.xenv.toml` 是项目级环境声明文件，应该跟随项目。
+- `session`、`global.toml`、`sdks.local.json` 都是用户机器上的运行状态，不应该散落在 `~/.xenv`。
 
 ### 保留配置项
 
@@ -126,7 +166,7 @@ tools: []
    - 使用 `eget` 记录中的 `path` 作为 `install_dir`。
    - 仍然使用 `xenv` 配置中的 `bin_dir` 和 `active_env` 渲染 PATH/ENV。
 3. 如果未启用 `eget`，或 `eget` 记录中未找到匹配版本：
-   - 读取 `~/.xenv/sdks.local.json`。
+   - 读取 `~/.config/xenv/sdks.local.json`。
    - 使用当前版本匹配规则匹配 `latest`、`1`、`1.22`、`1.22.0`。
 4. 如果仍然找不到：
    - 未启用 `eget` 时提示：`run "xenv sdk index" after installing SDK locally`。
@@ -138,6 +178,149 @@ tools: []
 - `xenv sdk index` 永远只扫描 `xenv` 配置中的本地安装目录规则，不写入 `eget` store。
 - `xenv` 不调用 `eget` CLI，不 shell out，不要求 `eget` 在 PATH 中。
 - `xenv` 只读取 `eget` 的 JSON store。读取失败时应 fallback 到 xenv 本地索引，并给出 warning。
+
+## 项目状态文件 .xenv.toml
+
+`.xenv.toml` 是项目级环境声明文件，不属于用户级配置目录，因此保持在项目根目录或父目录中。它描述当前项目需要的 SDK、环境变量、PATH 和外部 CLI 工具要求。
+
+推荐结构：
+
+```toml
+paths = [
+  "./bin",
+  "./scripts/bin",
+]
+
+[sdks]
+go = "1.24"
+node = "20"
+
+[envs]
+APP_ENV = "local"
+
+[tools]
+rg = "*"
+buf = ">=1.32,required"
+golangci-lint = ">=1.60"
+protoc = ">=25,required"
+```
+
+字段语义：
+
+- `paths`: 项目需要注入 PATH 的目录。
+- `[sdks]`: 项目需要激活的 SDK 版本，由 `xenv` 解析并注入 PATH/ENV。
+- `[envs]`: 项目需要注入的环境变量。
+- `[tools]`: 项目依赖的外部 CLI 工具要求。`xenv` 只检查，不安装、不更新、不激活、不写 PATH。
+
+### tools 字段语义
+
+`.xenv.toml [tools]` 不再表示“由 xenv 管理或安装的工具”，而表示“项目依赖的外部命令检查项”。
+
+规则：
+
+```toml
+[tools]
+rg = "*"
+buf = ">=1.32,required"
+golangci-lint = ">=1.60"
+protoc = ">=25,optional"
+```
+
+含义：
+
+- `"*"`: 只检查命令是否存在。
+- `">=1.32"`: 检查命令存在，并检查版本满足 `>=1.32`。默认按 required 处理。
+- `">=1.32,required"`: 缺失或版本不满足时返回错误。
+- `">=1.32,optional"`: 缺失或版本不满足时返回 warning。
+
+第一版只需要支持：
+
+- `*`
+- `>=x`
+- `>=x.y`
+- `>=x.y.z`
+- `required`
+- `optional`
+
+不需要第一版支持完整 semver range，例如 `~1.2`、`^1.2`、`>1 <2`。
+
+版本获取默认执行：
+
+```text
+<tool> --version
+```
+
+版本解析失败时：
+
+- `xenv check tools` 输出 warning。
+- 不阻止 SDK/env/path 激活。
+- required 工具如果命令存在但版本输出无法解析，第一版按 warning 处理，避免不同工具版本输出格式差异导致项目进入目录失败。
+
+后续如需要更精细控制，可扩展 table 写法：
+
+```toml
+[tools.buf]
+version = ">=1.32"
+required = true
+command = "buf"
+version_cmd = "buf --version"
+install_hint = "eget install --add --name buf bufbuild/buf"
+```
+
+但第一版只实现简单 map，避免把 `.xenv.toml` 复杂化。
+
+### tools 与 eget 的关系
+
+`.xenv.toml [tools]` 不依赖 `eget_enable`。
+
+原因：
+
+- `eget_enable` 只控制 SDK 查找来源。
+- `[tools]` 是项目外部 CLI 工具需求声明。
+- 用户可以通过 `eget`、`brew`、`scoop`、`apt`、手动安装等方式满足工具要求。
+
+`xenv` 可以输出安装提示，但不执行安装命令：
+
+```text
+missing required tool: buf >=1.32
+hint: eget install --add --name buf bufbuild/buf
+```
+
+安装提示不是第一阶段必须能力。如果需要，可后续通过全局配置维护：
+
+```yaml
+tool_install_hints:
+  rg: "eget install --add --name rg BurntSushi/ripgrep"
+  buf: "eget install --add --name buf bufbuild/buf"
+```
+
+### ActivityState 结构
+
+当前 `ActivityState` 中的 `Tools map[string]string` 应改名，避免继续误解成“已激活工具”或“由 xenv 管理的工具”。
+
+建议改为：
+
+```go
+type ActivityState struct {
+	Paths []string `json:"paths" toml:"paths"`
+	SDKs  map[string]string `json:"sdks" toml:"sdks"`
+	Envs  map[string]string `json:"envs" toml:"envs"`
+
+	// ToolRequirements declares external CLI tools required by this state.
+	// xenv only checks them; it does not install, update, activate, or remove them.
+	ToolRequirements map[string]string `json:"tools" toml:"tools"`
+}
+```
+
+行为约束：
+
+- 可从 `.xenv.toml [tools]` 读取。
+- 可被 global/session/direnv state 合并，供 `xenv check` 使用。
+- 不生成 shell script。
+- 不写 PATH。
+- 不调用 `eget`。
+- 不参与 `xenv sdk index`。
+- 不写入 `sdks.local.json`。
 
 ## 命令结构设计
 
@@ -153,6 +336,9 @@ xenv
     show <name>
     where <sdk:version>
     refresh
+  check
+    sdk
+    tools
   env
     set
     get
@@ -200,7 +386,7 @@ xenv unuse go
 xenv sdk index
 ```
 
-按 `sdks[].install_dir` 和 `sdks[].other_versions` 扫描本地 SDK，生成 `~/.xenv/sdks.local.json`。
+按 `sdks[].install_dir` 和 `sdks[].other_versions` 扫描本地 SDK，生成 `~/.config/xenv/sdks.local.json`。
 
 ```bash
 xenv sdk list
@@ -256,6 +442,71 @@ xenv tools add
 
 所有 SDK 发现和索引能力统一放到 `xenv sdk` 下。
 
+### check 命令
+
+新增：
+
+```bash
+xenv check
+xenv check sdk
+xenv check tools
+```
+
+`xenv check` 检查当前目录合并后的环境声明：
+
+- `.xenv.toml` 是否存在。
+- `[sdks]` 中版本是否可解析、可匹配、可激活。
+- `[tools]` 中外部 CLI 工具是否存在，版本是否满足要求。
+- `paths` 中的路径是否存在。
+- `[envs]` 是否有效。
+
+`xenv check sdk` 只检查 SDK。
+
+`xenv check tools` 只检查工具要求。
+
+输出示例：
+
+```text
+SDKs
+  OK go 1.24 -> D:/work/env/devsdk/gosdk/go1.24.2
+  OK node 20 -> D:/work/env/devsdk/nodejs/node-v20.11.1-win-x64
+
+Tools
+  OK rg 14.1.1
+  MISSING buf >=1.32 required
+    hint: eget install --add --name buf bufbuild/buf
+  WARN protoc version output not recognized
+```
+
+### shell hook 中的 tools 检查
+
+shell hook 每次进入目录时不应默认执行完整工具版本检查，因为多个 `<tool> --version` 会拖慢 `cd`。
+
+新增配置项：
+
+```yaml
+check_tools_on_direnv: false
+```
+
+默认行为：
+
+- `xenv shell-direnv` 只做 SDK/env/path 激活。
+- 不执行 `[tools]` 版本检查。
+- 用户主动执行 `xenv check tools` 时才做完整检查。
+
+如果启用：
+
+```yaml
+check_tools_on_direnv: true
+```
+
+进入目录时只做轻量检查：
+
+- 用 `exec.LookPath` 检查工具是否存在。
+- 不默认执行 `<tool> --version`。
+- 缺失 required 工具时输出 warning。
+- 不阻止 SDK/env/path 激活。
+
 ## 与 eget 的用户工作流
 
 默认不启用 `eget`：
@@ -297,7 +548,7 @@ eget_enable: false
 本地索引文件改为：
 
 ```text
-~/.xenv/sdks.local.json
+~/.config/xenv/sdks.local.json
 ```
 
 索引结构只存 SDK，不再预留 `tools` 字段：
@@ -356,6 +607,7 @@ type InstalledSDK struct {
 
 - 新增 `EgetEnable bool json:"eget_enable"`。
 - 新增 `EgetStoreFile string json:"eget_store_file"`。
+- 新增 `CheckToolsOnDirenv bool json:"check_tools_on_direnv"`。
 - 删除 `DownloadExt`、`DownloadDir`、顶层 `InstallDir`、`Tools`。
 - 删除 `ToolChain.InstallURL`、`ToolChain.DownloadExt`、`ToolChain.PostInstall`。
 
@@ -371,7 +623,7 @@ type SDKSource interface {
 
 实现：
 
-- `XenvIndexSource`: 读取 `~/.xenv/sdks.local.json`。
+- `XenvIndexSource`: 读取 `~/.config/xenv/sdks.local.json`。
 - `EgetStoreSource`: 读取 `eget` SDK installed store，并映射为 `models.InstalledTool`。
 - `CompositeSDKSource`: 当 `eget_enable` 为 true 时，先查 `EgetStoreSource`，再查 `XenvIndexSource`。
 
@@ -436,13 +688,15 @@ internal/xenv/tools/version.go
 - 默认 `eget_enable` 为 false。
 - 配置文件可以读取 `eget_enable: true`。
 - 配置文件可以读取自定义 `eget_store_file`。
+- 默认 `check_tools_on_direnv` 为 false。
 - 删除下载字段后，默认配置示例不再包含下载配置。
+- 用户级状态文件默认写入 `~/.config/xenv`。
 
 ### 索引测试
 
 - `xenv sdk index` 仍按 `sdks[].install_dir` 扫描版本目录。
 - `other_versions` 仍能被写入本地索引。
-- 本地索引文件写入 `~/.xenv/sdks.local.json`。
+- 本地索引文件写入 `~/.config/xenv/sdks.local.json`。
 - 本地索引文件只包含 `sdks`，不包含 `tools`。
 
 ### eget store 测试
@@ -457,6 +711,7 @@ internal/xenv/tools/version.go
 - `xenv sdk --help` 不显示 install/update/uninstall/register。
 - `xenv sdk index` 可运行。
 - `xenv tools --help` 应返回未知命令。
+- `xenv check tools` 可检查 `.xenv.toml [tools]`。
 - `xenv use go:1.22` 在只存在 xenv 本地索引时可激活。
 - `xenv use go:1.22` 在 `eget_enable: true` 且 eget 有记录时优先使用 eget 路径。
 
@@ -475,6 +730,7 @@ go run ./cmd/xenv sdk --help
 go run ./cmd/xenv tools --help # expected: unknown command
 go run ./cmd/xenv sdk index
 go run ./cmd/xenv sdk list
+go run ./cmd/xenv check tools
 ```
 
 ## 推荐实施阶段
@@ -482,10 +738,13 @@ go run ./cmd/xenv sdk list
 ### 阶段 1：命令和配置收缩
 
 - 新增 `eget_enable` 和 `eget_store_file` 配置项。
+- 新增 `check_tools_on_direnv` 配置项。
 - 新增 `sdk` 命令。
+- 新增 `check` 命令。
 - 删除 `tools` 命名空间。
 - 更新 README 和 config 示例。
-- 将本地索引改为 `~/.xenv/sdks.local.json`。
+- 将用户级状态目录统一改为 `~/.config/xenv`。
+- 将本地索引改为 `~/.config/xenv/sdks.local.json`。
 - 将本地索引结构改为 SDK 专用结构。
 
 ### 阶段 2：eget store 可选读取
@@ -504,5 +763,6 @@ go run ./cmd/xenv sdk list
 
 1. `xenv sdk list` 在启用 `eget_enable` 时，是否默认显示 xenv index 与 eget store 的合并结果。
 2. `eget_store_file` 是否需要首期实现，还是只实现 `eget_enable` 并固定读取默认路径。
-3. 本地索引文件名是否最终确定为 `~/.xenv/sdks.local.json`。
+3. 本地索引文件名是否最终确定为 `~/.config/xenv/sdks.local.json`。
 4. 是否接受一次性重命名 `ToolService`/`ToolManager` 为 `SDKService`/`SDKManager`。
+5. `.xenv.toml [tools]` 第一版是否只支持简单 map，不支持 table 写法。
