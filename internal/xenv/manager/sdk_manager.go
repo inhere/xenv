@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ type SDKManager struct {
 	localLoad bool
 	localFile string
 	localSDKs *models.SDKLocalIndex
+	egetSrc   EgetStoreSource
 
 	groupSDKs map[string][]models.InstalledSDK
 }
@@ -42,7 +44,14 @@ func (m *SDKManager) Init(config *models.Configuration) error {
 	}
 	m.init = true
 	m.config = config
+	if m.egetSrc.Path == "" && config != nil {
+		m.egetSrc = EgetStoreSource{Path: config.EgetStoreFile}
+	}
 	return nil
+}
+
+func (m *SDKManager) SetEgetSource(source EgetStoreSource) {
+	m.egetSrc = source
 }
 
 func (m *SDKManager) InitLoad() error {
@@ -232,8 +241,41 @@ func (m *SDKManager) ListSDKVersions(name string) []models.InstalledSDK {
 	return ls
 }
 
+func (m *SDKManager) ListMergedSDKVersions(name string) []models.InstalledSDK {
+	localItems := m.ListSDKVersions(name)
+	if m.config == nil || !m.config.EgetEnable {
+		return localItems
+	}
+
+	egetItems, err := m.egetSrc.ListSDKVersions(name)
+	if err != nil {
+		ccolor.Warnf("WARN: failed to load eget SDK store %q: %v\n", m.egetSrc.Path, err)
+		return localItems
+	}
+	if len(egetItems) == 0 {
+		return localItems
+	}
+
+	merged := make(map[string]models.InstalledSDK, len(localItems)+len(egetItems))
+	for _, item := range localItems {
+		merged[item.Version] = item
+	}
+	for _, item := range egetItems {
+		merged[item.Version] = item
+	}
+
+	items := make([]models.InstalledSDK, 0, len(merged))
+	for _, item := range merged {
+		items = append(items, item)
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Version > items[j].Version
+	})
+	return items
+}
+
 func (m *SDKManager) MatchSDKByNameAndVersion(name, version string) *models.InstalledSDK {
-	list := m.ListSDKVersions(name)
+	list := m.ListMergedSDKVersions(name)
 	if len(list) == 0 {
 		return nil
 	}

@@ -85,3 +85,57 @@ func TestSDKManagerCanRetryLoadAfterFailure(t *testing.T) {
 		t.Fatalf("loaded SDKs = %d, want 1", len(idx.SDKs))
 	}
 }
+
+func TestSDKManagerListMergedSDKVersionsPrefersEget(t *testing.T) {
+	indexFile := filepath.Join(t.TempDir(), "sdks.local.json")
+	storeFile := filepath.Join(t.TempDir(), "sdk.installed.json")
+
+	localData := []byte(`{"schema":1,"sdks":[{"id":"go:1.22.0","name":"go","version":"1.22.0","install_dir":"D:/xenv/go1.22.0","source":"xenv"},{"id":"go:1.23.0","name":"go","version":"1.23.0","install_dir":"D:/xenv/go1.23.0","source":"xenv"}]}`)
+	if err := os.WriteFile(indexFile, localData, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	storeData := []byte(`{
+	  "schema": 1,
+	  "installed": {
+	    "go": {
+	      "versions": {
+	        "1.22.0": {
+	          "name": "go",
+	          "version": "1.22.0",
+	          "path": "D:/eget/go1.22.0"
+	        }
+	      }
+	    }
+	  }
+	}`)
+	if err := os.WriteFile(storeFile, storeData, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	mgr := NewSDKManager(indexFile)
+	if err := mgr.Init(&models.Configuration{
+		EgetEnable:    true,
+		EgetStoreFile: storeFile,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	mgr.SetEgetSource(EgetStoreSource{Path: storeFile})
+
+	items := mgr.ListMergedSDKVersions("go")
+	if len(items) != 2 {
+		t.Fatalf("items = %d, want 2", len(items))
+	}
+	if items[0].Version != "1.23.0" {
+		t.Fatalf("first version = %q, want 1.23.0", items[0].Version)
+	}
+	if items[1].Version != "1.22.0" {
+		t.Fatalf("second version = %q, want 1.22.0", items[1].Version)
+	}
+	if items[1].Source != "eget" {
+		t.Fatalf("source = %q, want eget", items[1].Source)
+	}
+	if items[1].InstallDir != "D:/eget/go1.22.0" {
+		t.Fatalf("install dir = %q", items[1].InstallDir)
+	}
+}
