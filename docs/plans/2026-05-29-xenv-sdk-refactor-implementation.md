@@ -936,7 +936,7 @@ git commit -m "feat: add xenv check for project tool requirements"
 - Modify: `internal/xenv/shell/gen_hook_test.go`
 - Test: `go test ./internal/xenv/shell ./internal/xenv/service`
 
-- [ ] Step 1: 写 hook 生成测试
+- [x] Step 1: 写 hook 生成测试
 
 在 `internal/xenv/shell/gen_hook_test.go` 增加：
 
@@ -968,7 +968,7 @@ func TestGeneratedHooksSupportProjectScripts(t *testing.T) {
 }
 ```
 
-- [ ] Step 2: 运行测试确认失败
+- [x] Step 2: 运行测试确认失败
 
 Run:
 
@@ -978,7 +978,7 @@ go test ./internal/xenv/shell -run TestGeneratedHooksSupportProjectScripts -coun
 
 Expected: fail，模板不包含项目脚本逻辑。
 
-- [ ] Step 3: 扩展 GenInitScriptParams 和脚本生成器
+- [x] Step 3: 扩展 GenInitScriptParams 和脚本生成器
 
 在 `internal/xenv/models/dto.go` 增加：
 
@@ -998,7 +998,7 @@ func (sg *XenvScriptGenerator) GenSourceProjectScript(projectDir string) string
 - PowerShell 返回 `. "<projectDir>/.xenv.ps1"`，仅当文件存在时由 Go 端决定是否生成。
 - CMD 第一版不支持项目脚本，返回空字符串。
 
-- [ ] Step 4: 由 `init-direnv` 返回项目脚本 source 表达式
+- [x] Step 4: 由 `init-direnv` 返回项目脚本 source 表达式
 
 在 `SDKService.SetupDirenv()` 中：
 
@@ -1011,7 +1011,7 @@ func (sg *XenvScriptGenerator) GenSourceProjectScript(projectDir string) string
 
 这样 shell hook 不需要自己猜项目目录，所有项目脚本逻辑由 `xenv init-direnv` 根据已加载的 dir state 生成。
 
-- [ ] Step 5: Bash/Zsh/Pwsh hook 只负责 eval `init-direnv` 结果
+- [x] Step 5: Bash/Zsh/Pwsh hook 只负责 eval `init-direnv` 结果
 
 不在 hook 模板中直接查找 `.xenv.sh` 或 `.xenv.ps1`。
 
@@ -1027,11 +1027,11 @@ chpwd() {
 }
 ```
 
-- [ ] Step 6: SDKService 传参
+- [x] Step 6: SDKService 传参
 
 `GenHookScripts` 不需要把 `SourceProjectScripts` 写进 hook 模板，但 `SetupDirenv` 需要使用 `ts.config.SourceProjectScripts` 决定是否 append 项目脚本 source 表达式。
 
-- [ ] Step 7: 运行测试
+- [x] Step 7: 运行测试
 
 Run:
 
@@ -1041,7 +1041,7 @@ go test ./internal/xenv/shell ./internal/xenv/service -count=1
 
 Expected: pass。
 
-- [ ] Step 8: 提交
+- [x] Step 8: 提交
 
 ```bash
 git add internal/xenv/models internal/xenv/service internal/xenv/shell
