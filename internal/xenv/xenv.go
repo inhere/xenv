@@ -22,7 +22,7 @@ func Init() error {
 		return fmt.Errorf("failed to initialize state manager: %w", err)
 	}
 
-	if err := toolMgr.Init(config.Config()); err != nil {
+	if err := sdkMgr.Init(config.Config()); err != nil {
 		return fmt.Errorf("failed to initialize sdk manager: %w", err)
 	}
 	return nil
@@ -40,10 +40,10 @@ func InitState() error {
 	return stateMgr.Init()
 }
 
-var toolMgr = manager.NewSDKManager(config.DefaultPaths().SDKLocalIndexFile)
+var sdkMgr = manager.NewSDKManager(config.DefaultPaths().SDKLocalIndexFile)
 
-func ToolMgr() *manager.SDKManager {
-	return toolMgr
+func SDKMgr() *manager.SDKManager {
+	return sdkMgr
 }
 
 func EnvService() (*service.EnvService, error) {
@@ -67,6 +67,6 @@ func ToolService() (*service.ToolService, error) {
 	}
 
 	// Create tool service
-	toolSvc := service.NewToolService(config.Config(), stateMgr, toolMgr)
+	toolSvc := service.NewToolService(config.Config(), stateMgr, sdkMgr)
 	return toolSvc, nil
 }

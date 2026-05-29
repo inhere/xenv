@@ -41,7 +41,7 @@ func ToolsIndexCmd() *gcli.Command {
 			}
 
 			// Index local tools
-			return toolSvc.IndexLocalTools()
+			return toolSvc.IndexLocalSDKs()
 		},
 	}
 
