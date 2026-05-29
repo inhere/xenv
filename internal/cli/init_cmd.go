@@ -50,10 +50,6 @@ var InitCmd = &gcli.Command{
 			return fmt.Errorf("failed to create bin directory: %w", err)
 		}
 
-		if err := util.EnsureDir(cfgMgr.Config.InstallDir); err != nil {
-			return fmt.Errorf("failed to create install directory: %w", err)
-		}
-
 		if err := util.EnsureDir(cfgMgr.Config.ShellHooksDir); err != nil {
 			return fmt.Errorf("failed to create shell scripts directory: %w", err)
 		}
@@ -61,7 +57,6 @@ var InitCmd = &gcli.Command{
 		fmt.Println("Xenv initialization completed successfully!")
 		fmt.Printf("Configuration file: %s\n", configPath)
 		fmt.Printf("Bin directory: %s\n", cfgMgr.Config.BinDir)
-		fmt.Printf("Install directory: %s\n", cfgMgr.Config.InstallDir)
 		fmt.Printf("Shell scripts directory: %s\n", cfgMgr.Config.ShellHooksDir)
 
 		return nil

@@ -26,7 +26,7 @@ func SetBuildInfo(versionStr, gitHashStr, buildTimeStr string) {
 func NewApp() *gcli.App {
 	app := gcli.NewApp(func(app *gcli.App) {
 		app.Name = "xenv"
-		app.Desc = "Manage local development environments and tools"
+		app.Desc = "Manage local development environments and SDK activation"
 	})
 	app.Version = buildVersionString()
 
@@ -41,7 +41,7 @@ func NewApp() *gcli.App {
 	})
 
 	app.Add(
-		ToolsCmd,
+		SDKCmd,
 		NewUseCmd(),
 		NewUnuseCmd(),
 		EnvSetCmd(),

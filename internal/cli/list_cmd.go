@@ -14,29 +14,28 @@ import (
 // ListCmd the xenv list command
 var ListCmd = &gcli.Command{
 	Name:    "list",
-	Desc:    "List installed tools, environment variables, or PATH entries",
+	Desc:    "List installed SDKs, environment variables, or PATH entries",
 	Aliases: []string{"ls"},
 	Subs: []*gcli.Command{
-		ListToolsCmd(),
+		ListSDKCmd(),
 		ListEnvCmd(),
 		ListPathCmd(),
 		ListActivityCmd(),
 		ListAllCmd(),
 	},
 	Func: func(c *gcli.Command, args []string) error {
-		// Default to listing tools if no subcommand is specified
-		return listTools()
+		return listSDKs()
 	},
 }
 
-// ListToolsCmd lists tools (similar to the one in tools subcommand)
-func ListToolsCmd() *gcli.Command {
+// ListSDKCmd lists SDKs.
+func ListSDKCmd() *gcli.Command {
 	return &gcli.Command{
-		Name:    "tools",
-		Desc:    "List local installed SDK tools",
-		Aliases: []string{"t", "tool", "sdk", "sdks"},
+		Name:    "sdk",
+		Desc:    "List local installed SDKs",
+		Aliases: []string{"sdks"},
 		Func: func(c *gcli.Command, args []string) error {
-			return listTools()
+			return listSDKs()
 		},
 	}
 }
@@ -63,7 +62,7 @@ func ListPathCmd() *gcli.Command {
 	}
 }
 
-// ListActivityCmd lists active tools and settings
+// ListActivityCmd lists active SDKs and settings
 func ListActivityCmd() *gcli.Command {
 	var listActOpts = struct {
 		Group bool `flag:"shorts=t;desc=List activity states and group by global, dir, session"`
@@ -71,7 +70,7 @@ func ListActivityCmd() *gcli.Command {
 
 	return &gcli.Command{
 		Name:    "activity",
-		Desc:    "List active SDKs, envs, paths and tools",
+		Desc:    "List active SDKs, envs, and paths",
 		Aliases: []string{"act", "active", "use"},
 		Config: func(c *gcli.Command) {
 			c.MustFromStruct(&listActOpts)
@@ -149,11 +148,20 @@ func listActivity(state *models.ActivityState) {
 func ListAllCmd() *gcli.Command {
 	return &gcli.Command{
 		Name: "all",
-		Desc: "List all tools, env vars, and paths",
+		Desc: "List all SDKs, env vars, and paths",
 		Func: func(c *gcli.Command, args []string) error {
 			// This would call all the other list commands
 			fmt.Println("This would list all items - implementation needed")
 			return nil
 		},
 	}
+}
+
+func listSDKs() error {
+	sdkSvc, err := xenv.SDKService()
+	if err != nil {
+		return err
+	}
+
+	return sdkSvc.ListSDKs(false)
 }

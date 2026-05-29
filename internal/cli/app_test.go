@@ -10,7 +10,7 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 	}
 
 	for _, name := range []string{
-		"tools",
+		"sdk",
 		"use",
 		"unuse",
 		"env",
@@ -25,6 +25,10 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 		if !app.HasCommand(name) {
 			t.Fatalf("expected app to register command %q", name)
 		}
+	}
+
+	if app.HasCommand("tools") {
+		t.Fatalf("tools command must not be registered")
 	}
 
 	if app.ResolveAlias("init-direnv") != "shell-direnv" {

@@ -11,22 +11,21 @@ func NewUseCmd() *gcli.Command {
 	return &gcli.Command{
 		Name: "use",
 		Help: "use [-g] <name:version>...",
-		Desc: "Switch and activate different versions of SDK/tool",
+		Desc: "Switch and activate different versions of SDK",
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Global operation, not the current session")
 			c.BoolOpt(&SaveDirenv, "save", "s,d", false, "Save change to direnv config .xenv.toml")
 
-			c.AddArg("tools", "Name of the tool to activate, allow multi.", true, true)
+			c.AddArg("sdks", "Name of the SDK to activate, allow multi.", true, true)
 		},
 		Func: func(c *gcli.Command, args []string) error {
-			// Create tool service
-			toolSvc, err := xenv.ToolService()
+			sdkSvc, err := xenv.SDKService()
 			if err != nil {
 				return err
 			}
 
-			useTools := c.Arg("tools").Strings()
-			script, err1 := toolSvc.ActivateSDKs(useTools, GetOpFlag())
+			useSDKs := c.Arg("sdks").Strings()
+			script, err1 := sdkSvc.ActivateSDKs(useSDKs, GetOpFlag())
 			if err1 == nil {
 				shell.OutputScript(script)
 			}
@@ -40,21 +39,20 @@ func NewUnuseCmd() *gcli.Command {
 	return &gcli.Command{
 		Name: "unuse",
 		Help: "unuse [-g] <name:version>...",
-		Desc: "Deactivate specific SDK/tool versions",
+		Desc: "Deactivate specific SDK versions",
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Global operation, not the current session")
 			c.BoolOpt(&SaveDirenv, "save", "s,d", false, "Save change to direnv config .xenv.toml")
-			c.AddArg("tools", "Name of the tool to deactivate, allow multi.", true, true)
+			c.AddArg("sdks", "Name of the SDK to deactivate, allow multi.", true, true)
 		},
 		Func: func(c *gcli.Command, args []string) error {
-			// Create tool service
-			toolSvc, err := xenv.ToolService()
+			sdkSvc, err := xenv.SDKService()
 			if err != nil {
 				return err
 			}
 
-			unTools := c.Arg("tools").Strings()
-			script, err1 := toolSvc.DeactivateSDKs(unTools, GetOpFlag())
+			unSDKs := c.Arg("sdks").Strings()
+			script, err1 := sdkSvc.DeactivateSDKs(unSDKs, GetOpFlag())
 			if err1 == nil {
 				shell.OutputScript(script)
 			}
