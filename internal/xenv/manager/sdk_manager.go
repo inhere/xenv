@@ -64,7 +64,7 @@ func (m *SDKManager) ensureLocalLoad(must bool) error {
 
 func (m *SDKManager) LoadLocalIndexIntoCache() error {
 	if m.localFile == "" {
-		m.localFile = fsutil.ExpandHome(xenvcom.InstalledMetaFile)
+		return fmt.Errorf("sdk local index file is required")
 	}
 
 	fileExist := fsutil.IsFile(m.localFile)

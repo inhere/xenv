@@ -53,3 +53,10 @@ func TestSDKManagerIndexLocalSDKsWritesSDKOnlyIndex(t *testing.T) {
 		t.Fatal("unexpected tools field")
 	}
 }
+
+func TestSDKManagerRequiresInjectedIndexFile(t *testing.T) {
+	mgr := NewSDKManager("")
+	if _, err := mgr.LoadLocalIndex(); err == nil {
+		t.Fatal("expected missing index file path error")
+	}
+}
