@@ -53,11 +53,13 @@ func (m *SDKManager) ensureLocalLoad(must bool) error {
 	if m.localLoad {
 		return nil
 	}
-	m.localLoad = true
 
 	err := m.LoadLocalIndexIntoCache()
 	if err != nil && must {
 		panic(err)
+	}
+	if err == nil {
+		m.localLoad = true
 	}
 	return err
 }
@@ -88,9 +90,11 @@ func (m *SDKManager) LoadLocalIndex() (*models.SDKLocalIndex, error) {
 func (m *SDKManager) FindLocalSDK(name, version string) *models.InstalledSDK {
 	_ = m.ensureLocalLoad(true)
 
-	for _, sdk := range m.localSDKs.SDKs {
+	for i := range m.localSDKs.SDKs {
+		sdk := &m.localSDKs.SDKs[i]
 		if sdk.Name == name && sdk.Version == version {
-			return &sdk
+			sdk.Index = i
+			return sdk
 		}
 	}
 	return nil
@@ -161,6 +165,10 @@ func (m *SDKManager) IndexLocalSDKs() error {
 }
 
 func (m *SDKManager) SaveLocalIndex() error {
+	if err := os.MkdirAll(filepath.Dir(m.localFile), 0o755); err != nil {
+		return err
+	}
+
 	jsonBytes, err := json.MarshalIndent(m.localSDKs, "", "  ")
 	if err != nil {
 		return err
@@ -236,9 +244,9 @@ func (m *SDKManager) MatchSDKByVersion(localSDKs []models.InstalledSDK, version 
 	dotNum := strings.Count(version, ".")
 
 	if dotNum > 1 {
-		for _, localSDK := range localSDKs {
-			if localSDK.Version == version {
-				return &localSDK
+		for i := range localSDKs {
+			if localSDKs[i].Version == version {
+				return &localSDKs[i]
 			}
 		}
 	}
@@ -247,24 +255,24 @@ func (m *SDKManager) MatchSDKByVersion(localSDKs []models.InstalledSDK, version 
 		return &localSDKs[0]
 	}
 
-	for _, localSDK := range localSDKs {
-		locVersion := localSDK.Version
+	for i := range localSDKs {
+		locVersion := localSDKs[i].Version
 		if strings.HasPrefix(locVersion, version) {
 			if len(locVersion) == len(version) || locVersion[len(version)] == '.' {
-				return &localSDK
+				return &localSDKs[i]
 			}
 		}
 	}
 
-	if dotNum > 1 && m.config.AllowUpMatch > 0 {
+	if dotNum > 1 && m.config != nil && m.config.AllowUpMatch > 0 {
 		parts := strings.Split(version, ".")
 
 		if m.config.AllowUpMatch == xenvcom.UpMatchOne {
 			matchVer := strings.Join(parts[:len(parts)-1], ".") + "."
-			for _, localSDK := range localSDKs {
-				locVersion := localSDK.Version
+			for i := range localSDKs {
+				locVersion := localSDKs[i].Version
 				if strings.HasPrefix(locVersion, matchVer) {
-					return &localSDK
+					return &localSDKs[i]
 				}
 			}
 		}

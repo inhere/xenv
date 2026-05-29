@@ -15,13 +15,13 @@ type SDKLocalIndex struct {
 }
 
 type InstalledSDK struct {
-	ID         string    `json:"id"`
-	Name       string    `json:"name"`
-	Version    string    `json:"version"`
-	InstallDir string    `json:"install_dir"`
-	Source     string    `json:"source"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	Version    string     `json:"version"`
+	InstallDir string     `json:"install_dir"`
+	Source     string     `json:"source"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 	Index      int        `json:"-"`
 	Config     *ToolChain `json:"-"`
 }
@@ -45,10 +45,11 @@ func (idx *SDKLocalIndex) ListByName(name string) []InstalledSDK {
 }
 
 func (idx *SDKLocalIndex) FindByID(id string) *InstalledSDK {
-	for i, sdk := range idx.SDKs {
+	for i := range idx.SDKs {
+		sdk := &idx.SDKs[i]
 		if sdk.ID == id {
 			sdk.Index = i
-			return &sdk
+			return sdk
 		}
 	}
 	return nil

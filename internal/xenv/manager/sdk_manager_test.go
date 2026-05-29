@@ -60,3 +60,28 @@ func TestSDKManagerRequiresInjectedIndexFile(t *testing.T) {
 		t.Fatal("expected missing index file path error")
 	}
 }
+
+func TestSDKManagerCanRetryLoadAfterFailure(t *testing.T) {
+	indexFile := filepath.Join(t.TempDir(), "sdks.local.json")
+	mgr := NewSDKManager(indexFile)
+
+	if err := os.WriteFile(indexFile, []byte("{bad json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mgr.LoadLocalIndex(); err == nil {
+		t.Fatal("expected invalid json error")
+	}
+
+	data := []byte(`{"schema":1,"sdks":[{"id":"go:1.22.0","name":"go","version":"1.22.0","install_dir":"/sdk/go1.22.0","source":"xenv"}]}`)
+	if err := os.WriteFile(indexFile, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	idx, err := mgr.LoadLocalIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(idx.SDKs) != 1 {
+		t.Fatalf("loaded SDKs = %d, want 1", len(idx.SDKs))
+	}
+}
