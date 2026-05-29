@@ -253,14 +253,26 @@ func (u *StateTomlUpdater) addNewSections(state *models.ActivityState) {
 
 		switch sec {
 		case "envs":
+			if len(state.Envs) == 0 {
+				continue
+			}
+			u.newBuf.WriteStr1Nl("[envs]")
 			for key, val := range state.Envs {
 				u.newBuf.Writef("%s = %q\n", key, val)
 			}
 		case "tools":
+			if len(state.ToolRequirements) == 0 {
+				continue
+			}
+			u.newBuf.WriteStr1Nl("[tools]")
 			for key, val := range state.ToolRequirements {
 				u.newBuf.Writef("%s = %q\n", key, val)
 			}
 		case "sdks":
+			if len(state.SDKs) == 0 {
+				continue
+			}
+			u.newBuf.WriteStr1Nl("[sdks]")
 			for key, val := range state.SDKs {
 				u.newBuf.Writef("%s = %q\n", key, val)
 			}

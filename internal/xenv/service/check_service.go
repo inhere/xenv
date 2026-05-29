@@ -88,7 +88,7 @@ func (s *CheckService) CheckTools(state *models.ActivityState, checkVersion bool
 		if err != nil {
 			results = append(results, CheckResult{
 				Name:    name,
-				Status:  CheckStatusWarn,
+				Status:  CheckStatusError,
 				Message: err.Error(),
 			})
 			continue

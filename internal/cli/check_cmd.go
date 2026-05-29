@@ -16,10 +16,12 @@ var CheckCmd = &gcli.Command{
 		CheckToolsCmd(),
 	},
 	Func: func(c *gcli.Command, args []string) error {
-		if err := runSDKChecks(); err != nil {
-			return err
+		sdkErr := runSDKChecks()
+		toolErr := runToolChecks(false)
+		if sdkErr != nil {
+			return sdkErr
 		}
-		return runToolChecks(false)
+		return toolErr
 	},
 }
 

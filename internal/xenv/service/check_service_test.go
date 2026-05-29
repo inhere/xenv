@@ -48,3 +48,16 @@ func TestCheckToolsCanSkipVersionCommand(t *testing.T) {
 		t.Fatalf("status = %s, want ok: %+v", results[0].Status, results[0])
 	}
 }
+
+func TestCheckToolsInvalidRequirementIsError(t *testing.T) {
+	state := models.NewActivityState(".xenv.toml")
+	state.ToolRequirements["rg"] = "=>1.0"
+
+	results := NewCheckService(nil).CheckTools(state, false)
+	if len(results) != 1 {
+		t.Fatalf("results = %d, want 1", len(results))
+	}
+	if results[0].Status != CheckStatusError {
+		t.Fatalf("status = %s, want error", results[0].Status)
+	}
+}
