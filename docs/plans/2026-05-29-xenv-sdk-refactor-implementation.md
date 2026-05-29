@@ -689,7 +689,7 @@ git commit -m "refactor: replace tools command with sdk command"
 - Modify: `internal/xenv/manager/sdk_manager.go`
 - Test: `go test ./internal/xenv/manager`
 
-- [ ] Step 1: 写 eget store 映射测试
+- [x] Step 1: 写 eget store 映射测试
 
 在 `internal/xenv/manager/eget_store_test.go`：
 
@@ -739,7 +739,7 @@ func TestEgetStoreSourceListsSDKs(t *testing.T) {
 }
 ```
 
-- [ ] Step 2: 运行测试确认失败
+- [x] Step 2: 运行测试确认失败
 
 Run:
 
@@ -749,7 +749,7 @@ go test ./internal/xenv/manager -run TestEgetStoreSourceListsSDKs -count=1
 
 Expected: fail，`EgetStoreSource` 未定义。
 
-- [ ] Step 3: 实现 eget store source
+- [x] Step 3: 实现 eget store source
 
 在 `internal/xenv/manager/eget_store.go` 实现读取结构：
 
@@ -774,7 +774,7 @@ type egetInstalledStore struct {
 
 返回 `[]models.InstalledSDK`，`Source: "eget"`。
 
-- [ ] Step 4: 实现合并来源
+- [x] Step 4: 实现合并来源
 
 在 `SDKManager` 增加：
 
@@ -788,7 +788,7 @@ type egetInstalledStore struct {
 - 同名同版本重复时保留 eget。
 - eget store 缺失或损坏时返回 xenv index，并记录 warning。
 
-- [ ] Step 5: 运行测试
+- [x] Step 5: 运行测试
 
 Run:
 
@@ -798,7 +798,7 @@ go test ./internal/xenv/manager -count=1
 
 Expected: pass。
 
-- [ ] Step 6: 提交
+- [x] Step 6: 提交
 
 ```bash
 git add internal/xenv/manager
