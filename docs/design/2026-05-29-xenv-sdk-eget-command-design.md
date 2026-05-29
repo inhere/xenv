@@ -300,6 +300,12 @@ install_hint = "eget install --add --name buf bufbuild/buf"
 
 但第一版只实现简单 map，避免把 `.xenv.toml` 复杂化。
 
+已确认决策：
+
+- `.xenv.toml [tools]` 第一版只支持简单 map。
+- 第一版不支持 `[tools.<name>]` table 写法。
+- table 写法作为后续扩展保留，不进入第一版实现范围。
+
 ### tools 与 eget 的关系
 
 `.xenv.toml [tools]` 不依赖 `eget_enable`。
@@ -368,6 +374,7 @@ xenv
     list [name]
     show <name>
     where <sdk:version>
+    which <sdk:version>
   check
     sdk
     tools
@@ -450,13 +457,17 @@ xenv sdk show go
 
 ```bash
 xenv sdk where go:1.22
+xenv sdk which go:1.22
 ```
 
-输出匹配到的 SDK 安装目录。可选增加 `--bin` 输出 bin 目录：
+二者等价，输出匹配到的 SDK 安装目录。可选增加 `--bin` 输出 bin 目录：
 
 ```bash
 xenv sdk where --bin go:1.22
+xenv sdk which --bin go:1.22
 ```
+
+`which` 是 `where` 的 alias，不引入新行为。
 
 `refresh` 强调刷新本地可用 SDK 列表，`scan` 强调重新扫描安装目录。二者都是 `index` 的别名，不引入新行为。
 
@@ -596,6 +607,12 @@ source_project_scripts: false
 - `.envrc` / `.envrc.ps1` 不作为 xenv 的主命名。
 - 原因是 `.envrc` 已经是 direnv 的强约定，用户会预期由 direnv 管理；xenv 如果默认接管 `.envrc`，容易和 direnv 行为、信任模型、allow 机制混淆。
 - 后续如确实需要兼容 `.envrc`，应通过单独配置开启，例如 `source_envrc: false`，并明确文档说明它是兼容模式。
+
+已确认决策：
+
+- `source_project_scripts` 默认关闭。
+- 只有配置 `source_project_scripts: true` 后才允许 shell hook source `.xenv.sh` / `.xenv.ps1`。
+- 即使启用，也要求同目录存在 `.xenv.toml`，否则不 source 项目脚本。
 
 ## 与 eget 的用户工作流
 
@@ -824,6 +841,7 @@ internal/xenv/tools/version.go
 - `xenv sdk index` 可运行。
 - `xenv sdk refresh` 行为等价于 `xenv sdk index`。
 - `xenv sdk scan` 行为等价于 `xenv sdk index`。
+- `xenv sdk which` 行为等价于 `xenv sdk where`。
 - `xenv tools --help` 应返回未知命令。
 - `xenv check tools` 可检查 `.xenv.toml [tools]`。
 - `xenv use go:1.22` 在只存在 xenv 本地索引时可激活。
@@ -848,6 +866,7 @@ go run ./cmd/xenv sdk index
 go run ./cmd/xenv sdk refresh
 go run ./cmd/xenv sdk scan
 go run ./cmd/xenv sdk list
+go run ./cmd/xenv sdk which go:1.22
 go run ./cmd/xenv check tools
 ```
 
@@ -881,5 +900,4 @@ go run ./cmd/xenv check tools
 
 ## 待确认决策
 
-1. `.xenv.toml [tools]` 第一版是否只支持简单 map，不支持 table 写法。
-2. `source_project_scripts` 是否默认关闭，并要求 `.xenv.toml` 存在才 source 项目脚本。
+当前设计决策已确认完毕，后续进入实现计划前如发现新的风险，再单独补充。
