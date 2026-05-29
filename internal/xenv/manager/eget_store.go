@@ -72,9 +72,6 @@ func (s EgetStoreSource) ListSDKVersions(name string) ([]models.InstalledSDK, er
 func (s EgetStoreSource) load() (*egetInstalledStore, error) {
 	data, err := os.ReadFile(s.Path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return &egetInstalledStore{}, nil
-		}
 		return nil, err
 	}
 
