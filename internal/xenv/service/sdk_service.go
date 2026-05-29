@@ -52,12 +52,16 @@ func (ts *SDKService) ListSDKs(showAll bool) error {
 		fmt.Printf("  - InstallDir: %s\n", sdkCfg.InstallDir)
 
 		locals := ts.sdks.ListSDKVersions(sdkCfg.Name)
-		fmt.Print("  - Installed: ")
 		if len(locals) == 0 {
+			if !showAll {
+				continue
+			}
+			fmt.Print("  - Installed: ")
 			ccolor.Cyanln("None")
 			continue
 		}
 
+		fmt.Print("  - Installed: ")
 		for _, local := range locals {
 			ccolor.Infof("%s ", local.Version)
 		}
@@ -148,7 +152,7 @@ func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*m
 			}
 		}
 
-		actParams.AddSdk(spec.Name, spec.Version)
+		actParams.AddSdk(spec.Name, localSDK.Version)
 		actParams.AddPath(localSDK.BinDirPath())
 		if len(localSDK.Config.ActiveEnv) > 0 {
 			actParams.AddSetEnvs(localSDK.RenderActiveEnv())

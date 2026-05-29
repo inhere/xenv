@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -90,12 +91,38 @@ func TestSetupDirenvDetectsProjectRootGoModFromSubdirectory(t *testing.T) {
 	}
 }
 
+func TestActivateSDKsStoresMatchedVersion(t *testing.T) {
+	tempHome, projectDir, svc, state := newDirenvTestService(t, "test-real-version", nil)
+
+	if _, err := svc.ActivateSDKs([]string{"go:1.24"}, models.OpFlagSession); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := state.Merged().SDKs["go"]; got != "1.24.0" {
+		t.Fatalf("merged go version = %q, want %q", got, "1.24.0")
+	}
+
+	sessionID := xenvcom.SessionIDForDir(projectDir)
+	stateFile := filepath.Join(tempHome, ".config", "xenv", "session", sessionID+".json")
+	data, err := os.ReadFile(stateFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved models.ActivityState
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatal(err)
+	}
+	if got := saved.SDKs["go"]; got != "1.24.0" {
+		t.Fatalf("saved go version = %q, want %q", got, "1.24.0")
+	}
+}
+
 func newDirenvTestService(t *testing.T, sessionID string, setupProject func(projectDir string)) (tempHome, projectDir string, svc *SDKService, state *manager.StateManager) {
 	t.Helper()
 
 	tempHome = t.TempDir()
 	projectDir = t.TempDir()
-	installDir := filepath.Join(tempHome, "tools", "go", "1.24")
+	installDir := filepath.Join(tempHome, "tools", "go", "1.24.0")
 
 	t.Setenv("HOME", tempHome)
 	t.Setenv("USERPROFILE", tempHome)
@@ -128,9 +155,9 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 	if err := jsonutil.WritePretty(localToolsFile, &models.SDKLocalIndex{
 		Schema: 1,
 		SDKs: []models.InstalledSDK{{
-			ID:         "go:1.24",
+			ID:         "go:1.24.0",
 			Name:       "go",
-			Version:    "1.24",
+			Version:    "1.24.0",
 			InstallDir: installDir,
 		}},
 	}); err != nil {

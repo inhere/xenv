@@ -22,7 +22,7 @@ func Init() error {
 		return fmt.Errorf("failed to initialize state manager: %w", err)
 	}
 
-	if err := sdkMgr.Init(config.Config()); err != nil {
+	if err := SDKMgr().Init(config.Config()); err != nil {
 		return fmt.Errorf("failed to initialize sdk manager: %w", err)
 	}
 	return nil
@@ -40,9 +40,12 @@ func InitState() error {
 	return stateMgr.Init()
 }
 
-var sdkMgr = manager.NewSDKManager(config.DefaultPaths().SDKLocalIndexFile)
+var sdkMgr *manager.SDKManager
 
 func SDKMgr() *manager.SDKManager {
+	if sdkMgr == nil {
+		sdkMgr = manager.NewSDKManager(config.DefaultPaths().SDKLocalIndexFile)
+	}
 	return sdkMgr
 }
 
@@ -50,7 +53,7 @@ func SDKService() (*service.SDKService, error) {
 	if err := Init(); err != nil {
 		return nil, err
 	}
-	return service.NewSDKService(config.Config(), stateMgr, sdkMgr), nil
+	return service.NewSDKService(config.Config(), stateMgr, SDKMgr()), nil
 }
 
 func EnvService() (*service.EnvService, error) {
