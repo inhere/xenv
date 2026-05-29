@@ -475,11 +475,11 @@ git commit -m "refactor: replace tool index with sdk index"
 - Delete: `internal/xenv/tools/uninstaller.go`
 - Test: `go test ./internal/xenv/service ./internal/xenv/sdk`
 
-- [ ] Step 1: 先移动版本测试
+- [x] Step 1: 先移动版本测试
 
 将 `internal/xenv/tools/version_test.go` 移到 `internal/xenv/sdk/version_test.go`，包名改为 `sdk`。
 
-- [ ] Step 2: 运行测试确认失败
+- [x] Step 2: 运行测试确认失败
 
 Run:
 
@@ -489,11 +489,11 @@ go test ./internal/xenv/sdk -count=1
 
 Expected: fail，`ParseVersionSpec` 未定义。
 
-- [ ] Step 3: 移动版本实现
+- [x] Step 3: 移动版本实现
 
 将 `internal/xenv/tools/version.go` 移到 `internal/xenv/sdk/version.go`，包名改为 `sdk`。
 
-- [ ] Step 4: 新建 SDKService
+- [x] Step 4: 新建 SDKService
 
 从 `ToolService` 提取保留能力到 `internal/xenv/service/sdk_service.go`：
 
@@ -524,7 +524,7 @@ type SDKService struct {
 - `UpdateTool`
 - `Uninstall`
 
-- [ ] Step 5: 更新 xenv facade
+- [x] Step 5: 更新 xenv facade
 
 在 `internal/xenv/xenv.go`：
 
@@ -533,11 +533,11 @@ type SDKService struct {
 - `func SDKService() (*service.SDKService, error)`
 - 删除 `ToolMgr()` 和 `ToolService()`。
 
-- [ ] Step 6: 更新导入
+- [x] Step 6: 更新导入
 
 全仓把 `internal/xenv/tools` 的版本解析引用改成 `internal/xenv/sdk`。
 
-- [ ] Step 7: 删除下载实现
+- [x] Step 7: 删除下载实现
 
 删除：
 
@@ -548,7 +548,7 @@ internal/xenv/tools/uninstaller.go
 
 如果 `internal/xenv/tools` 目录空了，删除目录。
 
-- [ ] Step 8: 运行测试
+- [x] Step 8: 运行测试
 
 Run:
 
@@ -558,7 +558,7 @@ go test ./internal/xenv/sdk ./internal/xenv/service -count=1
 
 Expected: pass。
 
-- [ ] Step 9: 提交
+- [x] Step 9: 提交
 
 ```bash
 git add internal/xenv
@@ -576,7 +576,7 @@ git commit -m "refactor: rename tool service to sdk service"
 - Delete: `internal/cli/tools_cmd.go`
 - Test: `go test ./internal/cli`
 
-- [ ] Step 1: 更新 CLI 注册测试
+- [x] Step 1: 更新 CLI 注册测试
 
 修改 `internal/cli/app_test.go`：
 
@@ -612,7 +612,7 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 }
 ```
 
-- [ ] Step 2: 运行测试确认失败
+- [x] Step 2: 运行测试确认失败
 
 Run:
 
@@ -622,7 +622,7 @@ go test ./internal/cli -run TestNewAppRegistersTopLevelCommands -count=1
 
 Expected: fail，`sdk` 未注册或 `tools` 仍存在。
 
-- [ ] Step 3: 新增 sdk 命令
+- [x] Step 3: 新增 sdk 命令
 
 在 `internal/cli/sdk_cmd.go` 实现：
 
@@ -634,7 +634,7 @@ Expected: fail，`sdk` 未注册或 `tools` 仍存在。
 
 所有实现调用 `xenv.SDKService()`。
 
-- [ ] Step 4: 更新 app 注册
+- [x] Step 4: 更新 app 注册
 
 在 `internal/cli/app.go`：
 
@@ -642,7 +642,7 @@ Expected: fail，`sdk` 未注册或 `tools` 仍存在。
 - 新增 `SDKCmd`
 - Desc 改为 `Manage local development environments and SDK activation`。
 
-- [ ] Step 5: 更新 list 命令
+- [x] Step 5: 更新 list 命令
 
 在 `internal/cli/list_cmd.go`：
 
@@ -652,7 +652,7 @@ Expected: fail，`sdk` 未注册或 `tools` 仍存在。
 - 默认 `xenv list` 调用 `listSDKs()`
 - 文案从 tools 改为 SDKs
 
-- [ ] Step 6: 更新 use 命令
+- [x] Step 6: 更新 use 命令
 
 在 `internal/cli/use_cmd.go`：
 
@@ -660,11 +660,11 @@ Expected: fail，`sdk` 未注册或 `tools` 仍存在。
 - 变量从 `toolSvc` 改为 `sdkSvc`
 - 调用 `xenv.SDKService()`
 
-- [ ] Step 7: 删除旧 tools 命令
+- [x] Step 7: 删除旧 tools 命令
 
 删除 `internal/cli/tools_cmd.go`。
 
-- [ ] Step 8: 运行测试
+- [x] Step 8: 运行测试
 
 Run:
 
@@ -674,7 +674,7 @@ go test ./internal/cli -count=1
 
 Expected: pass。
 
-- [ ] Step 9: 提交
+- [x] Step 9: 提交
 
 ```bash
 git add internal/cli
