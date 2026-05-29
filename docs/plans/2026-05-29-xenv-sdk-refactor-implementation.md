@@ -257,7 +257,7 @@ git commit -m "refactor: centralize xenv config paths"
 - Modify: `internal/xenv/xenvcom/const.go`
 - Test: `go test ./internal/xenv/manager ./internal/xenv/models`
 
-- [ ] Step 1: 写 SDK 本地索引测试
+- [x] Step 1: 写 SDK 本地索引测试
 
 在 `internal/xenv/manager/sdk_manager_test.go` 中增加：
 
@@ -320,7 +320,7 @@ data, _ := os.ReadFile(indexFile)
 if strings.Contains(string(data), `"tools"`) { t.Fatal("unexpected tools field") }
 ```
 
-- [ ] Step 2: 运行测试确认失败
+- [x] Step 2: 运行测试确认失败
 
 Run:
 
@@ -330,7 +330,7 @@ go test ./internal/xenv/manager -run TestSDKManagerIndexLocalSDKsWritesSDKOnlyIn
 
 Expected: fail，`NewSDKManager` 或 `SDKLocalIndex` 未定义。
 
-- [ ] Step 3: 新增模型
+- [x] Step 3: 新增模型
 
 在 `internal/xenv/models/sdk_local.go`：
 
@@ -410,7 +410,7 @@ func (s *InstalledSDK) RenderActiveEnv() map[string]string {
 }
 ```
 
-- [ ] Step 4: 实现 SDKManager
+- [x] Step 4: 实现 SDKManager
 
 将 `internal/xenv/manager/tool_manager.go` 迁移为 `sdk_manager.go`：
 
@@ -426,7 +426,7 @@ func (s *InstalledSDK) RenderActiveEnv() map[string]string {
 
 索引文件路径由构造函数注入，生产代码传 `config.DefaultPaths().SDKLocalIndexFile`。
 
-- [ ] Step 5: 更新引用
+- [x] Step 5: 更新引用
 
 全仓替换：
 
@@ -437,7 +437,7 @@ func (s *InstalledSDK) RenderActiveEnv() map[string]string {
 - `ToolsLocal` -> `SDKLocalIndex`
 - `IndexLocalTools` -> `IndexLocalSDKs`
 
-- [ ] Step 6: 删除旧模型和 manager
+- [x] Step 6: 删除旧模型和 manager
 
 删除：
 
@@ -446,7 +446,7 @@ internal/xenv/models/tool_local.go
 internal/xenv/manager/tool_manager.go
 ```
 
-- [ ] Step 7: 运行测试
+- [x] Step 7: 运行测试
 
 Run:
 
@@ -456,7 +456,7 @@ go test ./internal/xenv/manager ./internal/xenv/models -count=1
 
 Expected: pass。
 
-- [ ] Step 8: 提交
+- [x] Step 8: 提交
 
 ```bash
 git add internal/xenv/models internal/xenv/manager internal/xenv/xenvcom/const.go
