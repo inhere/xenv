@@ -816,7 +816,7 @@ git commit -m "feat: read optional eget sdk store"
 - Modify: `internal/cli/list_cmd.go`
 - Test: `go test ./internal/xenv/service ./internal/cli`
 
-- [ ] Step 1: 写 `.xenv.toml [tools]` 检查测试
+- [x] Step 1: 写 `.xenv.toml [tools]` 检查测试
 
 在 `internal/xenv/service/check_service_test.go`：
 
@@ -860,7 +860,7 @@ func TestActivityStateUsesToolRequirementsField(t *testing.T) {
 }
 ```
 
-- [ ] Step 2: 运行测试确认失败
+- [x] Step 2: 运行测试确认失败
 
 Run:
 
@@ -870,7 +870,7 @@ go test ./internal/xenv/service -run 'TestParseToolRequirement|TestActivityState
 
 Expected: fail，`ParseToolRequirement` 或 `ToolRequirements` 未定义。
 
-- [ ] Step 3: 改 ActivityState
+- [x] Step 3: 改 ActivityState
 
 在 `internal/xenv/models/state.go`：
 
@@ -880,14 +880,14 @@ Expected: fail，`ParseToolRequirement` 或 `ToolRequirements` 未定义。
 - `DelTool` 改为 `DelToolRequirement`
 - `Merge` 和 `IsEmpty` 使用 `ToolRequirements`
 
-- [ ] Step 4: 更新 TOML updater
+- [x] Step 4: 更新 TOML updater
 
 在 `internal/xenv/manager/state_toml_update.go`：
 
 - `[tools]` 分支使用 `state.ToolRequirements`
 - `sections := []string{"envs", "sdks", "tools"}` 保留
 
-- [ ] Step 5: 实现 CheckService
+- [x] Step 5: 实现 CheckService
 
 在 `internal/xenv/service/check_service.go`：
 
@@ -896,7 +896,7 @@ Expected: fail，`ParseToolRequirement` 或 `ToolRequirements` 未定义。
 - 第一版 `CheckTools` 使用 `exec.LookPath`，版本检查只在 `xenv check tools` 时执行 `<tool> --version`。
 - 版本解析失败返回 warning。
 
-- [ ] Step 6: 新增 CLI check 命令
+- [x] Step 6: 新增 CLI check 命令
 
 在 `internal/cli/check_cmd.go`：
 
@@ -908,7 +908,7 @@ Expected: fail，`ParseToolRequirement` 或 `ToolRequirements` 未定义。
 
 同时在 `internal/cli/app.go` 注册 `CheckCmd`，并把 `internal/cli/app_test.go` 的顶层命令列表加入 `"check"`。
 
-- [ ] Step 7: 运行测试
+- [x] Step 7: 运行测试
 
 Run:
 
@@ -918,7 +918,7 @@ go test ./internal/xenv/service ./internal/cli -count=1
 
 Expected: pass。
 
-- [ ] Step 8: 提交
+- [x] Step 8: 提交
 
 ```bash
 git add internal/xenv/models internal/xenv/manager internal/xenv/service internal/cli
