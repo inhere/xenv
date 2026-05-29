@@ -1,4 +1,4 @@
-package tools
+package sdk
 
 import (
 	"errors"
@@ -67,7 +67,6 @@ func IsValidSDKName(name string) bool {
 		return false
 	}
 
-	// SDK名称只能包含字母、数字、下划线和连字符
 	for _, r := range name {
 		if !((r >= 'a' && r <= 'z') ||
 			(r >= 'A' && r <= 'Z') ||
@@ -86,13 +85,6 @@ func IsValidVersion(version string) bool {
 		return false
 	}
 
-	// 支持的版本格式：
-	// 1. 语义版本: 1.2.3, 1.2.3-alpha, 1.2.3+build
-	// 2. 主版本: 18, 16
-	// 3. 别名: lts, latest, stable
-	// 4. 自动检测: auto
-
-	// 简单验证：不能包含空格和特殊字符
 	invalidChars := []string{" ", "\t", "\n", "\r"}
 	for _, char := range invalidChars {
 		if strings.Contains(version, char) {
@@ -107,7 +99,6 @@ func IsValidVersion(version string) bool {
 func NormalizeVersion(version string) string {
 	version = strings.TrimSpace(version)
 
-	// 处理别名
 	switch strings.ToLower(version) {
 	case "lts":
 		return "lts"
@@ -123,9 +114,7 @@ func NormalizeVersion(version string) string {
 }
 
 // CompareVersions 比较两个版本号
-// 返回值: -1 表示 v1 < v2, 0 表示 v1 == v2, 1 表示 v1 > v2
 func CompareVersions(v1, v2 string) int {
-	// 简单的字符串比较，实际应该实现语义版本比较
 	if v1 == v2 {
 		return 0
 	}

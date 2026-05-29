@@ -29,7 +29,7 @@ func TestSetupDirenvDetectsGoModWithoutCreatingXenvToml(t *testing.T) {
 		t.Fatalf("expected .xenv.toml not to be created, stat err=%v", err)
 	}
 	sessionID := xenvcom.SessionIDForDir(projectDir)
-	if _, err := os.Stat(filepath.Join(tempHome, ".xenv", "session", sessionID+".json")); err != nil {
+	if _, err := os.Stat(filepath.Join(tempHome, ".config", "xenv", "session", sessionID+".json")); err != nil {
 		t.Fatalf("expected session state to be saved: %v", err)
 	}
 	if state.Nearest() != nil {
@@ -82,7 +82,7 @@ func TestSetupDirenvDetectsProjectRootGoModFromSubdirectory(t *testing.T) {
 		t.Fatalf("expected subdirectory .xenv.toml not to be created, stat err=%v", err)
 	}
 	sessionID := xenvcom.SessionIDForDir(projectDir)
-	if _, err := os.Stat(filepath.Join(tempHome, ".xenv", "session", sessionID+".json")); err != nil {
+	if _, err := os.Stat(filepath.Join(tempHome, ".config", "xenv", "session", sessionID+".json")); err != nil {
 		t.Fatalf("expected project-root session state to be saved: %v", err)
 	}
 	if state.Nearest() != nil {

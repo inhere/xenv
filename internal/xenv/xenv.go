@@ -46,6 +46,13 @@ func SDKMgr() *manager.SDKManager {
 	return sdkMgr
 }
 
+func SDKService() (*service.SDKService, error) {
+	if err := Init(); err != nil {
+		return nil, err
+	}
+	return service.NewSDKService(config.Config(), stateMgr, sdkMgr), nil
+}
+
 func EnvService() (*service.EnvService, error) {
 	// Initialize configuration
 	if err := config.Mgr.Init(); err != nil {
@@ -61,12 +68,9 @@ func EnvService() (*service.EnvService, error) {
 }
 
 func ToolService() (*service.ToolService, error) {
-	// Initialize configuration
 	if err := Init(); err != nil {
 		return nil, err
 	}
 
-	// Create tool service
-	toolSvc := service.NewToolService(config.Config(), stateMgr, sdkMgr)
-	return toolSvc, nil
+	return service.NewToolService(config.Config(), stateMgr, sdkMgr), nil
 }
