@@ -163,3 +163,32 @@ func TestSDKManagerListMergedSDKVersionsFallsBackWhenEgetStoreMissing(t *testing
 		t.Fatalf("source = %q, want xenv", items[0].Source)
 	}
 }
+
+func TestSDKManagerListMergedSDKVersionsFallsBackWhenEgetStoreInvalid(t *testing.T) {
+	indexFile := filepath.Join(t.TempDir(), "sdks.local.json")
+	storeFile := filepath.Join(t.TempDir(), "sdk.installed.json")
+
+	localData := []byte(`{"schema":1,"sdks":[{"id":"go:1.23.0","name":"go","version":"1.23.0","install_dir":"D:/xenv/go1.23.0","source":"xenv"}]}`)
+	if err := os.WriteFile(indexFile, localData, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(storeFile, []byte("{bad json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	mgr := NewSDKManager(indexFile)
+	if err := mgr.Init(&models.Configuration{
+		EgetEnable:    true,
+		EgetStoreFile: storeFile,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	items := mgr.ListMergedSDKVersions("go")
+	if len(items) != 1 {
+		t.Fatalf("items = %d, want 1", len(items))
+	}
+	if items[0].Source != "xenv" {
+		t.Fatalf("source = %q, want xenv", items[0].Source)
+	}
+}

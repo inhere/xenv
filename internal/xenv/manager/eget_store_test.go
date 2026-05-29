@@ -42,7 +42,7 @@ func TestEgetStoreSourceListsSDKs(t *testing.T) {
 	}
 }
 
-func TestEgetStoreSourceMissingFileReturnsEmpty(t *testing.T) {
+func TestEgetStoreSourceEmptyPathReturnsEmpty(t *testing.T) {
 	src := EgetStoreSource{}
 
 	items, err := src.ListSDKVersions("go")
