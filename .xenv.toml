@@ -1,8 +1,9 @@
-paths = []
+
+paths = [
+]
 
 [sdks]
-  go = "1.24"
+go = "1.24"
 
 [envs]
-
 [tools]

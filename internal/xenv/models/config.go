@@ -6,8 +6,14 @@ type Configuration struct {
 	// ID              string                  `json:"id"`
 	// tools 可执行文件链接目录 默认: ~/.local/bin
 	BinDir string `json:"bin_dir"`
-	// 工具安装基础目录 默认: ~/.xenv/tools
-	InstallDir string `json:"install_dir"`
+	// 是否启用 eget SDK store 作为附加来源
+	EgetEnable bool `json:"eget_enable"`
+	// eget SDK store 文件路径
+	EgetStoreFile string `json:"eget_store_file"`
+	// direnv 激活时是否检查 [tools] 要求
+	CheckToolsOnDirenv bool `json:"check_tools_on_direnv"`
+	// direnv 激活时是否 source 项目脚本
+	SourceProjectScripts bool `json:"source_project_scripts"`
 	// 快速配置 shell 命令别名, 会自动注入到shell环境
 	ShellAliases map[string]string `json:"shell_aliases"`
 	// shell hooks 脚本目录。 默认: ~/.config/xenv/hooks/
@@ -16,16 +22,6 @@ type Configuration struct {
 	GlobalEnv map[string]string `json:"global_env"`
 	// 全局PATH条目 - 首次初始化生效，后续通过命令设置即可
 	GlobalPaths []string `json:"global_paths"`
-	// 从远程下载不同OS平台的工具包的后缀格式
-	// eg:
-	//
-	// 	download_ext:
-	// 	  windows: zip
-	// 	  linux: tar.gz
-	// 	  darwin: tar.gz
-	DownloadExt map[string]string `json:"download_ext"`
-	// 临时下载目录
-	DownloadDir string `json:"download_dir"`
 	// 设置了完整版本号，是否允许向上匹配版本 eg: 1.23.1
 	//
 	// default: 1 see xenvcom.UpMatchOne
@@ -38,8 +34,6 @@ type Configuration struct {
 	// 可管理的工具链列表
 	//  - sdks 和 tools 差异是：sdk 允许本地同时存在多个版本，tools 只允许一个版本
 	SDKs []ToolChain `json:"sdks"`
-	// 配置的简单工具列表
-	Tools []SimpleTool `json:"tools"`
 	// internal fields
 	configFile string
 	configDir  string

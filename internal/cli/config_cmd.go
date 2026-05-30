@@ -41,10 +41,9 @@ var ConfigCmd = &gcli.Command{
 		// Display current configuration
 		managedSdkKey := fmt.Sprintf("4. Managed SDKs(%d)", len(cfg.SDKs))
 		show.AList("【Current Xenv Configuration】:", map[string]any{
-			"1. Default Bin Dir":  cfg.BinDir,
-			"2. Tool Install Dir": cfg.InstallDir,
-			"3. Shell Hooks Dir":  cfg.ShellHooksDir,
-			managedSdkKey:         cfg.SDKNames(),
+			"1. Default Bin Dir": cfg.BinDir,
+			"2. Shell Hooks Dir": cfg.ShellHooksDir,
+			managedSdkKey:        cfg.SDKNames(),
 		})
 
 		return nil
@@ -78,8 +77,6 @@ func ConfigSetCmd() *gcli.Command {
 			switch name {
 			case "bin_dir":
 				cfgMgr.Config.BinDir = value
-			case "install_dir":
-				cfgMgr.Config.InstallDir = value
 			case "shell_hooks_dir":
 				cfgMgr.Config.ShellHooksDir = value
 			default:
@@ -118,8 +115,6 @@ func ConfigGetCmd() *gcli.Command {
 			switch name {
 			case "bin_dir":
 				value = cfgMgr.Config.BinDir
-			case "install_dir":
-				value = cfgMgr.Config.InstallDir
 			case "shell_hooks_dir":
 				value = cfgMgr.Config.ShellHooksDir
 			default:

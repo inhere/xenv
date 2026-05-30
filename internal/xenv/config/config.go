@@ -16,12 +16,6 @@ import (
 const (
 	// DefaultBinDir is the default directory for installed tools
 	DefaultBinDir = "~/.local/bin"
-	// DefaultInstallDir is the default directory for tool installation
-	DefaultInstallDir = "~/.xenv/tools"
-	// DefaultConfigDir is the default config directory for xenv
-	DefaultConfigDir = "~/.config/xenv/"
-	// DefaultShellHooksDir is the default directory for shell scripts
-	DefaultShellHooksDir = "~/.config/xenv/hooks/"
 )
 
 // Manager handles loading and saving configuration
@@ -39,26 +33,23 @@ func Config() *models.Configuration {
 
 // NewConfigManager creates a new ConfigManager with default configuration
 func NewConfigManager() *Manager {
+	paths := DefaultPaths()
 	return &Manager{
 		Config: &models.Configuration{
-			BinDir:        DefaultBinDir,
-			InstallDir:    DefaultInstallDir,
-			ShellHooksDir: DefaultShellHooksDir,
-			ShellAliases:  make(map[string]string),
+			BinDir:               DefaultBinDir,
+			EgetEnable:           false,
+			EgetStoreFile:        "",
+			CheckToolsOnDirenv:   false,
+			SourceProjectScripts: false,
+			ShellAliases:         make(map[string]string),
+			ShellHooksDir:        paths.ShellHooksDir,
 			// env
 			GlobalEnv:   make(map[string]string),
 			GlobalPaths: []string{},
-			// tools
-			SDKs:  []models.ToolChain{},
-			Tools: []models.SimpleTool{},
+			// sdk
+			SDKs: []models.ToolChain{},
 			// other
 			AllowUpMatch: xenvcom.UpMatchOne,
-			DownloadDir:  DefaultInstallDir + "/cache",
-			DownloadExt: map[string]string{
-				"windows": "zip",
-				"linux":   "tar.gz",
-				"darwin":  "tar.gz",
-			},
 		},
 	}
 }
@@ -87,7 +78,7 @@ func (cm *Manager) LoadConfig(configPath string) error {
 	// Load other configuration values like tools, global environment, etc.
 	err = cfg.Decode(&cm.Config)
 	cm.Config.SetConfigFile(configPath)
-	cm.Config.SetConfigDir(GetDefaultConfigDir())
+	cm.Config.SetConfigDir(filepath.Dir(configPath))
 	return err
 }
 
@@ -111,15 +102,9 @@ func (cm *Manager) SaveConfig(configPath string) error {
 
 // GetDefaultConfigPath returns the default configuration file path
 func GetDefaultConfigPath() string {
-	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, ".config", "xenv", "config.yaml")
+	return DefaultPaths().ConfigFile
 }
 
 func GetDefaultConfigDir() string {
-	// Get the config directory
-	homeDir, _ := os.UserHomeDir()
-	// if err != nil {
-	// 	return fmt.Errorf("failed to get user home directory: %w", err)
-	// }
-	return filepath.Join(homeDir, ".config", "xenv")
+	return DefaultPaths().ConfigDir
 }

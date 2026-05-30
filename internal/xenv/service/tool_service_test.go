@@ -1,8 +1,10 @@
 package service
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gookit/goutil/jsonutil"
@@ -29,7 +31,7 @@ func TestSetupDirenvDetectsGoModWithoutCreatingXenvToml(t *testing.T) {
 		t.Fatalf("expected .xenv.toml not to be created, stat err=%v", err)
 	}
 	sessionID := xenvcom.SessionIDForDir(projectDir)
-	if _, err := os.Stat(filepath.Join(tempHome, ".xenv", "session", sessionID+".json")); err != nil {
+	if _, err := os.Stat(filepath.Join(tempHome, ".config", "xenv", "session", sessionID+".json")); err != nil {
 		t.Fatalf("expected session state to be saved: %v", err)
 	}
 	if state.Nearest() != nil {
@@ -54,6 +56,115 @@ func TestSetupDirenvUsesExistingXenvTomlAsDirenvState(t *testing.T) {
 	}
 	if state.Nearest() == nil {
 		t.Fatal("expected existing .xenv.toml to be loaded as direnv state")
+	}
+}
+
+func TestSetupDirenvGeneratesEnvAndPathWithoutSDK(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-existing-env-path-no-sdk", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = [\"./bin\"]\n\n[envs]\n  foo = \"bar\"\n\n[tools]\n"
+		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsNormalized(script, "./bin") {
+		t.Fatalf("expected setup direnv script to add project path, got %q", script)
+	}
+	if !strings.Contains(script, "$Env:FOO='bar';") {
+		t.Fatalf("expected setup direnv script to set project env, got %q", script)
+	}
+}
+
+func TestSetupDirenvAppendsProjectScriptWithoutSDK(t *testing.T) {
+	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-no-sdk", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		if err := os.WriteFile(xenvToml, []byte("paths = []\n\n[envs]\n\n[tools]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDir, ".xenv.ps1"), []byte("# project hook\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+	svc.config.SourceProjectScripts = true
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `. "` + filepath.ToSlash(projectDir) + `/.xenv.ps1"`
+	if !containsNormalized(script, want) {
+		t.Fatalf("expected setup direnv script to source project pwsh script without SDK, want %q, got %q", want, script)
+	}
+}
+
+func TestSetupDirenvAppendsProjectScriptForPwsh(t *testing.T) {
+	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-pwsh", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		if err := os.WriteFile(xenvToml, []byte("paths = []\n\n[sdks]\n  go = \"1.24\"\n\n[envs]\n\n[tools]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDir, ".xenv.ps1"), []byte("# project hook\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+	svc.config.SourceProjectScripts = true
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `. "` + filepath.ToSlash(projectDir) + `/.xenv.ps1"`
+	if !containsNormalized(script, want) {
+		t.Fatalf("expected setup direnv script to source project pwsh script, want %q, got %q", want, script)
+	}
+}
+
+func TestSetupDirenvAppendsProjectScriptForBash(t *testing.T) {
+	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-bash", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		if err := os.WriteFile(xenvToml, []byte("paths = []\n\n[sdks]\n  go = \"1.24\"\n\n[envs]\n\n[tools]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDir, ".xenv.sh"), []byte("# project hook\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("XENV_HOOK_SHELL", "bash")
+		xenvcom.SetHookShell("bash")
+	})
+	svc.config.SourceProjectScripts = true
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `source "` + filepath.ToSlash(projectDir) + `/.xenv.sh"`
+	if !containsNormalized(script, want) {
+		t.Fatalf("expected setup direnv script to source project bash script, want %q, got %q", want, script)
+	}
+}
+
+func TestSetupDirenvSkipsProjectScriptWithoutDirenvState(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-no-direnv-script", func(projectDir string) {
+		if err := os.WriteFile(filepath.Join(projectDir, "go.mod"), []byte("module example.com/test\n\ngo 1.24\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(projectDir, ".xenv.ps1"), []byte("# project hook\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+	svc.config.SourceProjectScripts = true
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsNormalized(script, ".xenv.ps1") || containsNormalized(script, ".xenv.sh") {
+		t.Fatalf("expected setup direnv script not to source project script without direnv state, got %q", script)
 	}
 }
 
@@ -82,7 +193,7 @@ func TestSetupDirenvDetectsProjectRootGoModFromSubdirectory(t *testing.T) {
 		t.Fatalf("expected subdirectory .xenv.toml not to be created, stat err=%v", err)
 	}
 	sessionID := xenvcom.SessionIDForDir(projectDir)
-	if _, err := os.Stat(filepath.Join(tempHome, ".xenv", "session", sessionID+".json")); err != nil {
+	if _, err := os.Stat(filepath.Join(tempHome, ".config", "xenv", "session", sessionID+".json")); err != nil {
 		t.Fatalf("expected project-root session state to be saved: %v", err)
 	}
 	if state.Nearest() != nil {
@@ -90,12 +201,97 @@ func TestSetupDirenvDetectsProjectRootGoModFromSubdirectory(t *testing.T) {
 	}
 }
 
-func newDirenvTestService(t *testing.T, sessionID string, setupProject func(projectDir string)) (tempHome, projectDir string, svc *ToolService, state *manager.StateManager) {
+func TestActivateSDKsStoresMatchedVersion(t *testing.T) {
+	tempHome, projectDir, svc, state := newDirenvTestService(t, "test-real-version", nil)
+
+	if _, err := svc.ActivateSDKs([]string{"go:1.24"}, models.OpFlagSession); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := state.Merged().SDKs["go"]; got != "1.24.0" {
+		t.Fatalf("merged go version = %q, want %q", got, "1.24.0")
+	}
+
+	sessionID := xenvcom.SessionIDForDir(projectDir)
+	stateFile := filepath.Join(tempHome, ".config", "xenv", "session", sessionID+".json")
+	data, err := os.ReadFile(stateFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved models.ActivityState
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatal(err)
+	}
+	if got := saved.SDKs["go"]; got != "1.24.0" {
+		t.Fatalf("saved go version = %q, want %q", got, "1.24.0")
+	}
+}
+
+func TestWhereSDKUsesXenvIndexWhenEgetHasSameVersion(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-where-xenv-source", nil)
+	svc.config.EgetEnable = true
+	svc.sdks.SetEgetSource(manager.EgetStoreSource{
+		Path: writeTestEgetStore(t, "go", "1.24.0", "D:/eget/go1.24.0"),
+	})
+
+	got, err := svc.WhereSDK("go:1.24.0", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.ToSlash(got) == "D:/eget/go1.24.0" {
+		t.Fatalf("WhereSDK should use xenv local index for activation paths, got eget path %q", got)
+	}
+	if filepath.Base(got) != "1.24.0" {
+		t.Fatalf("WhereSDK() = %q, want local 1.24.0 path", got)
+	}
+}
+
+func TestWhereSDKUsesEgetWhenOnlyEgetHasVersion(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-where-eget-source", nil)
+	svc.config.EgetEnable = true
+	svc.sdks.SetEgetSource(manager.EgetStoreSource{
+		Path: writeTestEgetStore(t, "go", "1.25.0", "D:/eget/go1.25.0"),
+	})
+
+	got, err := svc.WhereSDK("go:1.25.0", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.ToSlash(got) != "D:/eget/go1.25.0" {
+		t.Fatalf("WhereSDK() = %q, want eget path", got)
+	}
+}
+
+func writeTestEgetStore(t *testing.T, name, version, installDir string) string {
+	t.Helper()
+
+	storeFile := filepath.Join(t.TempDir(), "sdk.installed.json")
+	data := []byte(`{
+	  "schema": 1,
+	  "installed": {
+	    "` + name + `": {
+	      "versions": {
+	        "` + version + `": {
+	          "name": "` + name + `",
+	          "version": "` + version + `",
+	          "path": "` + installDir + `"
+	        }
+	      }
+	    }
+	  }
+	}`)
+	if err := os.WriteFile(storeFile, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return storeFile
+}
+
+func newDirenvTestService(t *testing.T, sessionID string, setupProject func(projectDir string)) (tempHome, projectDir string, svc *SDKService, state *manager.StateManager) {
 	t.Helper()
 
 	tempHome = t.TempDir()
 	projectDir = t.TempDir()
-	installDir := filepath.Join(tempHome, "tools", "go", "1.24")
+	installDir := filepath.Join(tempHome, "tools", "go", "1.24.0")
 
 	t.Setenv("HOME", tempHome)
 	t.Setenv("USERPROFILE", tempHome)
@@ -121,18 +317,17 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 		setupProject(projectDir)
 	}
 
-	localToolsFile := filepath.Join(tempHome, ".xenv", "tools.local.json")
+	localToolsFile := filepath.Join(tempHome, ".config", "xenv", "sdks.local.json")
 	if err := os.MkdirAll(filepath.Dir(localToolsFile), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := jsonutil.WritePretty(localToolsFile, &models.ToolsLocal{
-		Version: "v1",
-		SDKs: []models.InstalledTool{{
-			ID:         "go:1.24",
+	if err := jsonutil.WritePretty(localToolsFile, &models.SDKLocalIndex{
+		Schema: 1,
+		SDKs: []models.InstalledSDK{{
+			ID:         "go:1.24.0",
 			Name:       "go",
-			Version:    "1.24",
+			Version:    "1.24.0",
 			InstallDir: installDir,
-			IsSDK:      true,
 		}},
 	}); err != nil {
 		t.Fatal(err)
@@ -147,9 +342,13 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 	if err := state.Init(); err != nil {
 		t.Fatal(err)
 	}
-	toolMgr := manager.NewToolManager()
+	toolMgr := manager.NewSDKManager(localToolsFile)
 	if err := toolMgr.Init(cfg); err != nil {
 		t.Fatal(err)
 	}
-	return tempHome, projectDir, NewToolService(cfg, state, toolMgr), state
+	return tempHome, projectDir, NewSDKService(cfg, state, toolMgr), state
+}
+
+func containsNormalized(s, substr string) bool {
+	return strings.Contains(filepath.ToSlash(s), filepath.ToSlash(substr))
 }

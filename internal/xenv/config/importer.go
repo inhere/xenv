@@ -64,12 +64,14 @@ func (i *Importer) importFromZip(importPath string) error {
 
 			// Unmarshal the configuration
 			var importedConfig struct {
-				BinDir        string            `json:"bin_dir"`
-				InstallDir    string            `json:"install_dir"`
-				ShellHooksDir string            `json:"shell_hooks_dir"`
-				Tools         []any             `json:"tools"` // Will be handled separately
-				GlobalEnv     map[string]string `json:"global_env"`
-				GlobalPaths   []string          `json:"global_paths"`
+				BinDir               string            `json:"bin_dir"`
+				EgetEnable           bool              `json:"eget_enable"`
+				EgetStoreFile        string            `json:"eget_store_file"`
+				CheckToolsOnDirenv   bool              `json:"check_tools_on_direnv"`
+				SourceProjectScripts bool              `json:"source_project_scripts"`
+				ShellHooksDir        string            `json:"shell_hooks_dir"`
+				GlobalEnv            map[string]string `json:"global_env"`
+				GlobalPaths          []string          `json:"global_paths"`
 			}
 
 			if err := json.Unmarshal(configData, &importedConfig); err != nil {
@@ -78,8 +80,13 @@ func (i *Importer) importFromZip(importPath string) error {
 
 			// Update the current configuration with imported values
 			i.configManager.Config.BinDir = importedConfig.BinDir
-			i.configManager.Config.InstallDir = importedConfig.InstallDir
+			i.configManager.Config.EgetEnable = importedConfig.EgetEnable
+			i.configManager.Config.EgetStoreFile = importedConfig.EgetStoreFile
+			i.configManager.Config.CheckToolsOnDirenv = importedConfig.CheckToolsOnDirenv
+			i.configManager.Config.SourceProjectScripts = importedConfig.SourceProjectScripts
 			i.configManager.Config.ShellHooksDir = importedConfig.ShellHooksDir
+			i.configManager.Config.GlobalEnv = importedConfig.GlobalEnv
+			i.configManager.Config.GlobalPaths = importedConfig.GlobalPaths
 
 			// For now, we'll store the raw JSON data and handle the conversion later
 			// In a real implementation, we would convert the interface{} values to proper structs
@@ -101,12 +108,14 @@ func (i *Importer) importFromJSON(importPath string) error {
 
 	// Unmarshal the configuration
 	var importedConfig struct {
-		BinDir        string                            `json:"bin_dir"`
-		InstallDir    string                            `json:"install_dir"`
-		ShellHooksDir string                            `json:"shell_hooks_dir"`
-		Tools         []interface{}                     `json:"tools"` // Will be handled separately
-		GlobalEnv     map[string]map[string]interface{} `json:"global_env"`
-		GlobalPaths   []interface{}                     `json:"global_paths"`
+		BinDir               string            `json:"bin_dir"`
+		EgetEnable           bool              `json:"eget_enable"`
+		EgetStoreFile        string            `json:"eget_store_file"`
+		CheckToolsOnDirenv   bool              `json:"check_tools_on_direnv"`
+		SourceProjectScripts bool              `json:"source_project_scripts"`
+		ShellHooksDir        string            `json:"shell_hooks_dir"`
+		GlobalEnv            map[string]string `json:"global_env"`
+		GlobalPaths          []string          `json:"global_paths"`
 	}
 
 	if err := json.Unmarshal(configData, &importedConfig); err != nil {
@@ -115,8 +124,13 @@ func (i *Importer) importFromJSON(importPath string) error {
 
 	// Update the current configuration with imported values
 	i.configManager.Config.BinDir = importedConfig.BinDir
-	i.configManager.Config.InstallDir = importedConfig.InstallDir
+	i.configManager.Config.EgetEnable = importedConfig.EgetEnable
+	i.configManager.Config.EgetStoreFile = importedConfig.EgetStoreFile
+	i.configManager.Config.CheckToolsOnDirenv = importedConfig.CheckToolsOnDirenv
+	i.configManager.Config.SourceProjectScripts = importedConfig.SourceProjectScripts
 	i.configManager.Config.ShellHooksDir = importedConfig.ShellHooksDir
+	i.configManager.Config.GlobalEnv = importedConfig.GlobalEnv
+	i.configManager.Config.GlobalPaths = importedConfig.GlobalPaths
 
 	// For now, we'll store the raw JSON data and handle the conversion later
 	// In a real implementation, we would convert the interface{} values to proper structs

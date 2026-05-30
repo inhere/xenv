@@ -71,19 +71,18 @@ func NewShellCmd() *gcli.Command {
 				return err
 			}
 
-			// Create env service
-			toolSvc, err := xenv.ToolService()
+			sdkSvc, err := xenv.SDKService()
 			if err != nil {
 				return err
 			}
 
 			// 自动安装钩子脚本到 user shell 配置文件
 			if shellOpts.Install {
-				return toolSvc.WriteHookToProfile(shellType, shellOpts.Profile)
+				return sdkSvc.WriteHookToProfile(shellType, shellOpts.Profile)
 			}
 
 			// 生成钩子脚本
-			hookScript, err := toolSvc.GenHookScripts(shellType)
+			hookScript, err := sdkSvc.GenHookScripts(shellType)
 			if err != nil {
 				return err
 			}
@@ -159,13 +158,12 @@ func ShellDirenvCmd() *gcli.Command {
 			c.VarOpt(&direnvOpts.Type, "type", "t", "Shell type (bash, zsh, pwsh, cmd)")
 		},
 		Func: func(c *gcli.Command, args []string) error {
-			// Create tool service
-			toolSvc, err := xenv.ToolService()
+			sdkSvc, err := xenv.SDKService()
 			if err != nil {
 				return err
 			}
 
-			script, err1 := toolSvc.SetupDirenv()
+			script, err1 := sdkSvc.SetupDirenv()
 			if err1 == nil {
 				shell.OutputScript(script)
 			}

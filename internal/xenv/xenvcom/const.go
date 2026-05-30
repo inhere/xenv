@@ -14,12 +14,12 @@ const (
 	GlobalStateFile = "~/.config/xenv/global.toml"
 	// LocalStateFile local state file path
 	LocalStateFile = ".xenv.toml"
-	// SessionStateDir 当前SHELL会话状态文件目录 eg: ~/.xenv/session/<session_id>.json
-	SessionStateDir = "~/.xenv/session"
+	// SessionStateDir 当前SHELL会话状态文件目录 eg: ~/.config/xenv/session/<session_id>.json
+	SessionStateDir = "~/.config/xenv/session"
 )
 
 const (
-	InstalledMetaFile = "~/.xenv/tools.local.json"
+	InstalledMetaFile = "~/.config/xenv/sdks.local.json"
 )
 
 // 升级匹配级别 see config#AllowUpMatch

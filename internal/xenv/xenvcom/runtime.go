@@ -7,7 +7,7 @@ package xenvcom
 var BinCommand = "xenv"
 
 // BinName is the executable name used for availability checks in shell hooks.
-var BinName = "kite"
+var BinName = "xenv"
 
 // SetBinCommand sets the command used inside generated shell hooks.
 func SetBinCommand(command string) {

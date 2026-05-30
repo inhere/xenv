@@ -1,0 +1,9 @@
+xenv
+*.exe
+xenv-*
+.claude/
+.agents/
+.worktrees/
+.xenv.toml
+dist/
+tmp/
