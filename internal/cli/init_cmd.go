@@ -10,7 +10,7 @@ import (
 	"github.com/inhere/xenv/internal/xenv/config"
 )
 
-// InitCmd the xenv init command
+// InitCmd the xenv config init command
 var InitCmd = &gcli.Command{
 	Name: "init",
 	Desc: "Initialize xenv configuration and environment",

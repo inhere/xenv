@@ -18,7 +18,6 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 		"path",
 		"config",
 		"list",
-		"init",
 		"shell",
 		"shell-init-hook",
 		"shell-direnv",
@@ -30,6 +29,16 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 
 	if app.HasCommand("tools") {
 		t.Fatalf("tools command must not be registered")
+	}
+	if app.HasCommand("init") {
+		t.Fatalf("init command must be registered under config, not at top level")
+	}
+	configCmd := app.GetCommand("config")
+	if configCmd == nil {
+		t.Fatal("expected config command to be registered")
+	}
+	if configCmd.Commands()["init"] == nil {
+		t.Fatalf("expected config command to register init subcommand")
 	}
 
 	if app.ResolveAlias("init-direnv") != "shell-direnv" {

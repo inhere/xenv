@@ -18,6 +18,7 @@ var ConfigCmd = &gcli.Command{
 	Desc:    "Manage xenv configuration",
 	Aliases: []string{"cfg"},
 	Subs: []*gcli.Command{
+		InitCmd,
 		ConfigSetCmd(),
 		ConfigGetCmd(),
 		ConfigExportCmd(),

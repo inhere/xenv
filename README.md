@@ -21,7 +21,7 @@ go install github.com/inhere/xenv/cmd/xenv@latest
 Initialize configuration:
 
 ```bash
-xenv init
+xenv config init
 ```
 
 Enable shell integration.
