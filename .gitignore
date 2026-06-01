@@ -1,4 +1,4 @@
-xenv
+/xenv
 *.exe
 xenv-*
 .claude/

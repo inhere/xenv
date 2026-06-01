@@ -35,28 +35,22 @@ func NewShellCmd() *gcli.Command {
 <cyan>Auto Configure:</>
   # pwsh
   xenv shell --install -t pwsh --profile $PROFILE.CurrentUserAllHosts
-  xenv shell --install -t pwsh --profile $PROFILE.CurrentUserAllHosts
   # bash, zsh
-  xenv shell --install -t $SHELL
   xenv shell --install -t $SHELL
 
 <cyan>Config for Bash:</>
   // write to .bashrc OR .bash_profile
   eval "$(xenv shell --type bash)"
-  eval "$(xenv shell --type bash)"
 
 <cyan>Config for Zsh:</>
   // write to .zshrc OR .zsh_profile
-  eval "$(xenv shell --type zsh)"
   eval "$(xenv shell --type zsh)"
 
 <cyan>Config for Pwsh:</>
   # write expr to profile. (find by: echo $PROFILE.CurrentUserAllHosts)
   # Method 1:
   Invoke-Expression (&xenv shell --type pwsh)
-  Invoke-Expression (&xenv shell --type pwsh)
   # Method 2:
-  xenv shell --type pwsh | Out-String | Invoke-Expression
   xenv shell --type pwsh | Out-String | Invoke-Expression
 `,
 		Config: func(c *gcli.Command) {
