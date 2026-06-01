@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gookit/gcli/v3"
@@ -38,6 +39,14 @@ func NewApp() *gcli.App {
 			DefVal: xenvcom.DebugMode,
 		})
 		return false
+	})
+	app.On(events.OnAppRunError, func(ctx *gcli.HookCtx) bool {
+		if errV := ctx.Get("err"); errV != nil {
+			if err, ok := errV.(error); ok {
+				_, _ = fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+			}
+		}
+		return true
 	})
 
 	app.Add(

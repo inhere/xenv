@@ -73,7 +73,7 @@ func NewShellCmd() *gcli.Command {
 
 			sdkSvc, err := xenv.SDKService()
 			if err != nil {
-				return err
+				return errorx.Failf(1, "%v", err)
 			}
 
 			// 自动安装钩子脚本到 user shell 配置文件
@@ -84,7 +84,7 @@ func NewShellCmd() *gcli.Command {
 			// 生成钩子脚本
 			hookScript, err := sdkSvc.GenHookScripts(shellType)
 			if err != nil {
-				return err
+				return errorx.Failf(1, "%v", err)
 			}
 
 			fmt.Print(hookScript)

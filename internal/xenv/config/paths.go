@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const EnvConfigDir = "XENV_CONFIG_DIR"
@@ -18,7 +19,7 @@ type Paths struct {
 
 func ResolveDir(homeFn func() (string, error)) string {
 	if dir := os.Getenv(EnvConfigDir); dir != "" {
-		return filepath.Clean(dir)
+		return filepath.Clean(expandHome(dir, homeFn))
 	}
 	home, err := homeFn()
 	if err == nil && home != "" {
@@ -31,6 +32,22 @@ func ResolveDir(homeFn func() (string, error)) string {
 		return abs
 	}
 	return filepath.Join(os.TempDir(), "xenv")
+}
+
+func expandHome(path string, homeFn func() (string, error)) string {
+	if path == "~" {
+		if home, err := homeFn(); err == nil && home != "" {
+			return home
+		}
+		return path
+	}
+
+	if strings.HasPrefix(path, "~/") || strings.HasPrefix(path, `~\`) {
+		if home, err := homeFn(); err == nil && home != "" {
+			return filepath.Join(home, path[2:])
+		}
+	}
+	return path
 }
 
 func PathsForDir(dir string) Paths {

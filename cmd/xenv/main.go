@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/inhere/xenv/internal/cli"
 )
 
@@ -26,5 +28,5 @@ var (
 func main() {
 	cli.SetBuildInfo(Version, GitHash, BuildTime)
 
-	cli.NewApp().Run(nil)
+	os.Exit(cli.NewApp().Run(nil))
 }

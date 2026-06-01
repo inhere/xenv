@@ -31,6 +31,18 @@ func TestResolveDirUsesXenvConfigDir(t *testing.T) {
 	}
 }
 
+func TestResolveDirExpandsHomeInXenvConfigDir(t *testing.T) {
+	t.Setenv("XENV_CONFIG_DIR", "~/.config/xenv-dev")
+	home := t.TempDir()
+
+	dir := ResolveDir(func() (string, error) { return home, nil })
+
+	want := filepath.Join(home, ".config", "xenv-dev")
+	if dir != want {
+		t.Fatalf("ResolveDir() = %q, want %q", dir, want)
+	}
+}
+
 func TestResolveDirFallsBackToUserConfigDirWhenHomeFails(t *testing.T) {
 	t.Setenv("XENV_CONFIG_DIR", "")
 	base := t.TempDir()

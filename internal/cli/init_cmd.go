@@ -15,16 +15,8 @@ var InitCmd = &gcli.Command{
 	Name: "init",
 	Desc: "Initialize xenv configuration and environment",
 	Func: func(c *gcli.Command, args []string) error {
-		// Initialize configuration
-		// Initialize load config file
-		if err := config.Mgr.Init(); err != nil {
-			return fmt.Errorf("failed to load configuration: %w", err)
-		}
-
 		cfgMgr := config.Mgr
-		cfg := config.Mgr.Config
-		// c.Infoln("Loading config file:", cfg.ConfigFile())
-		configPath := cfg.ConfigFile()
+		configPath := config.GetDefaultConfigPath()
 
 		// Ensure config directory exists
 		configDir := filepath.Dir(configPath)
@@ -41,6 +33,9 @@ var InitCmd = &gcli.Command{
 			// If no existing config, save the default config
 			if err := cfgMgr.SaveConfig(configPath); err != nil {
 				return fmt.Errorf("failed to save default config: %w", err)
+			}
+			if err := cfgMgr.LoadConfig(configPath); err != nil {
+				return fmt.Errorf("failed to load created config: %w", err)
 			}
 			fmt.Printf("Created default configuration at: %s\n", configPath)
 		}
