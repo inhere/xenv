@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gookit/cliui/show"
@@ -111,21 +112,28 @@ func ConfigGetCmd() *gcli.Command {
 			cfgMgr := config.Mgr
 			name := c.Arg("name").String()
 
-			// Get the configuration value based on the name
-			var value string
-			switch name {
-			case "bin_dir":
-				value = cfgMgr.Config.BinDir
-			case "shell_hooks_dir":
-				value = cfgMgr.Config.ShellHooksDir
-			default:
-				return fmt.Errorf("unknown configuration option: %s", name)
+			value, ok := cfgMgr.GetValue(name)
+			if !ok {
+				return fmt.Errorf("config key %q not found", name)
 			}
 
-			fmt.Printf("%s=%s\n", name, value)
-			return nil
+			return printConfigGetValue(name, value)
 		},
 	}
+}
+
+func printConfigGetValue(name string, value any) error {
+	switch val := value.(type) {
+	case map[string]any, map[any]any, []any:
+		data, err := json.MarshalIndent(val, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to format config value %q: %w", name, err)
+		}
+		fmt.Printf("%s=%s\n", name, data)
+	default:
+		fmt.Printf("%s=%v\n", name, val)
+	}
+	return nil
 }
 
 // ConfigExportCmd command for exporting configuration

@@ -22,6 +22,7 @@ const (
 type Manager struct {
 	cfgInit bool
 	Config  *models.Configuration
+	store   *config.Config
 }
 
 // Mgr is the global ConfigManager instance
@@ -92,12 +93,21 @@ func (cm *Manager) LoadConfig(configPath string) error {
 	if err != nil {
 		return err
 	}
+	cm.store = cfg
 
 	// Load other configuration values like tools, global environment, etc.
 	err = cfg.Decode(&cm.Config)
 	cm.Config.SetConfigFile(configPath)
 	cm.Config.SetConfigDir(filepath.Dir(configPath))
 	return err
+}
+
+// GetValue returns a config value by key path, such as "sdks.0.name".
+func (cm *Manager) GetValue(key string) (any, bool) {
+	if cm.store == nil {
+		return nil, false
+	}
+	return cm.store.GetValue(key)
 }
 
 // SaveConfig saves the configuration to the specified file
