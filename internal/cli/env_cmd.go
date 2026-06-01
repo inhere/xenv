@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gookit/gcli/v3"
+	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/xenv/internal/xenv"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
@@ -25,6 +26,7 @@ var EnvCmd = &gcli.Command{
 		EnvUnsetCmd(),
 		EnvListCmd(),
 	},
+	Aliases: []string{"e"},
 	Func: func(c *gcli.Command, args []string) error {
 		return listEnvs()
 	},
@@ -36,11 +38,12 @@ var EnvCmd = &gcli.Command{
 //
 //	// pwsh
 //	$env:XENV_HOOK_SHELL="pwsh"; xenv set TEST003 value003
-func EnvSetCmd() *gcli.Command {
+func EnvSetCmd(desc ...string) *gcli.Command {
+	descStr := arrutil.FirstOr(desc, "Set an environment variable")
 	return &gcli.Command{
 		Name: "set",
 		Help: "set [-g] [-s|-d] <name> <value>",
-		Desc: "Set an environment variable",
+		Desc: descStr,
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&SaveDirenv, "direnv", "s,d", false, "Save change to direnv config .xenv.toml")
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Operate for global config")
@@ -80,11 +83,12 @@ func EnvSetCmd() *gcli.Command {
 }
 
 // EnvUnsetCmd command for unsetting environment variables
-func EnvUnsetCmd() *gcli.Command {
+func EnvUnsetCmd(desc ...string) *gcli.Command {
+	descStr := arrutil.FirstOr(desc, "Unset environment variables")
 	return &gcli.Command{
 		Name: "unset",
 		Help: "unset [-g] [-s|-d] <name...>",
-		Desc: "Unset environment variables",
+		Desc: descStr,
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&SaveDirenv, "direnv", "s,d", false, "Operate for direnv config .xenv.toml")
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Operate for global config")

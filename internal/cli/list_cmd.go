@@ -14,7 +14,7 @@ import (
 // ListCmd the xenv list command
 var ListCmd = &gcli.Command{
 	Name:    "list",
-	Desc:    "List installed SDKs, environment variables, or PATH entries",
+	Desc:    "List local SDKs, ENV variables, or PATH entries",
 	Aliases: []string{"ls"},
 	Subs: []*gcli.Command{
 		ListSDKCmd(),

@@ -18,6 +18,7 @@ var PathCmd = &gcli.Command{
 		PathListCmd(),
 		PathSearchCmd(),
 	},
+	Aliases: []string{"p"},
 	Func: func(c *gcli.Command, args []string) error {
 		return listEnvPaths()
 	},

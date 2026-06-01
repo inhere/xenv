@@ -43,7 +43,14 @@ run: build
 DIST_DIR := dist
 
 ## build-all: cross-compile for all platforms
-build-all: build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest-yaml
+build-all: dump-info build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest-yaml
+
+## dump-info: dump build info
+dump-info:
+	@echo "Build Info:"
+	@echo "  VERSION: $(VERSION)"
+	@echo "  GIT_HASH: $(GIT_HASH)"
+	@echo "  BUILD_TIME: $(BUILD_TIME)"
 
 ## latest-yaml: generate latest.yaml release metadata
 latest-yaml:
