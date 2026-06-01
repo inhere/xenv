@@ -1,11 +1,11 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	goyaml "github.com/goccy/go-yaml"
 	"github.com/gookit/config/v2"
 	"github.com/gookit/config/v2/toml"
 	"github.com/gookit/config/v2/yaml"
@@ -83,7 +83,7 @@ func (cm *Manager) EnsureConfig() (created bool, err error) {
 
 // LoadConfig loads configuration from the specified file
 func (cm *Manager) LoadConfig(configPath string) error {
-	cfg := config.New("xenv", config.WithTagName("json"))
+	cfg := config.New("xenv", config.WithTagName("json"), config.ParseEnv)
 	cfg.AddDriver(yaml.Driver)
 	cfg.AddDriver(toml.Driver)
 
@@ -108,10 +108,10 @@ func (cm *Manager) SaveConfig(configPath string) error {
 		return err
 	}
 
-	// Marshal the configuration to JSON
-	configData, err := json.MarshalIndent(cm.Config, "", "  ")
+	// Marshal the configuration to YAML
+	configData, err := goyaml.MarshalWithOptions(cm.Config, goyaml.Indent(2))
 	if err != nil {
-		return fmt.Errorf("failed to marshal configuration to JSON: %w", err)
+		return fmt.Errorf("failed to marshal configuration to YAML: %w", err)
 	}
 
 	// Write to the file
