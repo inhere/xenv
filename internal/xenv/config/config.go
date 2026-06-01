@@ -60,7 +60,25 @@ func (cm *Manager) Init() error {
 		return nil
 	}
 	cm.cfgInit = true
-	return cm.LoadConfig(GetDefaultConfigPath())
+	_, err := cm.EnsureConfig()
+	return err
+}
+
+func (cm *Manager) EnsureConfig() (created bool, err error) {
+	configPath := GetDefaultConfigPath()
+	if _, statErr := os.Stat(configPath); statErr == nil {
+		return false, cm.LoadConfig(configPath)
+	} else if !os.IsNotExist(statErr) {
+		return false, statErr
+	}
+
+	if err := cm.SaveConfig(configPath); err != nil {
+		return false, err
+	}
+	if err := cm.LoadConfig(configPath); err != nil {
+		return true, err
+	}
+	return true, nil
 }
 
 // LoadConfig loads configuration from the specified file

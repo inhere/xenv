@@ -18,7 +18,7 @@ go install github.com/inhere/xenv/cmd/xenv@latest
 
 ## Quick Start
 
-Initialize configuration:
+Configuration is created automatically on first use. To initialize it explicitly:
 
 ```bash
 xenv config init

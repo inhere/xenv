@@ -9,25 +9,42 @@ import (
 	"testing"
 )
 
-func TestShellCommandConfigErrorDoesNotPrintToStdout(t *testing.T) {
+func TestShellCommandCreatesMissingConfig(t *testing.T) {
+	configDir := t.TempDir()
 	repoRoot := filepath.Clean(filepath.Join("..", ".."))
 	cmd := exec.Command("go", "run", "./cmd/xenv", "shell", "--type", "bash")
 	cmd.Dir = repoRoot
 	cmd.Env = appendWithoutEnv(os.Environ(), "XENV_CONFIG_DIR", "NO_COLOR")
-	cmd.Env = append(cmd.Env, "XENV_CONFIG_DIR="+t.TempDir(), "NO_COLOR=1")
+	cmd.Env = append(cmd.Env, "XENV_CONFIG_DIR="+configDir, "NO_COLOR=1")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
-	if err == nil {
-		t.Fatalf("expected shell command to fail when config file is missing, stdout: %s", stdout.String())
+	if err != nil {
+		t.Fatalf("expected shell command to auto-create config, err=%v, stderr=%s", err, stderr.String())
 	}
-	if stdout.Len() > 0 {
-		t.Fatalf("expected config error not to be printed to stdout, got: %s", stdout.String())
+	if !strings.Contains(stdout.String(), "#!/usr/bin/env bash") {
+		t.Fatalf("expected shell command to print bash hook, got: %s", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "failed to initialize configuration") {
-		t.Fatalf("expected config error on stderr, got: %s", stderr.String())
+	if _, err := os.Stat(filepath.Join(configDir, "config.yaml")); err != nil {
+		t.Fatalf("expected shell command to create config.yaml: %v", err)
+	}
+}
+
+func TestHelpDoesNotCreateConfig(t *testing.T) {
+	configDir := t.TempDir()
+	cmd := exec.Command("go", "run", "./cmd/xenv", "--help")
+	cmd.Dir = filepath.Clean(filepath.Join("..", ".."))
+	cmd.Env = appendWithoutEnv(os.Environ(), "XENV_CONFIG_DIR", "NO_COLOR")
+	cmd.Env = append(cmd.Env, "XENV_CONFIG_DIR="+configDir, "NO_COLOR=1")
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("expected help to succeed, err=%v, output=%s", err, out)
+	}
+	if _, err := os.Stat(filepath.Join(configDir, "config.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("expected help not to create config.yaml, stat err=%v", err)
 	}
 }
 

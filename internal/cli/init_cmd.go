@@ -2,8 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/gookit/gcli/v3"
 	"github.com/inhere/xenv/internal/util"
@@ -16,28 +14,14 @@ var InitCmd = &gcli.Command{
 	Desc: "Initialize xenv configuration and environment",
 	Func: func(c *gcli.Command, args []string) error {
 		cfgMgr := config.Mgr
-		configPath := config.GetDefaultConfigPath()
-
-		// Ensure config directory exists
-		configDir := filepath.Dir(configPath)
-		if err := util.EnsureDir(configDir); err != nil {
-			return fmt.Errorf("failed to create config directory: %w", err)
+		created, err := cfgMgr.EnsureConfig()
+		if err != nil {
+			return fmt.Errorf("failed to initialize configuration: %w", err)
 		}
-
-		// Try to load existing config, if it exists
-		if _, err := os.Stat(configPath); err == nil {
-			if err := cfgMgr.LoadConfig(configPath); err != nil {
-				fmt.Printf("Warning: failed to load existing config: %v\n", err)
-			}
+		if created {
+			fmt.Printf("Created default configuration at: %s\n", cfgMgr.Config.ConfigFile())
 		} else {
-			// If no existing config, save the default config
-			if err := cfgMgr.SaveConfig(configPath); err != nil {
-				return fmt.Errorf("failed to save default config: %w", err)
-			}
-			if err := cfgMgr.LoadConfig(configPath); err != nil {
-				return fmt.Errorf("failed to load created config: %w", err)
-			}
-			fmt.Printf("Created default configuration at: %s\n", configPath)
+			fmt.Printf("Configuration already exists at: %s\n", cfgMgr.Config.ConfigFile())
 		}
 
 		// Ensure required directories exist
@@ -50,7 +34,7 @@ var InitCmd = &gcli.Command{
 		}
 
 		fmt.Println("Xenv initialization completed successfully!")
-		fmt.Printf("Configuration file: %s\n", configPath)
+		fmt.Printf("Configuration file: %s\n", cfgMgr.Config.ConfigFile())
 		fmt.Printf("Bin directory: %s\n", cfgMgr.Config.BinDir)
 		fmt.Printf("Shell scripts directory: %s\n", cfgMgr.Config.ShellHooksDir)
 
