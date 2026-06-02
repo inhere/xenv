@@ -379,7 +379,7 @@ SDK 字段说明：
 | `xenv shell --install -t <shell>` | 安装 Shell Hook 到配置文件 |
 | `xenv config` | 查看配置摘要 |
 | `xenv config get <name>` | 读取支持的配置项 |
-| `xenv config export <zip|json>` | 导出配置 |
+| `xenv config export <zip\|json>` | 导出配置 |
 
 别名：
 

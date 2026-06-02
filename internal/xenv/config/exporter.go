@@ -81,6 +81,12 @@ func (e *Exporter) exportToJSON(exportPath string) error {
 		return fmt.Errorf("failed to marshal configuration: %w", err)
 	}
 
+	// to STDOUT
+	if exportPath == "STDOUT" {
+		_, err = fmt.Println(string(configData))
+		return err
+	}
+
 	// Write the JSON to the file
 	if err := os.WriteFile(exportPath, configData, 0644); err != nil {
 		return fmt.Errorf("failed to write configuration to file: %w", err)

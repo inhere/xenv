@@ -389,7 +389,7 @@ SDK fields:
 | `xenv shell --install -t <shell>` | Install shell hook into a shell profile |
 | `xenv config` | Show configuration summary |
 | `xenv config get <name>` | Read a supported configuration value |
-| `xenv config export <zip|json>` | Export configuration |
+| `xenv config export <zip\|json>` | Export configuration |
 
 Aliases:
 

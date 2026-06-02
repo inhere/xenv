@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/gookit/cliui/show"
 	"github.com/gookit/gcli/v3"
@@ -138,11 +139,17 @@ func printConfigGetValue(name string, value any) error {
 
 // ConfigExportCmd command for exporting configuration
 func ConfigExportCmd() *gcli.Command {
+	var writeTo string
 	return &gcli.Command{
 		Name: "export",
 		Desc: "Export configuration",
 		Config: func(c *gcli.Command) {
-			c.AddArg("format", "export format, allow: zip, json").WithDefault("zip")
+			c.StrOpt(&writeTo, "to", "w", "stdout", `export configuration to the target.
+stdout     -  default output for json format.
+file       -  export to xenv_config_export.{format}, default for zip.
+file path  -  custom the export output target.
+			`)
+			c.AddArg("format", "export format, allow: zip, json").WithDefault("json")
 		},
 		Func: func(c *gcli.Command, args []string) error {
 			format := c.Arg("format").String()
@@ -155,11 +162,19 @@ func ConfigExportCmd() *gcli.Command {
 			if err := config.Mgr.Init(); err != nil {
 				return fmt.Errorf("failed to load configuration: %w", err)
 			}
-			cfgMgr := config.Mgr
 
 			// Create exporter
-			exporter := config.NewExporter(cfgMgr)
-			exportPath := "xenv_config_export." + format
+			exporter := config.NewExporter(config.Mgr)
+			exportPath := writeTo
+			switch strings.ToLower(writeTo) {
+			case "stdout":
+				exportPath = "STDOUT"
+				if format == "zip" {
+					exportPath = "xenv_config_export.zip"
+				}
+			case "file":
+				exportPath = "xenv_config_export." + format
+			}
 
 			// Export the configuration
 			if err := exporter.Export(exportPath, format); err != nil {
