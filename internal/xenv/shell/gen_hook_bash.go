@@ -78,7 +78,7 @@ invoke_xenv_result() {
 
                 # 后面部分当做代码执行
                 if [ -n "$expr_part" ]; then
-                    echo "expr_part: $expr_part"
+                    [ "$XENV_DEBUG_MODE" = "true" ] && echo "expr_part: $expr_part"
                     eval "$expr_part"
                 fi
                 # 前面部分直接输出

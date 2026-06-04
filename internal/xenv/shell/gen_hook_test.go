@@ -89,6 +89,17 @@ func TestGeneratedHooksSupportProjectScripts(t *testing.T) {
 	assertContains(t, pwsh, ".xenv.ps1")
 }
 
+func TestGeneratedBashHookOnlyPrintsExprPartInDebugMode(t *testing.T) {
+	params := &models.GenInitScriptParams{ShellHooksDir: "~/.config/xenv/hooks"}
+	script, err := NewScriptGenerator(Bash).GenHookScripts(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertNotContains(t, script, "                    echo \"expr_part: $expr_part\"\n")
+	assertContains(t, script, `[ "$XENV_DEBUG_MODE" = "true" ] && echo "expr_part: $expr_part"`)
+}
+
 func assertContains(t *testing.T, s, substr string) {
 	t.Helper()
 	if !strings.Contains(s, substr) {
