@@ -287,6 +287,10 @@ func (m *SDKManager) MatchSDKByNameAndVersion(name, version string) *models.Inst
 }
 
 func (m *SDKManager) MatchSDKByVersion(localSDKs []models.InstalledSDK, version string) *models.InstalledSDK {
+	if len(localSDKs) == 0 {
+		return nil
+	}
+
 	dotNum := strings.Count(version, ".")
 
 	if dotNum > 1 {

@@ -291,6 +291,17 @@ func TestWhereSDKUsesEgetWhenOnlyEgetHasVersion(t *testing.T) {
 	}
 }
 
+func TestWhereSDKWithoutVersionReturnsErrorWhenSDKHasNoVersions(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-where-empty-latest", nil)
+	svc.config.SDKs = append(svc.config.SDKs, models.ToolChain{Name: "node"})
+
+	if _, err := svc.WhereSDK("node", false); err == nil {
+		t.Fatal("expected missing SDK version error")
+	} else if !strings.Contains(err.Error(), "sdk node:latest is not installed locally") {
+		t.Fatalf("WhereSDK(node) error = %v", err)
+	}
+}
+
 func TestDeactivateSDKsUsesEgetSourceWhenOnlyEgetHasVersion(t *testing.T) {
 	_, _, svc, state := newDirenvTestService(t, "test-unuse-eget-source", nil)
 	svc.config.EgetEnable = true

@@ -86,6 +86,14 @@ func TestSDKManagerCanRetryLoadAfterFailure(t *testing.T) {
 	}
 }
 
+func TestSDKManagerMatchSDKByVersionLatestOnEmptyListReturnsNil(t *testing.T) {
+	mgr := NewSDKManager(filepath.Join(t.TempDir(), "sdks.local.json"))
+
+	if got := mgr.MatchSDKByVersion(nil, "latest"); got != nil {
+		t.Fatalf("MatchSDKByVersion(nil, latest) = %#v, want nil", got)
+	}
+}
+
 func TestSDKManagerListMergedSDKVersionsPrefersEget(t *testing.T) {
 	indexFile := filepath.Join(t.TempDir(), "sdks.local.json")
 	storeFile := filepath.Join(t.TempDir(), "sdk.installed.json")
