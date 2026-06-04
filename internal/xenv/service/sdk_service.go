@@ -340,6 +340,7 @@ func (ts *SDKService) DeactivateSDKs(deSDKs []string, opFlag models.OpFlag) (scr
 	}
 
 	var delPaths, delEnvs []string
+	var delSDKNames []string
 
 	for _, arg := range deSDKs {
 		spec, err2 := sdk.ParseVersionSpec(arg)
@@ -352,6 +353,7 @@ func (ts *SDKService) DeactivateSDKs(deSDKs []string, opFlag models.OpFlag) (scr
 			ccolor.Warnf("WARN: failed to deactivate sdk %q: %v", spec, err3)
 			continue
 		}
+		delSDKNames = append(delSDKNames, spec.Name)
 
 		if localSDK != nil {
 			delPaths = append(delPaths, localSDK.BinDirPath())
@@ -382,7 +384,7 @@ func (ts *SDKService) DeactivateSDKs(deSDKs []string, opFlag models.OpFlag) (scr
 		}
 	}
 
-	err = ts.state.DelSDKsWithEnvsPaths(deSDKs, delEnvs, delPaths, opFlag)
+	err = ts.state.DelSDKsWithEnvsPaths(delSDKNames, delEnvs, delPaths, opFlag)
 	if err != nil {
 		return "", err
 	}
@@ -397,7 +399,7 @@ func (ts *SDKService) checkDeactivateSDK(spec *models.VersionSpec, opFlag models
 		return nil, fmt.Errorf("sdk %s config is not defined", spec.Name)
 	}
 
-	localSDKs := ts.sdks.ListSDKVersions(sdkCfg.Name)
+	localSDKs := ts.sdks.ListMergedSDKVersions(sdkCfg.Name)
 	if len(localSDKs) == 0 {
 		return nil, fmt.Errorf("sdk %s is not installed locally", spec.Name)
 	}

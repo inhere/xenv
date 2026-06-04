@@ -262,6 +262,41 @@ func TestWhereSDKUsesEgetWhenOnlyEgetHasVersion(t *testing.T) {
 	}
 }
 
+func TestDeactivateSDKsUsesEgetSourceWhenOnlyEgetHasVersion(t *testing.T) {
+	_, _, svc, state := newDirenvTestService(t, "test-unuse-eget-source", nil)
+	svc.config.EgetEnable = true
+	svc.config.SDKs = append(svc.config.SDKs, models.ToolChain{Name: "node", BinDir: "bin"})
+	svc.sdks.SetEgetSource(manager.EgetStoreSource{
+		Path: writeTestEgetStore(t, "node", "22.22.3", "D:/eget/node22.22.3"),
+	})
+
+	useScript, err := svc.ActivateSDKs([]string{"node:22"}, models.OpFlagSession)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsNormalized(useScript, "D:/eget/node22.22.3/bin") {
+		t.Fatalf("expected use script to add eget node bin path, got %q", useScript)
+	}
+	if got := state.Merged().SDKs["node"]; got != "22.22.3" {
+		t.Fatalf("merged node version after use = %q, want %q", got, "22.22.3")
+	}
+
+	t.Setenv("PATH", filepath.FromSlash("D:/eget/node22.22.3/bin")+string(os.PathListSeparator)+filepath.FromSlash("D:/tools/keep"))
+	unuseScript, err := svc.DeactivateSDKs([]string{"node:22"}, models.OpFlagSession)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsNormalized(unuseScript, "D:/eget/node22.22.3/bin") {
+		t.Fatalf("expected unuse script to remove eget node bin path, got %q", unuseScript)
+	}
+	if !containsNormalized(unuseScript, "D:/tools/keep") {
+		t.Fatalf("expected unuse script to preserve other PATH entries, got %q", unuseScript)
+	}
+	if got := state.Merged().SDKs["node"]; got != "" {
+		t.Fatalf("merged node version after unuse = %q, want empty", got)
+	}
+}
+
 func writeTestEgetStore(t *testing.T, name, version, installDir string) string {
 	t.Helper()
 
