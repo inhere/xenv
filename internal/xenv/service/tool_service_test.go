@@ -59,6 +59,35 @@ func TestSetupDirenvUsesExistingXenvTomlAsDirenvState(t *testing.T) {
 	}
 }
 
+func TestSetupDirenvDoesNotRewriteExistingXenvTomlSDKVersion(t *testing.T) {
+	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-direnv-preserve-sdk-spec", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		if err := os.WriteFile(xenvToml, []byte("paths = []\n\n[sdks]\n  go = \"1.24\" # keep partial version\n\n[envs]\n\n[tools]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if script == "" {
+		t.Fatal("expected existing .xenv.toml to generate activation script")
+	}
+
+	data, err := os.ReadFile(filepath.Join(projectDir, ".xenv.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := string(data)
+	if !strings.Contains(contents, `go = "1.24" # keep partial version`) {
+		t.Fatalf("expected SetupDirenv to preserve existing SDK spec, got:\n%s", contents)
+	}
+	if strings.Contains(contents, `go = "1.24.0"`) {
+		t.Fatalf("expected SetupDirenv not to rewrite SDK spec to real version, got:\n%s", contents)
+	}
+}
+
 func TestSetupDirenvGeneratesEnvAndPathWithoutSDK(t *testing.T) {
 	_, _, svc, _ := newDirenvTestService(t, "test-existing-env-path-no-sdk", func(projectDir string) {
 		xenvToml := filepath.Join(projectDir, ".xenv.toml")

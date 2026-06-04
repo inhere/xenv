@@ -130,10 +130,10 @@ func (ts *SDKService) ActivateSDKs(useSDKs []string, opFlag models.OpFlag) (scri
 		return "", err1
 	}
 
-	return ts.activateSDKs(gen, sdkSpecs, opFlag)
+	return ts.activateSDKs(gen, sdkSpecs, opFlag, true)
 }
 
-func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*models.VersionSpec, opFlag models.OpFlag) (script string, err error) {
+func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*models.VersionSpec, opFlag models.OpFlag, saveState bool) (script string, err error) {
 	actParams := models.NewActivateSDKsParams()
 	actParams.OpFlag = opFlag
 
@@ -179,6 +179,9 @@ func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*m
 		ccolor.Warnln("TIP: The operation will not take effect, please setup the SHELL HOOK first.")
 	}
 
+	if !saveState {
+		return sb.String(), nil
+	}
 	if !isEmpty {
 		ts.state.SetBatchMode(true)
 		defer ts.state.SetBatchMode(false)
@@ -255,7 +258,8 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 		for _, spec := range specMap {
 			sdkSpecs = append(sdkSpecs, spec)
 		}
-		script, err := ts.activateSDKs(gen, sdkSpecs, opFlag)
+		saveState := opFlag != models.OpFlagDirenv || deState == nil
+		script, err := ts.activateSDKs(gen, sdkSpecs, opFlag, saveState)
 		if err != nil {
 			return "", err
 		}
