@@ -233,7 +233,7 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	deState := ts.state.Nearest()
 	if deState != nil && !deState.IsEmpty() {
 		opFlag = models.OpFlagDirenv
-		ccolor.Infof("Detect xenv state file: %s\n", deState.File)
+		xenvcom.Debugf("Detect xenv state file: %s\n", deState.File)
 		for name, ver := range deState.SDKs {
 			specMap[name] = &models.VersionSpec{
 				Name:    name,
