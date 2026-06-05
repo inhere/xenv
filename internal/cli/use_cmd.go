@@ -12,6 +12,7 @@ func NewUseCmd() *gcli.Command {
 		Name: "use",
 		Help: "use [-g] <name:version>...",
 		Desc: "Switch and activate different versions of SDK",
+		Aliases: []string{"u"},
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Global operation, not the current session")
 			c.BoolOpt(&SaveDirenv, "save", "s,d", false, "Save change to direnv config .xenv.toml")
@@ -40,6 +41,7 @@ func NewUnuseCmd() *gcli.Command {
 		Name: "unuse",
 		Help: "unuse [-g] <name:version>...",
 		Desc: "Deactivate specific SDK versions",
+		Aliases: []string{"un"},
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Global operation, not the current session")
 			c.BoolOpt(&SaveDirenv, "save", "s,d", false, "Save change to direnv config .xenv.toml")
