@@ -63,12 +63,13 @@ func NewApp() *gcli.App {
 		ShellDirenvCmd(),
 	)
 
+	envCategory := "Quick for Environment"
 	envSetCmd := EnvSetCmd()
 	envSetCmd.Desc = "Set an environment variable. equals to call `env set`"
-	envSetCmd.Category = "Env Commands"
+	envSetCmd.Category = envCategory
 	envUnsetCmd := EnvUnsetCmd()
 	envUnsetCmd.Desc = "Unset environment variables. equals to call `env unset`"
-	envUnsetCmd.Category = "Env Commands"
+	envUnsetCmd.Category = envCategory
 
 	app.Add(envSetCmd, envUnsetCmd)
 	return app

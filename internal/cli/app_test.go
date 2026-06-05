@@ -1,6 +1,35 @@
 package cli
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/gookit/color"
+	"github.com/gookit/goutil/byteutil"
+	"github.com/gookit/goutil/x/assert"
+)
+
+func TestApp_showVersion(t *testing.T) {
+	app := NewApp()
+	app.Version = "0.0.1"
+
+	buf := byteutil.NewBuffer()
+	color.SetOutput(buf)
+	defer color.ResetOutput()
+
+	t.Run("use flag -V", func(t *testing.T) {
+		code := app.RunArgs("-V")
+		assert.Equal(t, 0, code)
+		text := buf.ResetAndGet()
+		assert.StrContainsAll(t, text, []string{app.Desc, "Version", app.Version})
+	})
+
+	t.Run("use flag --version", func(t *testing.T) {
+		code := app.RunArgs("--version")
+		assert.Equal(t, 0, code)
+		text := buf.ResetAndGet()
+		assert.StrContainsAll(t, text, []string{app.Desc, "Version", app.Version})
+	})
+}
 
 func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 	app := NewApp()
