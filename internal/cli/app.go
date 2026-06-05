@@ -54,8 +54,6 @@ func NewApp() *gcli.App {
 		CheckCmd,
 		NewUseCmd(),
 		NewUnuseCmd(),
-		EnvSetCmd("Set an environment variable. equals to `env set`"),
-		EnvUnsetCmd("Unset environment variables. equals to `env unset`"),
 		EnvCmd,
 		PathCmd,
 		ConfigCmd,
@@ -64,6 +62,15 @@ func NewApp() *gcli.App {
 		ShellHookInitCmd(),
 		ShellDirenvCmd(),
 	)
+
+	envSetCmd := EnvSetCmd()
+	envSetCmd.Desc = "Set an environment variable. equals to call `env set`"
+	envSetCmd.Category = "Env Commands"
+	envUnsetCmd := EnvUnsetCmd()
+	envUnsetCmd.Desc = "Unset environment variables. equals to call `env unset`"
+	envUnsetCmd.Category = "Env Commands"
+
+	app.Add(envSetCmd, envUnsetCmd)
 	return app
 }
 
