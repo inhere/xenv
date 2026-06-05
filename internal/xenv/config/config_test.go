@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/inhere/xenv/internal/xenv/models"
 )
 
 func TestLoadConfigExpandsEnvValues(t *testing.T) {
@@ -65,5 +67,22 @@ sdks:
 
 	if _, ok := manager.GetValue("sdks.1.name"); ok {
 		t.Fatal("expected missing path key to return ok=false")
+	}
+}
+
+func TestFindSDKConfigSupportsAlias(t *testing.T) {
+	cfg := &models.Configuration{
+		SDKs: []models.ToolChain{{
+			Name:  "jdk",
+			Alias: "java",
+		}},
+	}
+
+	got := cfg.FindSDKConfig("java")
+	if got == nil {
+		t.Fatal("expected alias java to resolve jdk config")
+	}
+	if got.Name != "jdk" {
+		t.Fatalf("FindSDKConfig(java).Name = %q, want jdk", got.Name)
 	}
 }

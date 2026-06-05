@@ -256,6 +256,75 @@ func TestActivateSDKsStoresMatchedVersion(t *testing.T) {
 	}
 }
 
+func TestActivateSDKsResolvesAliasToConfiguredSDKName(t *testing.T) {
+	_, _, svc, state := newDirenvTestService(t, "test-activate-alias", nil)
+	svc.config.SDKs = append(svc.config.SDKs, models.ToolChain{
+		Name:  "jdk",
+		Alias: "java",
+	})
+	svc.config.EgetEnable = true
+	svc.sdks.SetEgetSource(manager.EgetStoreSource{
+		Path: writeTestEgetStore(t, "jdk", "17.0.19", "D:/env/sdks/jdk/zulu-17.0.19"),
+	})
+
+	script, err := svc.ActivateSDKs([]string{"java:17"}, models.OpFlagDirenv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsNormalized(script, "D:/env/sdks/jdk/zulu-17.0.19") {
+		t.Fatalf("expected activation script to contain jdk install path, got %q", script)
+	}
+	if got := state.Merged().SDKs["jdk"]; got != "17.0.19" {
+		t.Fatalf("merged jdk version = %q, want 17.0.19", got)
+	}
+	if got := state.Merged().SDKs["java"]; got != "" {
+		t.Fatalf("merged java alias version = %q, want empty", got)
+	}
+}
+
+func TestWhereSDKResolvesAliasToConfiguredSDKName(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-where-alias", nil)
+	svc.config.SDKs = append(svc.config.SDKs, models.ToolChain{
+		Name:  "jdk",
+		Alias: "java",
+	})
+	svc.config.EgetEnable = true
+	svc.sdks.SetEgetSource(manager.EgetStoreSource{
+		Path: writeTestEgetStore(t, "jdk", "17.0.19", "D:/env/sdks/jdk/zulu-17.0.19"),
+	})
+
+	got, err := svc.WhereSDK("java:17", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.ToSlash(got) != "D:/env/sdks/jdk/zulu-17.0.19" {
+		t.Fatalf("WhereSDK(java:17) = %q, want jdk install path", got)
+	}
+}
+
+func TestDeactivateSDKsResolvesAliasToConfiguredSDKName(t *testing.T) {
+	_, _, svc, state := newDirenvTestService(t, "test-unuse-alias", nil)
+	svc.config.SDKs = append(svc.config.SDKs, models.ToolChain{
+		Name:  "jdk",
+		Alias: "java",
+	})
+	svc.config.EgetEnable = true
+	svc.sdks.SetEgetSource(manager.EgetStoreSource{
+		Path: writeTestEgetStore(t, "jdk", "17.0.19", "D:/env/sdks/jdk/zulu-17.0.19"),
+	})
+	if _, err := svc.ActivateSDKs([]string{"java:17"}, models.OpFlagSession); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("PATH", filepath.FromSlash("D:/env/sdks/jdk/zulu-17.0.19")+string(os.PathListSeparator)+filepath.FromSlash("D:/tools/keep"))
+	if _, err := svc.DeactivateSDKs([]string{"java:17"}, models.OpFlagSession); err != nil {
+		t.Fatal(err)
+	}
+	if got := state.Merged().SDKs["jdk"]; got != "" {
+		t.Fatalf("merged jdk version after unuse = %q, want empty", got)
+	}
+}
+
 func TestWhereSDKUsesXenvIndexWhenEgetHasSameVersion(t *testing.T) {
 	_, _, svc, _ := newDirenvTestService(t, "test-where-xenv-source", nil)
 	svc.config.EgetEnable = true

@@ -86,7 +86,7 @@ func (ts *SDKService) ShowSDK(name string) error {
 		fmt.Printf("  BinDir: %s\n", sdkCfg.BinDir)
 	}
 
-	locals := ts.sdks.ListMergedSDKVersions(name)
+	locals := ts.sdks.ListMergedSDKVersions(sdkCfg.Name)
 	if len(locals) == 0 {
 		fmt.Println("  Installed: none")
 		return nil
@@ -201,6 +201,7 @@ func (ts *SDKService) checkActivateSDK(spec *models.VersionSpec) (*models.Instal
 	if sdkCfg == nil {
 		return nil, fmt.Errorf("sdk %s config is not defined", spec.Name)
 	}
+	spec.Name = sdkCfg.Name
 
 	localSDKs := ts.sdks.ListSDKVersions(sdkCfg.Name)
 	localSDK := ts.sdks.MatchSDKByVersion(localSDKs, spec.Version)
@@ -402,6 +403,7 @@ func (ts *SDKService) checkDeactivateSDK(spec *models.VersionSpec, opFlag models
 	if sdkCfg == nil {
 		return nil, fmt.Errorf("sdk %s config is not defined", spec.Name)
 	}
+	spec.Name = sdkCfg.Name
 
 	localSDKs := ts.sdks.ListMergedSDKVersions(sdkCfg.Name)
 	if len(localSDKs) == 0 {

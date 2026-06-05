@@ -44,7 +44,7 @@ func (c *Configuration) IsDefinedSDK(name string) bool {
 	// Check if the tool is installed
 	toolFound := false
 	for _, tool := range c.SDKs {
-		if tool.Name == name {
+		if tool.Name == name || tool.Alias == name {
 			toolFound = true
 			break
 		}
@@ -55,7 +55,7 @@ func (c *Configuration) IsDefinedSDK(name string) bool {
 // FindSDKConfig returns the SDK configuration if it is defined
 func (c *Configuration) FindSDKConfig(name string) *ToolChain {
 	for _, tool := range c.SDKs {
-		if tool.Name == name {
+		if tool.Name == name || tool.Alias == name {
 			return &tool
 		}
 	}
