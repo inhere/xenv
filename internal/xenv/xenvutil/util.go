@@ -50,17 +50,18 @@ func versionFromDirName(templateName, dirName string) string {
 		return strutil.NumVersion(dirName)
 	}
 
-	parts := strings.SplitN(templateName, versionToken, 2)
-	prefix, suffix := parts[0], parts[1]
-	if !strings.HasPrefix(dirName, prefix) || !strings.HasSuffix(dirName, suffix) {
+	matches := versionTemplateRegex(templateName).FindStringSubmatch(dirName)
+	if len(matches) != 2 {
 		return ""
 	}
+	return matches[1]
+}
 
-	version := strings.TrimSuffix(strings.TrimPrefix(dirName, prefix), suffix)
-	if version == "" || !versionPattern.MatchString(version) {
-		return ""
-	}
-	return version
+func versionTemplateRegex(templateName string) *regexp.Regexp {
+	quoted := regexp.QuoteMeta(templateName)
+	quoted = strings.ReplaceAll(quoted, regexp.QuoteMeta("{anyword}"), `[^/\\]+`)
+	quoted = strings.ReplaceAll(quoted, regexp.QuoteMeta("{version}"), `(`+versionPattern.String()[1:len(versionPattern.String())-1]+`)`)
+	return regexp.MustCompile(`^` + quoted + `$`)
 }
 
 // ParseGoVersion 实现简单的从 go.work/go.mod 文件解析go版本

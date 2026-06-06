@@ -358,7 +358,7 @@ SDK fields:
 | --- | --- |
 | `name` | SDK name used in commands, such as `go` |
 | `alias` | Optional alias for display or lookup |
-| `install_dir` | SDK installation directory template; `{version}` is replaced by the selected version and is used to strictly match indexed directory names |
+| `install_dir` | SDK installation directory template; `{version}` is replaced by the selected version and is used to strictly match indexed directory names; `{anyword}` matches one non-empty path-name segment |
 | `bin_dir` | SDK binary directory relative to `install_dir` |
 | `active_env` | Environment variables exported when the SDK is active |
 | `other_versions` | Additional versions that should be considered by the SDK index |
