@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/gookit/goutil/fsutil"
@@ -12,12 +13,15 @@ import (
 	"github.com/inhere/xenv/internal/util"
 )
 
+var versionPattern = regexp.MustCompile(`^[0-9]+(?:\.[0-9]+)*$`)
+
 // ListVersionDirs 列出SDK的已安装版本目录
 //
 // return key: version, value: dir path
 func ListVersionDirs(installDir string) (map[string]string, error) {
 	// 获取SDK基础目录
-	baseDir := filepath.Dir(util.NormalizePath(installDir))
+	normalizedInstallDir := util.NormalizePath(installDir)
+	baseDir := filepath.Dir(normalizedInstallDir)
 	if !fsutil.IsDir(baseDir) {
 		return nil, fmt.Errorf("SDK directory does not exist: %s", baseDir)
 	}
@@ -31,13 +35,32 @@ func ListVersionDirs(installDir string) (map[string]string, error) {
 	var sdkDirMap = make(map[string]string)
 	for _, entry := range entries {
 		if entry.IsDir() {
-			dirName := entry.Name() // 从目录名中提取版本号
-			if verStr := strutil.NumVersion(dirName); verStr != "" {
+			dirName := entry.Name()
+			if verStr := versionFromDirName(filepath.Base(normalizedInstallDir), dirName); verStr != "" {
 				sdkDirMap[verStr] = baseDir + "/" + entry.Name()
 			}
 		}
 	}
 	return sdkDirMap, nil
+}
+
+func versionFromDirName(templateName, dirName string) string {
+	const versionToken = "{version}"
+	if !strings.Contains(templateName, versionToken) {
+		return strutil.NumVersion(dirName)
+	}
+
+	parts := strings.SplitN(templateName, versionToken, 2)
+	prefix, suffix := parts[0], parts[1]
+	if !strings.HasPrefix(dirName, prefix) || !strings.HasSuffix(dirName, suffix) {
+		return ""
+	}
+
+	version := strings.TrimSuffix(strings.TrimPrefix(dirName, prefix), suffix)
+	if version == "" || !versionPattern.MatchString(version) {
+		return ""
+	}
+	return version
 }
 
 // ParseGoVersion 实现简单的从 go.work/go.mod 文件解析go版本

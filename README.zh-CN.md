@@ -348,7 +348,7 @@ SDK 字段说明：
 | --- | --- |
 | `name` | 命令中使用的 SDK 名称，例如 `go` |
 | `alias` | 可选别名，用于展示或查找 |
-| `install_dir` | SDK 安装目录模板；`{version}` 会替换为选中的版本 |
+| `install_dir` | SDK 安装目录模板；`{version}` 会替换为选中的版本，并用于索引时严格匹配目录名 |
 | `bin_dir` | 相对于 `install_dir` 的 SDK 可执行文件目录 |
 | `active_env` | 激活 SDK 时导出的环境变量 |
 | `other_versions` | 需要加入 SDK 索引的其他版本 |
