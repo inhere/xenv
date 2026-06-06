@@ -103,7 +103,7 @@ setup_xenv() {
         shift
 
         case "$command" in
-            use|unuse|env|path)
+            use|u|unuse|un|env|e|path|p)
                 # 对于这些命令，获取结果并评估
                 local result="$(command {{BinCommand}} "$command" "$@")"
                 local exit_code=$?
@@ -150,6 +150,6 @@ setup_xenv
 
 # Enable command completion for xenv
 if command -v compctl >/dev/null 2>&1; then
-	compctl -k "use unuse env set unset path list help" xenv
+	compctl -k "use u unuse un env e set unset path p list help" xenv
 fi
 `

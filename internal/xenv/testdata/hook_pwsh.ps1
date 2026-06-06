@@ -125,7 +125,7 @@ function Setup-Xenv {
         )
 
         switch ($Command) {
-            { $_ -in @('use', 'unuse', 'env', 'path') } {
+            { $_ -in @('use', 'u', 'unuse', 'un', 'env', 'e', 'path', 'p') } {
                 # Call xenv command and evaluate the result
                 $result = (& xenv $Command @Arguments | Out-String)
                 # Write-Output $result # DEBUG
@@ -170,5 +170,5 @@ Setup-Xenv
 # Enable command completion for xenv
 Register-ArgumentCompleter -CommandName xenv -ParameterName Command -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    @('use', 'unuse', 'env', 'set', 'unset', 'path', 'list', '--help') | Where-Object { $_ -like "$wordToComplete*" }
+    @('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset', 'path', 'p', 'list', '--help') | Where-Object { $_ -like "$wordToComplete*" }
 }

@@ -100,6 +100,31 @@ func TestGeneratedBashHookOnlyPrintsExprPartInDebugMode(t *testing.T) {
 	assertContains(t, script, `[ "$XENV_DEBUG_MODE" = "true" ] && echo "expr_part: $expr_part"`)
 }
 
+func TestGeneratedHooksEvaluateCommandAliases(t *testing.T) {
+	params := &models.GenInitScriptParams{ShellHooksDir: "~/.config/xenv/hooks"}
+
+	bash, err := NewScriptGenerator(Bash).GenHookScripts(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertContains(t, bash, "use|u|unuse|un|env|e|path|p)")
+	assertContains(t, bash, `complete -W "use u unuse un env e set unset path p list help" xenv`)
+
+	zsh, err := NewScriptGenerator(Zsh).GenHookScripts(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertContains(t, zsh, "use|u|unuse|un|env|e|path|p)")
+	assertContains(t, zsh, `compctl -k "use u unuse un env e set unset path p list help" xenv`)
+
+	pwsh, err := NewScriptGenerator(Pwsh).GenHookScripts(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertContains(t, pwsh, "{ $_ -in @('use', 'u', 'unuse', 'un', 'env', 'e', 'path', 'p') }")
+	assertContains(t, pwsh, "@('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset', 'path', 'p', 'list', '--help')")
+}
+
 func assertContains(t *testing.T, s, substr string) {
 	t.Helper()
 	if !strings.Contains(s, substr) {
