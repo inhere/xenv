@@ -134,10 +134,16 @@ func listEnvPaths() error {
 	for i, path := range envSvc.GlobalState().Paths {
 		fmt.Printf("  %d. %s\n", i+1, path)
 	}
+	if len(envSvc.GlobalState().Paths) == 0 {
+		fmt.Printf("  - No configuration")
+	}
 
 	ccolor.Infoln("Session PATH Entries:")
 	for i, path := range envSvc.SessionState().Paths {
 		fmt.Printf("  %d. %s\n", i+1, path)
+	}
+	if len(envSvc.SessionState().Paths) == 0 {
+		fmt.Printf("  - No configuration")
 	}
 
 	return nil
