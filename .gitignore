@@ -5,5 +5,6 @@ xenv-*
 .agents/
 .worktrees/
 .xenv.toml
+.xenv.local.toml
 dist/
 tmp/

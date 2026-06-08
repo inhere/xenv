@@ -37,6 +37,7 @@ func SessionRootDir(start string) string {
 	dir = filepath.Clean(dir)
 
 	markers := []string{
+		LocalOverrideStateFile,
 		LocalStateFile,
 		"go.work",
 		"go.mod",

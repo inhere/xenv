@@ -14,6 +14,8 @@ const (
 	GlobalStateFile = "~/.config/xenv/global.toml"
 	// LocalStateFile local state file path
 	LocalStateFile = ".xenv.toml"
+	// LocalOverrideStateFile local machine override state file path
+	LocalOverrideStateFile = ".xenv.local.toml"
 	// SessionStateDir 当前SHELL会话状态文件目录 eg: ~/.config/xenv/session/<session_id>.json
 	SessionStateDir = "~/.config/xenv/session"
 )

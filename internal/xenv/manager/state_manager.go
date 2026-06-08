@@ -3,6 +3,7 @@ package manager
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -26,7 +27,7 @@ type StateManager struct {
 	session *models.ActivityState
 	// global state data from global state file xenvcom.GlobalStateFile
 	global *models.ActivityState
-	// directory states. 从当前目录开始，会向上级目录递归查找 .xenv.toml
+	// directory states. 从当前目录开始，会向上级目录递归查找 .xenv.local.toml/.xenv.toml
 	//  - index 越大的优先级越高，距离当前目录越近
 	//  - 当前只会查找最近的一个 .xenv.toml 文件 TODO 后续支持多个
 	dirStates  []*models.ActivityState
@@ -343,13 +344,12 @@ func (m *StateManager) LoadDirEnvState() error {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	// Check for .xenv.toml file in the current directory and parent directories up to the root
-	xenvTomlPath := fsutil.FindOneInParentDirs(wd, xenvcom.LocalStateFile)
+	// Check for .xenv.local.toml/.xenv.toml file in the current directory and parent directories.
+	xenvTomlPath := findDirenvStateFile(wd)
 	if xenvTomlPath != "" {
-		xenvcom.Debugf("Found .xenv.toml at: %s\n", xenvTomlPath)
-		// Process the .xenv.toml file
+		xenvcom.Debugf("Found xenv state file at: %s\n", xenvTomlPath)
 		if err1 := m.processDirenvToml(xenvTomlPath); err1 != nil {
-			return fmt.Errorf("failed to process .xenv.toml: %w", err1)
+			return fmt.Errorf("failed to process xenv state file: %w", err1)
 		}
 	}
 
@@ -362,6 +362,30 @@ func (m *StateManager) LoadDirEnvState() error {
 	}
 
 	return nil
+}
+
+func findDirenvStateFile(wd string) string {
+	dir := wd
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		dir = wd
+	}
+	dir = filepath.Clean(dir)
+
+	for {
+		for _, fileName := range []string{xenvcom.LocalOverrideStateFile, xenvcom.LocalStateFile} {
+			filePath := filepath.Join(dir, fileName)
+			if fsutil.IsFile(filePath) {
+				return filePath
+			}
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
 }
 
 // processDirenvToml processes an .xenv.toml file
