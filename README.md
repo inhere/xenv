@@ -153,6 +153,9 @@ Example:
 ```toml
 paths = [
   "./bin",
+  "windows:C:/Program Files (x86)/NSIS",
+  "linux:/opt/nsis/bin",
+  "darwin:/opt/homebrew/bin",
 ]
 
 [sdks]
@@ -169,7 +172,7 @@ golangci-lint = ">=1.60,required"
 
 Sections:
 
-- `paths`: Project-local entries added to `PATH`.
+- `paths`: Project-local entries added to `PATH`. Prefix an entry with `windows:`, `linux:`, or `darwin:` to load it only on that OS; the prefix is stripped before adding it to `PATH`.
 - `sdks`: SDK versions activated for the project.
 - `envs`: Environment variables loaded for the project.
 - `tools`: External tool requirements checked by `xenv check tools`.

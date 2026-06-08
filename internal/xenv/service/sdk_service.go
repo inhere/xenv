@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
@@ -259,8 +260,9 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	}
 
 	if opFlag == models.OpFlagDirenv && deState != nil {
-		if len(deState.Paths) > 0 {
-			sb.WriteString(gen.GenAddPaths(deState.Paths))
+		paths := models.FilterPathsForGOOS(deState.Paths, runtime.GOOS)
+		if len(paths) > 0 {
+			sb.WriteString(gen.GenAddPaths(paths))
 		}
 		if len(deState.Envs) > 0 {
 			sb.WriteString(gen.GenSetEnvs(deState.Envs))
@@ -295,9 +297,9 @@ func (ts *SDKService) GenHookScripts(st shell.ShType) (string, error) {
 	state := ts.state.Merged()
 	params := &models.GenInitScriptParams{
 		Envs:  ts.config.GlobalEnv,
-		Paths: ts.config.GlobalPaths,
+		Paths: models.FilterPathsForGOOS(ts.config.GlobalPaths, runtime.GOOS),
 	}
-	params.AddPaths(state.Paths)
+	params.AddPaths(models.FilterPathsForGOOS(state.Paths, runtime.GOOS))
 	params.Envs = maputil.AppendSMap(params.Envs, state.Envs)
 	params.ShellAliases = ts.config.ShellAliases
 	params.ShellHooksDir = ts.config.ShellHooksDir

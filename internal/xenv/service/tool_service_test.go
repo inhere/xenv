@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/inhere/xenv/internal/xenv/manager"
 	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/shell"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
@@ -107,6 +109,55 @@ func TestSetupDirenvGeneratesEnvAndPathWithoutSDK(t *testing.T) {
 	if !strings.Contains(script, "$Env:FOO='bar';") {
 		t.Fatalf("expected setup direnv script to set project env, got %q", script)
 	}
+}
+
+func TestSetupDirenvSkipsPathsForOtherOS(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-os-prefixed-direnv-paths", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = [\"./bin\", \"" + otherGOOSPrefix() + ":/opt/other-os/bin\"]\n\n[envs]\n\n[tools]\n"
+		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsNormalized(script, "./bin") {
+		t.Fatalf("expected setup direnv script to add common project path, got %q", script)
+	}
+	if containsNormalized(script, "/opt/other-os/bin") {
+		t.Fatalf("expected setup direnv script to skip other-OS path, got %q", script)
+	}
+}
+
+func TestGenHookScriptsSkipsStatePathsForOtherOS(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-os-prefixed-hook-paths", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = [\"./bin\", \"" + otherGOOSPrefix() + ":/opt/other-os/bin\"]\n\n[envs]\n\n[tools]\n"
+		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.GenHookScripts(shell.Bash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsNormalized(script, "bin") {
+		t.Fatalf("expected shell hook to add common project path, got %q", script)
+	}
+	if containsNormalized(script, "/opt/other-os/bin") {
+		t.Fatalf("expected shell hook to skip other-OS path, got %q", script)
+	}
+}
+
+func otherGOOSPrefix() string {
+	if runtime.GOOS == "windows" {
+		return "linux"
+	}
+	return "windows"
 }
 
 func TestSetupDirenvGeneratesPwshPathWithSpaces(t *testing.T) {
