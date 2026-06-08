@@ -201,7 +201,7 @@ func (sg *XenvScriptGenerator) addCommonForLinuxShell(sb *strings.Builder, ps *m
 	if len(ps.Envs) > 0 {
 		sb.WriteString("  # Add global ENV variables from xenv\n")
 		maputil.EachTypedMap(ps.Envs, func(key, value string) {
-			sb.WriteString(fmt.Sprintf("  export %s=%s\n", strings.ToUpper(key), value))
+			sb.WriteString(fmt.Sprintf("  export %s=%s\n", strings.ToUpper(key), shQuote(value)))
 		})
 	}
 
@@ -211,7 +211,7 @@ func (sg *XenvScriptGenerator) addCommonForLinuxShell(sb *strings.Builder, ps *m
 		var fmtPaths []string
 		for _, path := range ps.Paths {
 			// TODO Windows git-bash 将盘符 D:/ 转换成 /d/
-			fmtPaths = append(fmtPaths, path)
+			fmtPaths = append(fmtPaths, shQuote(path))
 		}
 		sb.WriteString(fmt.Sprintf("  export PATH=%s:$PATH\n", strings.Join(fmtPaths, ":")))
 	}
@@ -220,8 +220,22 @@ func (sg *XenvScriptGenerator) addCommonForLinuxShell(sb *strings.Builder, ps *m
 	if len(ps.ShellAliases) > 0 {
 		sb.WriteString("  # Add global aliases from xenv\n")
 		maputil.EachTypedMap(ps.ShellAliases, func(key, value string) {
-			sb.WriteString(fmt.Sprintf("  alias %s='%s'\n", key, value))
+			sb.WriteString(fmt.Sprintf("  alias %s=%s\n", key, shQuote(value)))
 		})
 	}
 
+}
+
+func shQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
+}
+
+func shQuotePathExpr(path string) string {
+	if path == "~" {
+		return `"${HOME}"`
+	}
+	if strings.HasPrefix(path, "~/") {
+		return `"${HOME}/` + strings.ReplaceAll(path[2:], `"`, `\"`) + `"`
+	}
+	return shQuote(path)
 }

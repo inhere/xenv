@@ -15,7 +15,7 @@ func (sg *XenvScriptGenerator) generateBashScripts(ps *models.GenInitScriptParam
 	sg.addCommonForLinuxShell(&sb, ps)
 
 	return strutil.Replaces(BashHookTemplate, map[string]string{
-		"{{HooksDir}}":    ps.ShellHooksDir,
+		"{{HooksDir}}":    shQuotePathExpr(ps.ShellHooksDir),
 		"{{BinCommand}}":  xenvcom.BinCommand,
 		"{{BinName}}":     xenvcom.BinName,
 		"#{{EnvAliases}}": sb.String(),
@@ -151,8 +151,7 @@ setup_xenv() {
 
     # Load custom hooks script files
 	# 使用 glob 获取匹配的文件，加载所有匹配的脚本
-	hook_files=({{HooksDir}}/*.sh)
-	for file in "${hook_files[@]}"; do
+	for file in {{HooksDir}}/*.sh; do
 		if [[ -f "$file" ]] && [[ -r "$file" ]]; then
 			source "$file"
 		fi
