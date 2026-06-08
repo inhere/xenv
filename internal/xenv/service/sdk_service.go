@@ -245,15 +245,6 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	}
 
 	var sb strutil.Builder
-	if opFlag == models.OpFlagDirenv && deState != nil {
-		if len(deState.Paths) > 0 {
-			sb.WriteString(gen.GenAddPaths(deState.Paths))
-		}
-		if len(deState.Envs) > 0 {
-			sb.WriteString(gen.GenSetEnvs(deState.Envs))
-		}
-	}
-
 	if len(specMap) > 0 {
 		sdkSpecs := make([]*models.VersionSpec, 0, len(specMap))
 		for _, spec := range specMap {
@@ -265,6 +256,15 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 			return "", err
 		}
 		sb.WriteString(script)
+	}
+
+	if opFlag == models.OpFlagDirenv && deState != nil {
+		if len(deState.Paths) > 0 {
+			sb.WriteString(gen.GenAddPaths(deState.Paths))
+		}
+		if len(deState.Envs) > 0 {
+			sb.WriteString(gen.GenSetEnvs(deState.Envs))
+		}
 	}
 
 	if projectScript := ts.genProjectScriptForDirenv(gen, deState); projectScript != "" {

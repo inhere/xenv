@@ -109,6 +109,47 @@ func TestSetupDirenvGeneratesEnvAndPathWithoutSDK(t *testing.T) {
 	}
 }
 
+func TestSetupDirenvGeneratesPwshPathWithSpaces(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-existing-path-with-spaces", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = [\n  \"C:/Program Files (x86)/NSIS\"\n]\n"
+		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(script, `$Env:PATH="C:/Program Files (x86)/NSIS;$Env:PATH"`) {
+		t.Fatalf("expected setup direnv script to add NSIS path, got %q", script)
+	}
+}
+
+func TestSetupDirenvKeepsDirenvPathsBeforeSDKPaths(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-direnv-path-before-sdk", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = [\n  \"C:/Program Files (x86)/NSIS\"\n]\n\n[sdks]\n  go = \"1.24\"\n\n[envs]\n\n[tools]\n"
+		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sdkPathIndex := strings.Index(filepath.ToSlash(script), "tools/go/1.24.0")
+	direnvPathIndex := strings.Index(script, `C:/Program Files (x86)/NSIS`)
+	if sdkPathIndex < 0 || direnvPathIndex < 0 {
+		t.Fatalf("expected script to contain SDK and direnv paths, got %q", script)
+	}
+	if direnvPathIndex < sdkPathIndex {
+		t.Fatalf("expected direnv path expression after SDK PATH assignment so it is not overwritten, got %q", script)
+	}
+}
+
 func TestSetupDirenvAppendsProjectScriptWithoutSDK(t *testing.T) {
 	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-no-sdk", func(projectDir string) {
 		xenvToml := filepath.Join(projectDir, ".xenv.toml")
