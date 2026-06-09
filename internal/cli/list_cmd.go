@@ -88,7 +88,8 @@ func handleListActivity(groupInfo bool) error {
 	}
 
 	tl := title.New("", func(t *title.Title) {
-		t.Width = 40
+		t.Color = "ylw1"
+		t.PercentWidth = 80
 		t.PaddingLR = false
 		t.ShowBorder = true
 	})
@@ -98,10 +99,10 @@ func handleListActivity(groupInfo bool) error {
 		return nil
 	}
 
-	tl.ShowNew("Global State")
+	tl.ShowNew("[Global State]")
 	global := xenv.State().Global()
 	if global.IsEmpty() {
-		ccolor.Infoln("No global state found")
+		fmt.Println("No global state found")
 	} else {
 		listActivity(global)
 	}
@@ -109,7 +110,7 @@ func handleListActivity(groupInfo bool) error {
 	dirStates := xenv.State().DirStates()
 	if len(dirStates) > 0 {
 		fmt.Println()
-		tl.ShowNew("Directory States")
+		tl.ShowNew("[Directory States]")
 		for _, dirState := range dirStates {
 			fmt.Println(" - form:", dirState.File)
 			listActivity(dirState)
@@ -119,10 +120,10 @@ func handleListActivity(groupInfo bool) error {
 	if xenvcom.InHookShell() {
 		sess := xenv.State().Session()
 		fmt.Println()
-		tl.ShowNew("Session State")
+		tl.ShowNew("[Session State]")
 		fmt.Println(" - from:", sess.File)
 		if sess.IsEmpty() {
-			ccolor.Infoln("No session state found")
+			fmt.Println("No session state found")
 		} else {
 			listActivity(sess)
 		}

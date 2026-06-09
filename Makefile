@@ -41,6 +41,7 @@ run: build
 # ─── Cross Compilation ────────────────────────────────────────────────────────
 
 DIST_DIR := dist
+DESCRIPTION := "Manage local development environments and SDK activation"
 
 ## build-all: cross-compile for all platforms
 build-all: dump-info build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows latest-yaml
@@ -59,6 +60,7 @@ latest-yaml:
 		echo "name: $(APP)"; \
 		echo "version: $(VERSION)"; \
 		echo "released_at: $(BUILD_TIME)"; \
+		echo "description: $(DESCRIPTION)"; \
 	} > $(DIST_DIR)/latest.yaml
 	@echo "   → $(DIST_DIR)/latest.yaml"
 
