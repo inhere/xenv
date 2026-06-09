@@ -151,6 +151,7 @@ paths = [
 [sdks]
 go = "1.24"
 node = "20"
+flutter = "windows:3.27"
 
 [envs]
 APP_ENV = "local"
@@ -163,7 +164,7 @@ golangci-lint = ">=1.60,required"
 字段说明：
 
 - `paths`: 项目级 `PATH` 条目。可以使用 `windows:`、`linux:`、`darwin:` 前缀限制只在对应系统生效；加入 `PATH` 前会自动移除前缀。
-- `sdks`: 项目需要激活的 SDK 版本。
+- `sdks`: 项目需要激活的 SDK 版本。可以给版本值添加 `windows:`、`linux:`、`darwin:` 前缀，限制只在对应系统激活；版本匹配前会自动移除前缀。
 - `envs`: 项目需要加载的环境变量。
 - `tools`: `xenv check tools` 会检查的外部工具要求。
 

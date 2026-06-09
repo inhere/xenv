@@ -161,6 +161,7 @@ paths = [
 [sdks]
 go = "1.24"
 node = "20"
+flutter = "windows:3.27"
 
 [envs]
 APP_ENV = "local"
@@ -173,7 +174,7 @@ golangci-lint = ">=1.60,required"
 Sections:
 
 - `paths`: Project-local entries added to `PATH`. Prefix an entry with `windows:`, `linux:`, or `darwin:` to load it only on that OS; the prefix is stripped before adding it to `PATH`.
-- `sdks`: SDK versions activated for the project.
+- `sdks`: SDK versions activated for the project. Prefix a version with `windows:`, `linux:`, or `darwin:` to activate it only on that OS; the prefix is stripped before version matching.
 - `envs`: Environment variables loaded for the project.
 - `tools`: External tool requirements checked by `xenv check tools`.
 

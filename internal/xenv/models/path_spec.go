@@ -34,3 +34,30 @@ func FilterPathsForGOOS(paths []string, goos string) []string {
 	}
 	return filtered
 }
+
+// FilterSDKsForGOOS keeps common SDK versions and versions prefixed for the target GOOS.
+func FilterSDKsForGOOS(sdks map[string]string, goos string) map[string]string {
+	if len(sdks) == 0 {
+		return nil
+	}
+
+	goos = strings.ToLower(goos)
+	filtered := make(map[string]string, len(sdks))
+	for name, version := range sdks {
+		prefix, value, ok := strings.Cut(version, ":")
+		if !ok {
+			filtered[name] = version
+			continue
+		}
+
+		prefix = strings.ToLower(prefix)
+		if _, supported := osPathPrefixes[prefix]; !supported {
+			filtered[name] = version
+			continue
+		}
+		if prefix == goos && value != "" {
+			filtered[name] = value
+		}
+	}
+	return filtered
+}

@@ -153,6 +153,48 @@ func TestGenHookScriptsSkipsStatePathsForOtherOS(t *testing.T) {
 	}
 }
 
+func TestSetupDirenvSkipsSDKsForOtherOS(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-os-prefixed-direnv-sdks", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = []\n\n[sdks]\n  go = \"1.24\"\n  flutter = \"" + otherGOOSPrefix() + ":3.27\"\n\n[envs]\n\n[tools]\n"
+		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.SetupDirenv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsNormalized(script, "tools/go/1.24.0") {
+		t.Fatalf("expected setup direnv script to activate common go sdk, got %q", script)
+	}
+	if containsNormalized(script, "flutter:") || containsNormalized(script, "3.27") {
+		t.Fatalf("expected setup direnv script to skip other-OS flutter sdk, got %q", script)
+	}
+}
+
+func TestGenHookScriptsSkipsStateSDKsForOtherOS(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-os-prefixed-hook-sdks", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = []\n\n[sdks]\n  go = \"1.24\"\n  flutter = \"" + otherGOOSPrefix() + ":3.27\"\n\n[envs]\n\n[tools]\n"
+		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	script, err := svc.GenHookScripts(shell.Bash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsNormalized(script, "tools/go/1.24.0") {
+		t.Fatalf("expected shell hook to add common go sdk path, got %q", script)
+	}
+	if containsNormalized(script, "flutter:") || containsNormalized(script, "3.27") {
+		t.Fatalf("expected shell hook to skip other-OS flutter sdk, got %q", script)
+	}
+}
+
 func otherGOOSPrefix() string {
 	if runtime.GOOS == "windows" {
 		return "linux"

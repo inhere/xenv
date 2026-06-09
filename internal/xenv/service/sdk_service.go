@@ -235,7 +235,7 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	if deState != nil && !deState.IsEmpty() {
 		opFlag = models.OpFlagDirenv
 		xenvcom.Debugf("Detect xenv state file: %s\n", deState.File)
-		for name, ver := range deState.SDKs {
+		for name, ver := range models.FilterSDKsForGOOS(deState.SDKs, runtime.GOOS) {
 			specMap[name] = &models.VersionSpec{
 				Name:    name,
 				Version: ver,
@@ -304,8 +304,9 @@ func (ts *SDKService) GenHookScripts(st shell.ShType) (string, error) {
 	params.ShellAliases = ts.config.ShellAliases
 	params.ShellHooksDir = ts.config.ShellHooksDir
 
-	if len(state.SDKs) > 0 {
-		for name, version := range state.SDKs {
+	sdks := models.FilterSDKsForGOOS(state.SDKs, runtime.GOOS)
+	if len(sdks) > 0 {
+		for name, version := range sdks {
 			spec := &models.VersionSpec{Name: name, Version: version}
 			localSDK, err := ts.checkActivateSDK(spec)
 			if err != nil {
