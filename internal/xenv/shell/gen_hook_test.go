@@ -126,6 +126,12 @@ func TestGeneratedHooksEvaluateCommandAliases(t *testing.T) {
 	assertContains(t, pwsh, "@('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset', 'path', 'p', 'list', '--help')")
 }
 
+func TestPwshUnsetEnvIgnoresMissingVariables(t *testing.T) {
+	script := NewScriptGenerator(Pwsh).GenUnsetEnv("goroot")
+
+	assertContains(t, script, "Remove-Item Env:GOROOT -ErrorAction SilentlyContinue")
+}
+
 func TestGeneratedBashHookQuotesConfigValuesWithShellMetaChars(t *testing.T) {
 	params := &models.GenInitScriptParams{
 		ShellHooksDir: "~/.config/xenv/hooks",

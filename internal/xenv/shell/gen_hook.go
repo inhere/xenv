@@ -118,7 +118,7 @@ func (sg *XenvScriptGenerator) GenUnsetEnv(name string) string {
 	case Bash, Zsh:
 		return fmt.Sprintf("unset %s\n", name)
 	case Pwsh:
-		return fmt.Sprintf("Remove-Item Env:%s\n", name)
+		return fmt.Sprintf("Remove-Item Env:%s -ErrorAction SilentlyContinue\n", name)
 	default:
 		return fmt.Sprintf("os.unsetenv('%s')\n", name)
 	}

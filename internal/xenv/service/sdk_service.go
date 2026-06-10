@@ -361,6 +361,9 @@ func (ts *SDKService) DeactivateSDKs(deSDKs []string, opFlag models.OpFlag) (scr
 			ccolor.Warnf("WARN: failed to deactivate sdk %q: %v", spec, err3)
 			continue
 		}
+		if !ts.isSDKActiveForDeactivate(spec.Name, opFlag) {
+			continue
+		}
 		delSDKNames = append(delSDKNames, spec.Name)
 
 		if localSDK != nil {
@@ -399,6 +402,18 @@ func (ts *SDKService) DeactivateSDKs(deSDKs []string, opFlag models.OpFlag) (scr
 
 	err = ts.state.SaveStateFile()
 	return sb.String(), err
+}
+
+func (ts *SDKService) isSDKActiveForDeactivate(name string, opFlag models.OpFlag) bool {
+	switch opFlag {
+	case models.OpFlagGlobal:
+		return ts.state.Global().SDKs[name] != ""
+	case models.OpFlagDirenv:
+		ds := ts.state.Nearest()
+		return ds != nil && ds.SDKs[name] != ""
+	default:
+		return ts.state.Merged().SDKs[name] != ""
+	}
 }
 
 func (ts *SDKService) checkDeactivateSDK(spec *models.VersionSpec, opFlag models.OpFlag) (*models.InstalledSDK, error) {

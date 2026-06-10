@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/jsonutil"
+	"github.com/gookit/goutil/x/assert"
 	"github.com/inhere/xenv/internal/xenv/manager"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/shell"
@@ -563,6 +564,28 @@ func TestDeactivateSDKsUsesEgetSourceWhenOnlyEgetHasVersion(t *testing.T) {
 	if got := state.Merged().SDKs["node"]; got != "" {
 		t.Fatalf("merged node version after unuse = %q, want empty", got)
 	}
+}
+
+func TestDeactivateSDKsDirenvIsIdempotentWhenSDKAlreadyRemoved(t *testing.T) {
+	_, _, svc, state := newDirenvTestService(t, "test-unuse-direnv-idempotent", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		if err := os.WriteFile(xenvToml, []byte("paths = []\n\n[envs]\n\n[tools]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	})
+	svc.config.SDKs[0].ActiveEnv = map[string]string{"GOROOT": "{install_dir}"}
+
+	_, err := svc.ActivateSDKs([]string{"go:1.24"}, models.OpFlagDirenv)
+	assert.Require(t, assert.NoErr(t, err))
+
+	t.Setenv("PATH", filepath.Join(filepath.Dir(state.GlobalFile()), "unused")+string(os.PathListSeparator)+filepath.FromSlash("D:/tools/keep"))
+	_, err = svc.DeactivateSDKs([]string{"go:1.24"}, models.OpFlagDirenv)
+	assert.Require(t, assert.NoErr(t, err))
+
+	script, err := svc.DeactivateSDKs([]string{"go:1.24"}, models.OpFlagDirenv)
+	assert.Require(t, assert.NoErr(t, err))
+	assert.Eq(t, "", strings.TrimSpace(script))
+	assert.NotContains(t, script, "Remove-Item Env:GOROOT")
 }
 
 func writeTestEgetStore(t *testing.T, name, version, installDir string) string {
