@@ -60,6 +60,7 @@ func versionFromDirName(templateName, dirName string) string {
 func versionTemplateRegex(templateName string) *regexp.Regexp {
 	quoted := regexp.QuoteMeta(templateName)
 	quoted = strings.ReplaceAll(quoted, regexp.QuoteMeta("{anyword}"), `[^/\\]+?`)
+	quoted = strings.ReplaceAll(quoted, regexp.QuoteMeta("{oneword}"), `[^-/\\]+`)
 	quoted = strings.ReplaceAll(quoted, regexp.QuoteMeta("{version}"), `(`+versionPattern.String()[1:len(versionPattern.String())-1]+`)`)
 	return regexp.MustCompile(`^` + quoted + `$`)
 }

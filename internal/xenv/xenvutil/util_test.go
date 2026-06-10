@@ -76,6 +76,26 @@ func TestListVersionDirsSupportsHyphenatedVersionWithAnywordTemplate(t *testing.
 	}
 }
 
+func TestListVersionDirsSupportsOnewordTemplate(t *testing.T) {
+	root := t.TempDir()
+	for _, dir := range []string{
+		"azul-17.0.18",
+		"azul-17.0.18-1",
+		"graalvm-jdk-17.0.11",
+	} {
+		assert.Require(t, assert.NoErr(t, os.MkdirAll(filepath.Join(root, dir), 0o755)))
+	}
+
+	got, err := ListVersionDirs(filepath.Join(root, "{oneword}-{version}"))
+	assert.Require(t, assert.NoErr(t, err))
+
+	assert.Eq(t, filepath.ToSlash(filepath.Join(root, "azul-17.0.18")), filepath.ToSlash(got["17.0.18"]))
+	assert.Eq(t, filepath.ToSlash(filepath.Join(root, "azul-17.0.18-1")), filepath.ToSlash(got["17.0.18-1"]))
+	if _, ok := got["17.0.11"]; ok {
+		t.Fatalf("expected {oneword} not to match hyphenated prefix graalvm-jdk, got %#v", got)
+	}
+}
+
 func TestListVersionDirsWithoutVersionTemplateKeepsLegacyNumericScan(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "flutter-oh-3.27"), 0o755); err != nil {
