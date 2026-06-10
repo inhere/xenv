@@ -32,6 +32,40 @@ func TestShellCommandCreatesMissingConfig(t *testing.T) {
 	}
 }
 
+func TestShellCommandAcceptsShellExecutablePathAsType(t *testing.T) {
+	configDir := t.TempDir()
+	repoRoot := filepath.Clean(filepath.Join("..", ".."))
+	cmd := exec.Command("go", "run", "./cmd/xenv", "shell", "--type", "C:/Program Files/Git/usr/bin/bash")
+	cmd.Dir = repoRoot
+	cmd.Env = appendWithoutEnv(os.Environ(), "XENV_CONFIG_DIR", "NO_COLOR")
+	cmd.Env = append(cmd.Env, "XENV_CONFIG_DIR="+configDir, "NO_COLOR=1")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		t.Fatalf("expected shell command to accept executable path type, err=%v, stderr=%s", err, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "#!/usr/bin/env bash") {
+		t.Fatalf("expected shell command to print bash hook, got: %s", stdout.String())
+	}
+}
+
+func TestShellInstallAcceptsShellExecutablePathAsType(t *testing.T) {
+	configDir := t.TempDir()
+	repoRoot := filepath.Clean(filepath.Join("..", ".."))
+	cmd := exec.Command("go", "run", "./cmd/xenv", "shell", "--install", "--type", "C:/Program Files/Git/usr/bin/bash")
+	cmd.Dir = repoRoot
+	cmd.Env = appendWithoutEnv(os.Environ(), "XENV_CONFIG_DIR", "NO_COLOR")
+	cmd.Env = append(cmd.Env, "XENV_CONFIG_DIR="+configDir, "NO_COLOR=1")
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("expected shell install to accept executable path type, err=%v, output=%s", err, out)
+	}
+}
+
 func TestHelpDoesNotCreateConfig(t *testing.T) {
 	configDir := t.TempDir()
 	cmd := exec.Command("go", "run", "./cmd/xenv", "--help")

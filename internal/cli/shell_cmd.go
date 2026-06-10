@@ -15,7 +15,7 @@ import (
 )
 
 type shellOptions = struct {
-	Type    gflag.EnumString
+	Type    string
 	Install bool
 	Reload  bool
 	// Profile for pwsh. 无法区分版本，需要手动设置
@@ -24,9 +24,7 @@ type shellOptions = struct {
 
 // NewShellCmd the xenv shell command
 func NewShellCmd() *gcli.Command {
-	var shellOpts = shellOptions{
-		Type: cflag.NewEnumString(shell.AllTypeStrings...),
-	}
+	var shellOpts shellOptions
 
 	return &gcli.Command{
 		Name: "shell",
@@ -56,7 +54,7 @@ func NewShellCmd() *gcli.Command {
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&shellOpts.Reload, "reload", "r", false, "Reload the xenv shell script codes")
 			c.BoolOpt(&shellOpts.Install, "install", "i", false, "Install the xenv hook script to profile")
-			c.VarOpt(&shellOpts.Type, "type", "t", "Shell type (bash, zsh, pwsh, cmd)")
+			c.StrOpt(&shellOpts.Type, "type", "t", "", "Shell type or executable path (bash, zsh, pwsh, cmd)")
 			c.StrOpt2(&shellOpts.Profile, "profile", "current used PowerShell profile path.")
 		},
 		Func: func(c *gcli.Command, args []string) error {
@@ -96,9 +94,9 @@ func getShellType(shellOpts *shellOptions) (st shell.ShType, err error) {
 		}
 		shellName = hookShellName
 	} else {
-		shellName = strutil.OrElse(shellOpts.Type.String(), sysutil.CurrentShell(true))
+		shellName = strutil.OrElse(shellOpts.Type, sysutil.CurrentShell(true))
 		if shellName == "" {
-			return st, errorx.Errf("please specify the shell type (%s)", shellOpts.Type.EnumString())
+			return st, errorx.Errf("please specify the shell type (%s)", shell.AllTypeStrings)
 		}
 	}
 

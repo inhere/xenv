@@ -2,6 +2,7 @@ package shell
 
 import (
 	"fmt"
+	"path"
 	"strings"
 )
 
@@ -51,7 +52,10 @@ var (
 
 // TypeFromString returns the shell type from a string
 func TypeFromString(shellType string) (ShType, error) {
-	shellType = strings.ToLower(shellType)
+	shellType = strings.TrimSpace(strings.ToLower(shellType))
+	shellType = strings.ReplaceAll(shellType, "\\", "/")
+	shellType = path.Base(shellType)
+	shellType = strings.TrimSuffix(shellType, ".exe")
 	switch shellType {
 	case "bash":
 		return Bash, nil
