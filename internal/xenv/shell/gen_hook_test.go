@@ -1,7 +1,9 @@
 package shell
 
 import (
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -101,6 +103,15 @@ func TestGeneratedBashHookOnlyPrintsExprPartInDebugMode(t *testing.T) {
 	assertContains(t, script, `[ "$XENV_DEBUG_MODE" = "true" ] && echo "expr_part: $expr_part"`)
 }
 
+func TestGeneratedBashHookDoesNotEnableGlobalExitOnError(t *testing.T) {
+	script, err := NewScriptGenerator(Bash).GenHookScripts(&models.GenInitScriptParams{ShellHooksDir: "~/.config/xenv/hooks"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertNotContains(t, script, "\nset -e\n")
+}
+
 func TestGeneratedHooksEvaluateCommandAliases(t *testing.T) {
 	params := &models.GenInitScriptParams{ShellHooksDir: "~/.config/xenv/hooks"}
 
@@ -164,6 +175,54 @@ func TestGeneratedBashHookAvoidsArraySyntaxForHookFiles(t *testing.T) {
 
 	assertNotContains(t, script, "hook_files=(")
 	assertContains(t, script, `for file in "${HOME}/.config/xenv/hooks"/*.sh; do`)
+}
+
+func TestGeneratedBashHookDoesNotExitShellWhenXenvCommandFails(t *testing.T) {
+	if _, err := exec.LookPath("bash"); err != nil {
+		t.Skip("bash is not available")
+	}
+
+	oldBinCommand := xenvcom.BinCommand
+	oldBinName := xenvcom.BinName
+	xenvcom.SetBinCommand("xenv")
+	xenvcom.SetBinName("xenv")
+	t.Cleanup(func() {
+		xenvcom.BinCommand = oldBinCommand
+		xenvcom.BinName = oldBinName
+	})
+
+	tempDir := t.TempDir()
+	hooksDir := filepath.Join(tempDir, "hooks")
+	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fakeXenv := filepath.Join(tempDir, "xenv")
+	if err := os.WriteFile(fakeXenv, []byte(`#!/usr/bin/env bash
+if [ "$1" = "shell-init-hook" ]; then
+  exit 0
+fi
+echo "fake xenv failure"
+exit 1
+`), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	hookScript, err := NewScriptGenerator(Bash).GenHookScripts(&models.GenInitScriptParams{ShellHooksDir: hooksDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hookFile := filepath.Join(tempDir, "xenv-hook.sh")
+	if err := os.WriteFile(hookFile, []byte(hookScript), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command("bash", "-c", `source "$1"; xenv; echo still-alive`, "bash", hookFile)
+	cmd.Env = append(os.Environ(), "PATH="+tempDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("expected shell to continue after xenv failure, err=%v, output=%s", err, out)
+	}
+	assertContains(t, string(out), "still-alive")
 }
 
 func assertContains(t *testing.T, s, substr string) {

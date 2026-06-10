@@ -42,9 +42,6 @@ var BashHookTemplate = `#!/usr/bin/env bash
 # Usage, .bashrc or .bash_profile add:
 #   eval "$(xenv shell --type bash)"
 #
-# Start to set up xenv in the current shell
-set -e
-
 # 重写 cd 内建命令来实现监听
 cd() {
     # echo "cd $@"
@@ -115,6 +112,11 @@ setup_xenv() {
 
     # Define the xenv function to activate tools
     xenv() {
+        if [ "$#" -eq 0 ]; then
+            command {{BinCommand}}
+            return $?
+        fi
+
         local command="$1"
         shift
 

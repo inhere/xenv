@@ -99,6 +99,11 @@ setup_xenv() {
 
     # Define the xenv function to activate tools
     xenv() {
+        if [ "$#" -eq 0 ]; then
+            command {{BinCommand}}
+            return $?
+        fi
+
         local command="$1"
         shift
 
