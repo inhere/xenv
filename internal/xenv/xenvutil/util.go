@@ -13,7 +13,7 @@ import (
 	"github.com/inhere/xenv/internal/util"
 )
 
-var versionPattern = regexp.MustCompile(`^[0-9]+(?:\.[0-9]+)*$`)
+var versionPattern = regexp.MustCompile(`^[0-9]+(?:\.[0-9]+)*(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)*$`)
 
 // ListVersionDirs 列出SDK的已安装版本目录
 //
@@ -59,7 +59,7 @@ func versionFromDirName(templateName, dirName string) string {
 
 func versionTemplateRegex(templateName string) *regexp.Regexp {
 	quoted := regexp.QuoteMeta(templateName)
-	quoted = strings.ReplaceAll(quoted, regexp.QuoteMeta("{anyword}"), `[^/\\]+`)
+	quoted = strings.ReplaceAll(quoted, regexp.QuoteMeta("{anyword}"), `[^/\\]+?`)
 	quoted = strings.ReplaceAll(quoted, regexp.QuoteMeta("{version}"), `(`+versionPattern.String()[1:len(versionPattern.String())-1]+`)`)
 	return regexp.MustCompile(`^` + quoted + `$`)
 }
