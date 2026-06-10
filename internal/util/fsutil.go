@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/gookit/goutil/fsutil"
@@ -15,18 +16,73 @@ func NormalizePath(path string) string {
 	fmtPath := filepath.Clean(fsutil.ExpandPath(path))
 	if xenvcom.IsHookBash() {
 		fmtPath = fsutil.UnixPath(fmtPath)
+		fmtPath = toGitBashPath(fmtPath)
 	}
 	return fmtPath
 }
 
+var winDrivePathRe = regexp.MustCompile(`^([A-Za-z]):(/.*)?$`)
+
+func toGitBashPath(path string) string {
+	matches := winDrivePathRe.FindStringSubmatch(path)
+	if len(matches) == 0 {
+		return path
+	}
+
+	drive := strings.ToLower(matches[1])
+	rest := matches[2]
+	if rest == "" {
+		return "/" + drive
+	}
+	return "/" + drive + rest
+}
+
 // SplitPath splits a PATH string into individual paths.
 func SplitPath(envPath string) []string {
+	if xenvcom.IsHookBash() {
+		if strings.Contains(envPath, ";") {
+			return strings.Split(envPath, ";")
+		}
+		return splitGitBashPath(envPath)
+	}
 	return strings.Split(envPath, string(os.PathListSeparator))
+}
+
+func splitGitBashPath(envPath string) []string {
+	var paths []string
+	start := 0
+	for i := 0; i < len(envPath); i++ {
+		if envPath[i] != ':' {
+			continue
+		}
+		if isWindowsDriveColon(envPath, start, i) {
+			continue
+		}
+
+		paths = append(paths, envPath[start:i])
+		start = i + 1
+	}
+	return append(paths, envPath[start:])
+}
+
+func isWindowsDriveColon(s string, start, colon int) bool {
+	return colon == start+1 &&
+		((s[start] >= 'A' && s[start] <= 'Z') || (s[start] >= 'a' && s[start] <= 'z')) &&
+		colon+1 < len(s) &&
+		(s[colon+1] == '/' || s[colon+1] == '\\')
 }
 
 // JoinPaths joins multiple path entries into a single PATH string.
 func JoinPaths(paths []string) string {
-	return strings.Join(paths, xenvcom.PathSep())
+	if !xenvcom.IsHookBash() {
+		return strings.Join(paths, xenvcom.PathSep())
+	}
+
+	fmtPaths := make([]string, 0, len(paths))
+	for _, path := range paths {
+		fmtPaths = append(fmtPaths, NormalizePath(path))
+	}
+	return strings.Join(fmtPaths, xenvcom.PathSep())
 }
 
 // EnsureDir creates a directory if it doesn't exist.
