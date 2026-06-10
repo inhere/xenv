@@ -60,6 +60,9 @@ func (u *StateTomlUpdater) Update(state *models.ActivityState) error {
 	}
 
 	u.contents = data
+	if len(u.contents) == 0 {
+		return u.WriteNewState(state)
+	}
 	u.Build(state)
 
 	// 使用 newBuf 更新 state.File 内容
