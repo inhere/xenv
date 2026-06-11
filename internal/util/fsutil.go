@@ -13,10 +13,14 @@ import (
 
 // NormalizePath normalizes a path by expanding home directory and cleaning it.
 func NormalizePath(path string) string {
-	fmtPath := filepath.Clean(fsutil.ExpandPath(path))
+	return filepath.Clean(fsutil.ExpandPath(path))
+}
+
+// FormatShellPath formats a filesystem path for the active shell script output.
+func FormatShellPath(path string) string {
+	fmtPath := NormalizePath(path)
 	if xenvcom.IsHookBash() {
-		fmtPath = fsutil.UnixPath(fmtPath)
-		fmtPath = toGitBashPath(fmtPath)
+		return toGitBashPath(fsutil.UnixPath(fmtPath))
 	}
 	return fmtPath
 }
@@ -80,7 +84,7 @@ func JoinPaths(paths []string) string {
 
 	fmtPaths := make([]string, 0, len(paths))
 	for _, path := range paths {
-		fmtPaths = append(fmtPaths, NormalizePath(path))
+		fmtPaths = append(fmtPaths, FormatShellPath(path))
 	}
 	return strings.Join(fmtPaths, xenvcom.PathSep())
 }

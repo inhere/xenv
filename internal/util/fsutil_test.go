@@ -8,7 +8,7 @@ import (
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
-func TestNormalizePathUsesGitBashDrivePathOnWindows(t *testing.T) {
+func TestFormatShellPathUsesGitBashDrivePathOnWindows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("Git Bash path conversion is Windows-specific")
 	}
@@ -20,11 +20,11 @@ func TestNormalizePathUsesGitBashDrivePathOnWindows(t *testing.T) {
 	})
 
 	t.Run("slash path", func(t *testing.T) {
-		assert.Eq(t, "/d/work/env/devsdk/gosdk/go1.24.6/bin", NormalizePath("D:/work/env/devsdk/gosdk/go1.24.6/bin"))
+		assert.Eq(t, "/d/work/env/devsdk/gosdk/go1.24.6/bin", FormatShellPath("D:/work/env/devsdk/gosdk/go1.24.6/bin"))
 	})
 
 	t.Run("backslash path", func(t *testing.T) {
-		assert.Eq(t, "/c/Users/inhere/.xenv/shims", NormalizePath(`C:\Users\inhere\.xenv\shims`))
+		assert.Eq(t, "/c/Users/inhere/.xenv/shims", FormatShellPath(`C:\Users\inhere\.xenv\shims`))
 	})
 }
 

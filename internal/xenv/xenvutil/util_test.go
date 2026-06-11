@@ -3,9 +3,11 @@ package xenvutil
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/gookit/goutil/x/assert"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 func TestListVersionDirsMatchesInstallTemplateStrictly(t *testing.T) {
@@ -110,4 +112,24 @@ func TestListVersionDirsWithoutVersionTemplateKeepsLegacyNumericScan(t *testing.
 	if _, ok := got["3.27"]; !ok {
 		t.Fatalf("expected legacy numeric scan to index 3.27, got %#v", got)
 	}
+}
+
+func TestListVersionDirsUsesFilesystemPathInGitBashHook(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Git Bash filesystem path regression is Windows-specific")
+	}
+
+	oldHookShell := xenvcom.HookShell()
+	xenvcom.SetHookShell("bash")
+	t.Cleanup(func() {
+		xenvcom.SetHookShell(oldHookShell)
+	})
+
+	root := t.TempDir()
+	go124 := filepath.Join(root, "go1.24.6")
+	assert.Require(t, assert.NoErr(t, os.MkdirAll(go124, 0o755)))
+
+	got, err := ListVersionDirs(filepath.Join(root, "go{version}"))
+	assert.Require(t, assert.NoErr(t, err))
+	assert.Eq(t, filepath.ToSlash(go124), filepath.ToSlash(got["1.24.6"]))
 }
