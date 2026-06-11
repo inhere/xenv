@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gookit/cliui/show/title"
 	"github.com/gookit/gcli/v3"
@@ -107,58 +108,95 @@ func handleListState(groupInfo bool) error {
 		return nil
 	}
 
-	tl.ShowNew("[Global State]")
 	global := xenv.State().Global()
-	if global.IsEmpty() {
-		fmt.Println("No global state found")
-	} else {
-		listActivity(global)
-	}
+	listStateGroup("Global State", global, "No global state found")
 
 	dirStates := xenv.State().DirStates()
 	if len(dirStates) > 0 {
 		fmt.Println()
 		tl.ShowNew("[Directory States]")
 		for _, dirState := range dirStates {
-			fmt.Println(" - form:", dirState.File)
-			listActivity(dirState)
+			listStateGroup("", dirState, "No directory state found")
 		}
 	}
 
 	if xenvcom.InHookShell() {
 		sess := xenv.State().Session()
 		fmt.Println()
-		tl.ShowNew("[Session State]")
-		fmt.Println(" - from:", sess.File)
-		if sess.IsEmpty() {
-			fmt.Println("No session state found")
-		} else {
-			listActivity(sess)
-		}
+		listStateGroup("Session State", sess, "No session state found")
 	}
 	return nil
 }
 
+func listStateGroup(titleText string, state *models.ActivityState, emptyMessage string) {
+	if titleText != "" {
+		tl := title.New("", func(t *title.Title) {
+			t.Color = "ylw1"
+			t.PercentWidth = 80
+			t.PaddingLR = false
+			t.ShowBorder = true
+		})
+		tl.ShowNew("[" + titleText + "]")
+	}
+	fmt.Println(" - from:", state.File)
+	if state.IsEmpty() {
+		fmt.Println(emptyMessage)
+		return
+	}
+	listActivity(state)
+}
+
 func listActivity(state *models.ActivityState) {
-	ccolor.Cyanln("Active Develop SDKs:")
-	for name, version := range state.SDKs {
-		ccolor.Printf("  <green>%10s</> => %s\n", name, version)
+	for _, line := range formatActivityLines(state) {
+		if line == "" {
+			fmt.Println()
+			continue
+		}
+		if strings.HasPrefix(line, "  ") {
+			ccolor.Println(line)
+			continue
+		}
+		ccolor.Cyanln(line)
+	}
+}
+
+func formatActivityLines(state *models.ActivityState) []string {
+	var lines []string
+	if len(state.SDKs) > 0 {
+		lines = append(lines, "Active Develop SDKs:")
+		for name, version := range state.SDKs {
+			lines = append(lines, fmt.Sprintf("  <green>%10s</> => %s", name, version))
+		}
 	}
 
-	ccolor.Cyanln("\nActive Env Variables:")
-	for name, value := range state.Envs {
-		ccolor.Printf("  <green>%s</>=%s\n", name, value)
+	if len(state.Envs) > 0 {
+		lines = appendActivitySection(lines, "Active Env Variables:")
+		for name, value := range state.Envs {
+			lines = append(lines, fmt.Sprintf("  <green>%s</>=%s", name, value))
+		}
 	}
 
-	ccolor.Cyanln("\nActive PATH Entries:")
-	for i, path := range state.Paths {
-		ccolor.Printf("  <green>%d</>. %s\n", i+1, path)
+	if len(state.Paths) > 0 {
+		lines = appendActivitySection(lines, "Active PATH Entries:")
+		for i, path := range state.Paths {
+			lines = append(lines, fmt.Sprintf("  <green>%d</>. %s", i+1, path))
+		}
 	}
 
-	ccolor.Cyanln("\nTool Requirements:")
-	for name, requirement := range state.ToolRequirements {
-		ccolor.Printf("  <green>%s</> => %s\n", name, requirement)
+	if len(state.ToolRequirements) > 0 {
+		lines = appendActivitySection(lines, "Tool Requirements:")
+		for name, requirement := range state.ToolRequirements {
+			lines = append(lines, fmt.Sprintf("  <green>%s</> => %s", name, requirement))
+		}
 	}
+	return lines
+}
+
+func appendActivitySection(lines []string, title string) []string {
+	if len(lines) > 0 {
+		lines = append(lines, "")
+	}
+	return append(lines, title)
 }
 
 // ListAllCmd lists everything
