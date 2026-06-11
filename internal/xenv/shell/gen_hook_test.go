@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gookit/goutil/x/assert"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
@@ -187,6 +188,31 @@ func TestBashSetPathUsesGitBashPathSyntaxOnWindows(t *testing.T) {
 	assertContains(t, script, "export PATH='/d/work/env/devsdk/gosdk/go1.24.6/bin:/c/Users/inhere/.xenv/shims:/usr/bin'")
 	assertNotContains(t, script, "D:/")
 	assertNotContains(t, script, `C:\`)
+}
+
+func TestGeneratedBashHookFormatsGlobalPathForGitBashOnWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Git Bash path conversion is Windows-specific")
+	}
+
+	oldHookShell := xenvcom.HookShell()
+	xenvcom.SetHookShell("")
+	t.Setenv("SHELL", "")
+	t.Cleanup(func() {
+		xenvcom.SetHookShell(oldHookShell)
+	})
+
+	script, err := NewScriptGenerator(Bash).GenHookScripts(&models.GenInitScriptParams{
+		ShellHooksDir: "~/.config/xenv/hooks",
+		Paths: []string{
+			`D:\work\env\devsdk\gosdk\go1.21.13\bin`,
+		},
+	})
+	assert.Require(t, assert.NoErr(t, err))
+
+	assert.Contains(t, script, `export PATH='/d/work/env/devsdk/gosdk/go1.21.13/bin':$PATH`)
+	assert.NotContains(t, script, `D:\work`)
+	assert.NotContains(t, script, `D:/work`)
 }
 
 func TestGeneratedBashHookAvoidsArraySyntaxForHookFiles(t *testing.T) {

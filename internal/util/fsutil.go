@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/gookit/goutil/fsutil"
@@ -20,6 +21,15 @@ func NormalizePath(path string) string {
 func FormatShellPath(path string) string {
 	fmtPath := NormalizePath(path)
 	if xenvcom.IsHookBash() {
+		return toGitBashPath(fsutil.UnixPath(fmtPath))
+	}
+	return fmtPath
+}
+
+// FormatShellPathFor formats a filesystem path for scripts generated for shell.
+func FormatShellPathFor(path, shell string) string {
+	fmtPath := NormalizePath(path)
+	if runtime.GOOS == "windows" && shell == "bash" {
 		return toGitBashPath(fsutil.UnixPath(fmtPath))
 	}
 	return fmtPath

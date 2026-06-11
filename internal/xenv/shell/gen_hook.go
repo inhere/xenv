@@ -210,8 +210,7 @@ func (sg *XenvScriptGenerator) addCommonForLinuxShell(sb *strings.Builder, ps *m
 		sb.WriteString("  # Add global PATH from xenv\n")
 		var fmtPaths []string
 		for _, path := range ps.Paths {
-			// TODO Windows git-bash 将盘符 D:/ 转换成 /d/
-			fmtPaths = append(fmtPaths, shQuote(path))
+			fmtPaths = append(fmtPaths, shQuote(util.FormatShellPathFor(path, string(sg.shell))))
 		}
 		sb.WriteString(fmt.Sprintf("  export PATH=%s:$PATH\n", strings.Join(fmtPaths, ":")))
 	}
