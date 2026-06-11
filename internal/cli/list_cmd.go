@@ -29,7 +29,7 @@ func NewListCmd() *gcli.Command {
 			ListAllCmd(),
 		},
 		Func: func(c *gcli.Command, _ []string) error {
-			return handleListState(false)
+			return handleListState(listActOpts.Group)
 		},
 	}
 }
