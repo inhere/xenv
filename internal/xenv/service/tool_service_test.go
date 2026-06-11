@@ -423,15 +423,16 @@ func TestActivateSDKsResolvesAliasToConfiguredSDKName(t *testing.T) {
 		Alias: "java",
 	})
 	svc.config.EgetEnable = true
+	installDir := filepath.Join(t.TempDir(), "env", "sdks", "jdk", "zulu-17.0.19")
 	svc.sdks.SetEgetSource(manager.EgetStoreSource{
-		Path: writeTestEgetStore(t, "jdk", "17.0.19", "D:/env/sdks/jdk/zulu-17.0.19"),
+		Path: writeTestEgetStore(t, "jdk", "17.0.19", installDir),
 	})
 
 	script, err := svc.ActivateSDKs([]string{"java:17"}, models.OpFlagDirenv)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !containsNormalized(script, "D:/env/sdks/jdk/zulu-17.0.19") {
+	if !containsNormalized(script, installDir) {
 		t.Fatalf("expected activation script to contain jdk install path, got %q", script)
 	}
 	if got := state.Merged().SDKs["jdk"]; got != "17.0.19" {
@@ -449,15 +450,16 @@ func TestWhereSDKResolvesAliasToConfiguredSDKName(t *testing.T) {
 		Alias: "java",
 	})
 	svc.config.EgetEnable = true
+	installDir := filepath.Join(t.TempDir(), "env", "sdks", "jdk", "zulu-17.0.19")
 	svc.sdks.SetEgetSource(manager.EgetStoreSource{
-		Path: writeTestEgetStore(t, "jdk", "17.0.19", "D:/env/sdks/jdk/zulu-17.0.19"),
+		Path: writeTestEgetStore(t, "jdk", "17.0.19", installDir),
 	})
 
 	got, err := svc.WhereSDK("java:17", false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.ToSlash(got) != "D:/env/sdks/jdk/zulu-17.0.19" {
+	if filepath.Clean(got) != filepath.Clean(installDir) {
 		t.Fatalf("WhereSDK(java:17) = %q, want jdk install path", got)
 	}
 }
@@ -469,14 +471,16 @@ func TestDeactivateSDKsResolvesAliasToConfiguredSDKName(t *testing.T) {
 		Alias: "java",
 	})
 	svc.config.EgetEnable = true
+	installDir := filepath.Join(t.TempDir(), "env", "sdks", "jdk", "zulu-17.0.19")
 	svc.sdks.SetEgetSource(manager.EgetStoreSource{
-		Path: writeTestEgetStore(t, "jdk", "17.0.19", "D:/env/sdks/jdk/zulu-17.0.19"),
+		Path: writeTestEgetStore(t, "jdk", "17.0.19", installDir),
 	})
 	if _, err := svc.ActivateSDKs([]string{"java:17"}, models.OpFlagSession); err != nil {
 		t.Fatal(err)
 	}
 
-	t.Setenv("PATH", filepath.FromSlash("D:/env/sdks/jdk/zulu-17.0.19")+string(os.PathListSeparator)+filepath.FromSlash("D:/tools/keep"))
+	keepDir := filepath.Join(t.TempDir(), "tools", "keep")
+	t.Setenv("PATH", installDir+string(os.PathListSeparator)+keepDir)
 	if _, err := svc.DeactivateSDKs([]string{"java:17"}, models.OpFlagSession); err != nil {
 		t.Fatal(err)
 	}
@@ -488,15 +492,16 @@ func TestDeactivateSDKsResolvesAliasToConfiguredSDKName(t *testing.T) {
 func TestWhereSDKUsesXenvIndexWhenEgetHasSameVersion(t *testing.T) {
 	_, _, svc, _ := newDirenvTestService(t, "test-where-xenv-source", nil)
 	svc.config.EgetEnable = true
+	egetInstallDir := filepath.Join(t.TempDir(), "eget", "go1.24.0")
 	svc.sdks.SetEgetSource(manager.EgetStoreSource{
-		Path: writeTestEgetStore(t, "go", "1.24.0", "D:/eget/go1.24.0"),
+		Path: writeTestEgetStore(t, "go", "1.24.0", egetInstallDir),
 	})
 
 	got, err := svc.WhereSDK("go:1.24.0", false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.ToSlash(got) == "D:/eget/go1.24.0" {
+	if filepath.Clean(got) == filepath.Clean(egetInstallDir) {
 		t.Fatalf("WhereSDK should use xenv local index for activation paths, got eget path %q", got)
 	}
 	if filepath.Base(got) != "1.24.0" {
@@ -507,15 +512,16 @@ func TestWhereSDKUsesXenvIndexWhenEgetHasSameVersion(t *testing.T) {
 func TestWhereSDKUsesEgetWhenOnlyEgetHasVersion(t *testing.T) {
 	_, _, svc, _ := newDirenvTestService(t, "test-where-eget-source", nil)
 	svc.config.EgetEnable = true
+	egetInstallDir := filepath.Join(t.TempDir(), "eget", "go1.25.0")
 	svc.sdks.SetEgetSource(manager.EgetStoreSource{
-		Path: writeTestEgetStore(t, "go", "1.25.0", "D:/eget/go1.25.0"),
+		Path: writeTestEgetStore(t, "go", "1.25.0", egetInstallDir),
 	})
 
 	got, err := svc.WhereSDK("go:1.25.0", false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.ToSlash(got) != "D:/eget/go1.25.0" {
+	if filepath.Clean(got) != filepath.Clean(egetInstallDir) {
 		t.Fatalf("WhereSDK() = %q, want eget path", got)
 	}
 }
@@ -535,30 +541,33 @@ func TestDeactivateSDKsUsesEgetSourceWhenOnlyEgetHasVersion(t *testing.T) {
 	_, _, svc, state := newDirenvTestService(t, "test-unuse-eget-source", nil)
 	svc.config.EgetEnable = true
 	svc.config.SDKs = append(svc.config.SDKs, models.ToolChain{Name: "node", BinDir: "bin"})
+	egetInstallDir := filepath.Join(t.TempDir(), "eget", "node22.22.3")
+	egetBinDir := filepath.Join(egetInstallDir, "bin")
 	svc.sdks.SetEgetSource(manager.EgetStoreSource{
-		Path: writeTestEgetStore(t, "node", "22.22.3", "D:/eget/node22.22.3"),
+		Path: writeTestEgetStore(t, "node", "22.22.3", egetInstallDir),
 	})
 
 	useScript, err := svc.ActivateSDKs([]string{"node:22"}, models.OpFlagSession)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !containsNormalized(useScript, "D:/eget/node22.22.3/bin") {
+	if !containsNormalized(useScript, egetBinDir) {
 		t.Fatalf("expected use script to add eget node bin path, got %q", useScript)
 	}
 	if got := state.Merged().SDKs["node"]; got != "22.22.3" {
 		t.Fatalf("merged node version after use = %q, want %q", got, "22.22.3")
 	}
 
-	t.Setenv("PATH", filepath.FromSlash("D:/eget/node22.22.3/bin")+string(os.PathListSeparator)+filepath.FromSlash("D:/tools/keep"))
+	keepDir := filepath.Join(t.TempDir(), "tools", "keep")
+	t.Setenv("PATH", egetBinDir+string(os.PathListSeparator)+keepDir)
 	unuseScript, err := svc.DeactivateSDKs([]string{"node:22"}, models.OpFlagSession)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if containsNormalized(unuseScript, "D:/eget/node22.22.3/bin") {
+	if containsNormalized(unuseScript, egetBinDir) {
 		t.Fatalf("expected unuse script to remove eget node bin path, got %q", unuseScript)
 	}
-	if !containsNormalized(unuseScript, "D:/tools/keep") {
+	if !containsNormalized(unuseScript, keepDir) {
 		t.Fatalf("expected unuse script to preserve other PATH entries, got %q", unuseScript)
 	}
 	if got := state.Merged().SDKs["node"]; got != "" {
@@ -578,7 +587,8 @@ func TestDeactivateSDKsDirenvIsIdempotentWhenSDKAlreadyRemoved(t *testing.T) {
 	_, err := svc.ActivateSDKs([]string{"go:1.24"}, models.OpFlagDirenv)
 	assert.Require(t, assert.NoErr(t, err))
 
-	t.Setenv("PATH", filepath.Join(filepath.Dir(state.GlobalFile()), "unused")+string(os.PathListSeparator)+filepath.FromSlash("D:/tools/keep"))
+	keepDir := filepath.Join(t.TempDir(), "tools", "keep")
+	t.Setenv("PATH", filepath.Join(filepath.Dir(state.GlobalFile()), "unused")+string(os.PathListSeparator)+keepDir)
 	_, err = svc.DeactivateSDKs([]string{"go:1.24"}, models.OpFlagDirenv)
 	assert.Require(t, assert.NoErr(t, err))
 
@@ -592,20 +602,23 @@ func writeTestEgetStore(t *testing.T, name, version, installDir string) string {
 	t.Helper()
 
 	storeFile := filepath.Join(t.TempDir(), "sdk.installed.json")
-	data := []byte(`{
-	  "schema": 1,
-	  "installed": {
-	    "` + name + `": {
-	      "versions": {
-	        "` + version + `": {
-	          "name": "` + name + `",
-	          "version": "` + version + `",
-	          "path": "` + installDir + `"
-	        }
-	      }
-	    }
-	  }
-	}`)
+	data, err := json.Marshal(map[string]any{
+		"schema": 1,
+		"installed": map[string]any{
+			name: map[string]any{
+				"versions": map[string]any{
+					version: map[string]string{
+						"name":    name,
+						"version": version,
+						"path":    installDir,
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(storeFile, data, 0o644); err != nil {
 		t.Fatal(err)
 	}
