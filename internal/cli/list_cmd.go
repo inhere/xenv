@@ -11,21 +11,27 @@ import (
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
-// ListCmd the xenv list command
-var ListCmd = &gcli.Command{
-	Name:    "list",
-	Desc:    "List local SDKs, ENV variables, or PATH entries",
-	Aliases: []string{"ls"},
-	Subs: []*gcli.Command{
-		ListSDKCmd(),
-		ListEnvCmd(),
-		ListPathCmd(),
-		ListStateCmd(),
-		ListAllCmd(),
-	},
-	Func: func(c *gcli.Command, _ []string) error {
-		return handleListActivity(false)
-	},
+func NewListCmd() *gcli.Command {
+	var listActOpts = listStateOpts{}
+
+	return &gcli.Command{
+		Name:    "list",
+		Desc:    "List local SDKs, ENV variables, or PATH entries",
+		Aliases: []string{"ls"},
+		Config: func(c *gcli.Command) {
+			c.MustFromStruct(&listActOpts)
+		},
+		Subs: []*gcli.Command{
+			ListSDKCmd(),
+			ListEnvCmd(),
+			ListPathCmd(),
+			ListStateCmd(),
+			ListAllCmd(),
+		},
+		Func: func(c *gcli.Command, _ []string) error {
+			return handleListState(false)
+		},
+	}
 }
 
 // ListSDKCmd lists SDKs.
@@ -62,11 +68,13 @@ func ListPathCmd() *gcli.Command {
 	}
 }
 
+type listStateOpts struct {
+	Group bool `flag:"shorts=t;desc=List activity states and group by global, dir, session"`
+}
+
 // ListStateCmd lists active SDKs and settings
 func ListStateCmd() *gcli.Command {
-	var listActOpts = struct {
-		Group bool `flag:"shorts=t;desc=List activity states and group by global, dir, session"`
-	}{}
+	var listActOpts = listStateOpts{}
 
 	return &gcli.Command{
 		Name:    "state",
@@ -76,12 +84,12 @@ func ListStateCmd() *gcli.Command {
 			c.MustFromStruct(&listActOpts)
 		},
 		Func: func(c *gcli.Command, _ []string) error {
-			return handleListActivity(listActOpts.Group)
+			return handleListState(listActOpts.Group)
 		},
 	}
 }
 
-func handleListActivity(groupInfo bool) error {
+func handleListState(groupInfo bool) error {
 	// Load activity state
 	if err := xenv.InitState(); err != nil {
 		return fmt.Errorf("failed to load activity state: %w", err)

@@ -57,7 +57,7 @@ func NewApp() *gcli.App {
 		EnvCmd,
 		PathCmd,
 		ConfigCmd,
-		ListCmd,
+		NewListCmd(),
 		NewShellCmd(),
 		ShellHookInitCmd(),
 		ShellDirenvCmd(),
