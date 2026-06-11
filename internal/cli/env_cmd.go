@@ -6,6 +6,7 @@ import (
 	"github.com/gookit/gcli/v3"
 	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/xenv/internal/xenv"
+	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
@@ -38,13 +39,17 @@ var EnvCmd = &gcli.Command{
 //	// pwsh
 //	$env:XENV_HOOK_SHELL="pwsh"; xenv set TEST003 value003
 func EnvSetCmd() *gcli.Command {
+	var opts struct {
+		Global     bool
+		SaveDirenv bool
+	}
 	return &gcli.Command{
 		Name: "set",
 		Help: "set [-g] [-s|-d] <name> <value>",
 		Desc: "Set an environment variable",
 		Config: func(c *gcli.Command) {
-			c.BoolOpt(&SaveDirenv, "direnv", "s,d", false, "Save change to direnv config .xenv.toml")
-			c.BoolOpt(&GlobalFlag, "global", "g", false, "Operate for global config")
+			c.BoolOpt(&opts.SaveDirenv, "direnv", "s,d", false, "Save change to direnv config .xenv.toml")
+			c.BoolOpt(&opts.Global, "global", "g", false, "Operate for global config")
 
 			c.AddArg("name", "environment key name", true)
 			c.AddArg("value", "environment value", true)
@@ -60,14 +65,17 @@ func EnvSetCmd() *gcli.Command {
 			}
 
 			// Set the environment variable
-			script, err := envSvc.SetEnv(name, value, GetOpFlag())
+			opFlag := opFlagFrom(opts.Global, opts.SaveDirenv)
+			script, err := envSvc.SetEnv(name, value, opFlag)
 			if err != nil {
 				return fmt.Errorf("failed to set environment variable: %w", err)
 			}
 
 			// Save configuration if global
-			if GlobalFlag {
+			if opFlag == models.OpFlagGlobal {
 				ccolor.Infof("Set %s=%s globally\n", name, value)
+			} else if opFlag == models.OpFlagDirenv {
+				ccolor.Infof("Set %s=%s for direnv state\n", name, value)
 			} else {
 				ccolor.Infof("Set %s=%s for current session\n", name, value)
 			}
@@ -82,13 +90,17 @@ func EnvSetCmd() *gcli.Command {
 
 // EnvUnsetCmd command for unsetting environment variables
 func EnvUnsetCmd(desc ...string) *gcli.Command {
+	var opts struct {
+		Global     bool
+		SaveDirenv bool
+	}
 	return &gcli.Command{
 		Name: "unset",
 		Help: "unset [-g] [-s|-d] <name...>",
 		Desc: "Unset environment variables",
 		Config: func(c *gcli.Command) {
-			c.BoolOpt(&SaveDirenv, "direnv", "s,d", false, "Operate for direnv config .xenv.toml")
-			c.BoolOpt(&GlobalFlag, "global", "g", false, "Operate for global config")
+			c.BoolOpt(&opts.SaveDirenv, "direnv", "s,d", false, "Operate for direnv config .xenv.toml")
+			c.BoolOpt(&opts.Global, "global", "g", false, "Operate for global config")
 			c.AddArg("names", "environment key name", true, true)
 		},
 		Func: func(c *gcli.Command, args []string) error {
@@ -101,14 +113,17 @@ func EnvUnsetCmd(desc ...string) *gcli.Command {
 			names := c.Arg("names").Strings()
 
 			// Unset the environment variables
-			script, err1 := envSvc.UnsetEnvs(names, GetOpFlag())
+			opFlag := opFlagFrom(opts.Global, opts.SaveDirenv)
+			script, err1 := envSvc.UnsetEnvs(names, opFlag)
 			if err1 != nil {
 				return fmt.Errorf("failed to set environment variable: %w", err1)
 			}
 
 			// Save configuration if global
-			if GlobalFlag {
+			if opFlag == models.OpFlagGlobal {
 				ccolor.Infof("Unset %s globally\n", names)
+			} else if opFlag == models.OpFlagDirenv {
+				ccolor.Infof("Unset %s for direnv state\n", names)
 			} else {
 				ccolor.Infof("Unset %s for current session\n", names)
 			}

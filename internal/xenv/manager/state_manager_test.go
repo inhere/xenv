@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/x/assert"
+	"github.com/inhere/xenv/internal/xenv/models"
 )
 
 func TestLoadDirEnvStatePrefersLocalToml(t *testing.T) {
@@ -43,6 +44,23 @@ func TestLoadDirEnvStateKeepsNearestDirectoryFirst(t *testing.T) {
 
 	assert.Eq(t, "child-shared", state.Merged().Envs["SOURCE"])
 	assert.Eq(t, filepath.Join(subDir, ".xenv.toml"), state.Nearest().File)
+}
+
+func TestSetEnvDirenvCreatesXenvToml(t *testing.T) {
+	projectDir := t.TempDir()
+	chdirForTest(t, projectDir)
+
+	state := NewStateManager()
+	err := state.Init()
+	assert.Require(t, assert.NoErr(t, err))
+	err = state.SetEnv("JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8", models.OpFlagDirenv)
+	assert.Require(t, assert.NoErr(t, err))
+
+	data, err := os.ReadFile(filepath.Join(projectDir, ".xenv.toml"))
+	assert.Require(t, assert.NoErr(t, err))
+	contents := string(data)
+	assert.StrContains(t, contents, "[envs]")
+	assert.StrContains(t, contents, `JAVA_TOOL_OPTIONS = "-Dfile.encoding=UTF-8"`)
 }
 
 func chdirForTest(t *testing.T, dir string) {

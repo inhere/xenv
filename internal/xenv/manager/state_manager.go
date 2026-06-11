@@ -181,15 +181,16 @@ func (m *StateManager) SetEnv(name, value string, opFlag models.OpFlag) error {
 		return err
 	}
 
-	m.merged.Envs[name] = value
+	envs := map[string]string{name: value}
+	m.merged.AddEnvs(envs)
 
 	switch opFlag {
 	case models.OpFlagGlobal:
-		m.global.Envs[name] = value
+		m.global.AddEnvs(envs)
 	case models.OpFlagDirenv:
-		m.DirenvOrNew().Envs[name] = value
+		m.DirenvOrNew().AddEnvs(envs)
 	default:
-		m.session.Envs[name] = value
+		m.session.AddEnvs(envs)
 	}
 
 	if !m.batchMode {
@@ -207,20 +208,20 @@ func (m *StateManager) UnsetEnv(name string, opFlag models.OpFlag) error {
 	// update 删除合并数据
 	// check exists
 	if _, exists := m.merged.Envs[name]; exists {
-		delete(m.merged.Envs, name)
+		m.merged.DelEnvs([]string{name})
 	} else {
 		return fmt.Errorf("environment variable %s is not exists", name)
 	}
 
 	switch opFlag {
 	case models.OpFlagGlobal:
-		delete(m.global.Envs, name)
+		m.global.DelEnvs([]string{name})
 	case models.OpFlagDirenv:
 		if ds := m.Nearest(); ds != nil {
-			delete(ds.Envs, name)
+			ds.DelEnvs([]string{name})
 		}
 	default:
-		delete(m.session.Envs, name)
+		m.session.DelEnvs([]string{name})
 	}
 
 	if !m.batchMode {

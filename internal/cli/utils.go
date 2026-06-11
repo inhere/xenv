@@ -8,10 +8,14 @@ import (
 
 // GetOpFlag 根据参数获取操作标识
 func GetOpFlag() models.OpFlag {
-	if GlobalFlag {
+	return opFlagFrom(GlobalFlag, SaveDirenv)
+}
+
+func opFlagFrom(global, saveDirenv bool) models.OpFlag {
+	if global {
 		return models.OpFlagGlobal
 	}
-	if SaveDirenv {
+	if saveDirenv {
 		return models.OpFlagDirenv
 	}
 	return models.OpFlagSession

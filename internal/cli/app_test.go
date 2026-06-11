@@ -1,6 +1,10 @@
 package cli
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gookit/color"
@@ -72,5 +76,61 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 
 	if app.ResolveAlias("init-direnv") != "shell-direnv" {
 		t.Fatalf("expected init-direnv alias to resolve to shell-direnv")
+	}
+}
+
+func TestEnvSetSaveDirenvFlagWritesXenvToml(t *testing.T) {
+	tempDir := t.TempDir()
+	binPath := filepath.Join(tempDir, "xenv-test.exe")
+	build := exec.Command("go", "build", "-o", binPath, "./cmd/xenv")
+	build.Dir = filepath.Clean(filepath.Join("..", ".."))
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build xenv test binary: %v, output=%s", err, out)
+	}
+
+	tests := map[string][]string{
+		"top-level set": {"set", "-s", "JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8"},
+		"env set":       {"env", "set", "-s", "JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8"},
+	}
+
+	for name, args := range tests {
+		t.Run(name, func(t *testing.T) {
+			homeDir := filepath.Join(tempDir, strings.ReplaceAll(name, " ", "-"), "home")
+			projectDir := filepath.Join(tempDir, strings.ReplaceAll(name, " ", "-"), "project")
+			assert.Require(t, assert.NoErr(t, os.MkdirAll(homeDir, 0o755)))
+			assert.Require(t, assert.NoErr(t, os.MkdirAll(projectDir, 0o755)))
+
+			cmd := exec.Command(binPath, args...)
+			cmd.Dir = projectDir
+			cmd.Env = appendWithoutEnv(os.Environ(), "HOME", "USERPROFILE", "XENV_HOOK_SHELL", "XENV_SESSION_ID", "XENV_CONFIG_DIR", "NO_COLOR")
+			cmd.Env = append(cmd.Env,
+				"HOME="+homeDir,
+				"USERPROFILE="+homeDir,
+				"XENV_HOOK_SHELL=pwsh",
+				"NO_COLOR=1",
+			)
+
+			out, err := cmd.CombinedOutput()
+			assert.Require(t, assert.NoErr(t, err))
+			output := string(out)
+			assert.Contains(t, output, "Set JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 for direnv state")
+			assert.NotContains(t, output, "for current session")
+
+			stateFile := filepath.Join(projectDir, ".xenv.toml")
+			data, err := os.ReadFile(stateFile)
+			assert.Require(t, assert.NoErr(t, err))
+			contents := string(data)
+			assert.Contains(t, contents, "[envs]")
+			assert.Contains(t, contents, `JAVA_TOOL_OPTIONS = "-Dfile.encoding=UTF-8"`)
+
+			sessionDir := filepath.Join(homeDir, ".config", "xenv", "session")
+			if entries, err := os.ReadDir(sessionDir); err == nil && len(entries) > 0 {
+				var names []string
+				for _, entry := range entries {
+					names = append(names, entry.Name())
+				}
+				t.Fatalf("expected no session state files, got %s", strings.Join(names, ", "))
+			}
+		})
 	}
 }
