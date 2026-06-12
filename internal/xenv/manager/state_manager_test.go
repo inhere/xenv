@@ -46,6 +46,21 @@ func TestLoadDirEnvStateKeepsNearestDirectoryFirst(t *testing.T) {
 	assert.Eq(t, filepath.Join(subDir, ".xenv.toml"), state.Nearest().File)
 }
 
+func TestLoadDirEnvStateErrorIncludesStateFilePath(t *testing.T) {
+	projectDir := t.TempDir()
+	stateFile := filepath.Join(projectDir, ".xenv.toml")
+	chdirForTest(t, projectDir)
+
+	err := os.WriteFile(stateFile, []byte("[envs\n  BAD = \"value\"\n"), 0o644)
+	assert.Require(t, assert.NoErr(t, err))
+
+	state := NewStateManager()
+	err = state.Init()
+	assert.Require(t, assert.Err(t, err))
+	assert.Contains(t, err.Error(), stateFile)
+	assert.Contains(t, err.Error(), "failed to load dir state")
+}
+
 func TestSetEnvDirenvCreatesXenvToml(t *testing.T) {
 	projectDir := t.TempDir()
 	chdirForTest(t, projectDir)

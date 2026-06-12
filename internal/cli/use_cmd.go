@@ -9,9 +9,9 @@ import (
 // NewUseCmd the xenv use command
 func NewUseCmd() *gcli.Command {
 	return &gcli.Command{
-		Name: "use",
-		Help: "use [-g] <name:version>...",
-		Desc: "Switch and activate different versions of SDK",
+		Name:    "use",
+		Help:    "use [-g] <name:version>...",
+		Desc:    "Switch and activate different versions of SDK",
 		Aliases: []string{"u"},
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Global operation, not the current session")
@@ -22,6 +22,9 @@ func NewUseCmd() *gcli.Command {
 		Func: func(c *gcli.Command, args []string) error {
 			sdkSvc, err := xenv.SDKService()
 			if err != nil {
+				if outputHookWarningExpression("failed to initialize xenv command", err) {
+					return nil
+				}
 				return err
 			}
 
@@ -38,9 +41,9 @@ func NewUseCmd() *gcli.Command {
 // NewUnuseCmd the xenv unuse command
 func NewUnuseCmd() *gcli.Command {
 	return &gcli.Command{
-		Name: "unuse",
-		Help: "unuse [-g] <name:version>...",
-		Desc: "Deactivate specific SDK versions",
+		Name:    "unuse",
+		Help:    "unuse [-g] <name:version>...",
+		Desc:    "Deactivate specific SDK versions",
 		Aliases: []string{"un"},
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Global operation, not the current session")
@@ -50,6 +53,9 @@ func NewUnuseCmd() *gcli.Command {
 		Func: func(c *gcli.Command, args []string) error {
 			sdkSvc, err := xenv.SDKService()
 			if err != nil {
+				if outputHookWarningExpression("failed to initialize xenv command", err) {
+					return nil
+				}
 				return err
 			}
 

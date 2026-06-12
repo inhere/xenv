@@ -152,14 +152,22 @@ func ShellDirenvCmd() *gcli.Command {
 		Func: func(c *gcli.Command, args []string) error {
 			sdkSvc, err := xenv.SDKService()
 			if err != nil {
+				if outputHookWarningExpression("failed to initialize xenv direnv state", err) {
+					return nil
+				}
 				return err
 			}
 
 			script, err1 := sdkSvc.SetupDirenv()
-			if err1 == nil {
-				shell.OutputScript(script)
+			if err1 != nil {
+				if xenvcom.InHookShell() {
+					shell.OutputScriptWithMessage(fmt.Sprintf("WARN: failed to apply xenv direnv state: %v", err1), "")
+					return nil
+				}
+				return err1
 			}
-			return err1
+			shell.OutputScript(script)
+			return nil
 		},
 	}
 }

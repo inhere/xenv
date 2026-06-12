@@ -39,6 +39,9 @@ func PathAddCmd() *gcli.Command {
 			// Create env service
 			envSvc, err := xenv.EnvService()
 			if err != nil {
+				if outputHookWarningExpression("failed to initialize xenv command", err) {
+					return nil
+				}
 				return err
 			}
 
@@ -85,6 +88,9 @@ func PathRemoveCmd() *gcli.Command {
 			// Create env service
 			envSvc, err := xenv.EnvService()
 			if err != nil {
+				if outputHookWarningExpression("failed to initialize xenv command", err) {
+					return nil
+				}
 				return err
 			}
 

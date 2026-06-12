@@ -134,3 +134,74 @@ func TestEnvSetSaveDirenvFlagWritesXenvToml(t *testing.T) {
 		})
 	}
 }
+
+func TestShellDirenvOutputsWarningExpressionOnInvalidDirenvState(t *testing.T) {
+	tempDir := t.TempDir()
+	binPath := filepath.Join(tempDir, "xenv-test.exe")
+	build := exec.Command("go", "build", "-o", binPath, "./cmd/xenv")
+	build.Dir = filepath.Clean(filepath.Join("..", ".."))
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build xenv test binary: %v, output=%s", err, out)
+	}
+
+	homeDir := filepath.Join(tempDir, "home")
+	projectDir := filepath.Join(tempDir, "project")
+	assert.Require(t, assert.NoErr(t, os.MkdirAll(homeDir, 0o755)))
+	assert.Require(t, assert.NoErr(t, os.MkdirAll(projectDir, 0o755)))
+	stateFile := filepath.Join(projectDir, ".xenv.toml")
+	assert.Require(t, assert.NoErr(t, os.WriteFile(stateFile, []byte("[envs\n  BAD = \"value\"\n"), 0o644)))
+
+	cmd := exec.Command(binPath, "init-direnv")
+	cmd.Dir = projectDir
+	cmd.Env = appendWithoutEnv(os.Environ(), "HOME", "USERPROFILE", "XENV_HOOK_SHELL", "XENV_SESSION_ID", "XENV_CONFIG_DIR", "NO_COLOR")
+	cmd.Env = append(cmd.Env,
+		"HOME="+homeDir,
+		"USERPROFILE="+homeDir,
+		"XENV_HOOK_SHELL=bash",
+		"NO_COLOR=1",
+	)
+
+	out, err := cmd.CombinedOutput()
+	assert.Require(t, assert.NoErr(t, err))
+	output := string(out)
+	assert.Contains(t, output, "WARN: failed to initialize xenv direnv state")
+	assert.Contains(t, output, stateFile)
+	assert.Contains(t, output, "--Expression--")
+	assert.True(t, strings.Index(output, "WARN:") < strings.Index(output, "--Expression--"))
+}
+
+func TestHookCommandOutputsWarningExpressionOnInvalidDirenvState(t *testing.T) {
+	tempDir := t.TempDir()
+	binPath := filepath.Join(tempDir, "xenv-test.exe")
+	build := exec.Command("go", "build", "-o", binPath, "./cmd/xenv")
+	build.Dir = filepath.Clean(filepath.Join("..", ".."))
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build xenv test binary: %v, output=%s", err, out)
+	}
+
+	homeDir := filepath.Join(tempDir, "home")
+	projectDir := filepath.Join(tempDir, "project")
+	assert.Require(t, assert.NoErr(t, os.MkdirAll(homeDir, 0o755)))
+	assert.Require(t, assert.NoErr(t, os.MkdirAll(projectDir, 0o755)))
+	stateFile := filepath.Join(projectDir, ".xenv.toml")
+	assert.Require(t, assert.NoErr(t, os.WriteFile(stateFile, []byte("[envs\n  BAD = \"value\"\n"), 0o644)))
+
+	cmd := exec.Command(binPath, "set", "FOO", "BAR")
+	cmd.Dir = projectDir
+	cmd.Env = appendWithoutEnv(os.Environ(), "HOME", "USERPROFILE", "XENV_HOOK_SHELL", "XENV_SESSION_ID", "XENV_CONFIG_DIR", "NO_COLOR")
+	cmd.Env = append(cmd.Env,
+		"HOME="+homeDir,
+		"USERPROFILE="+homeDir,
+		"XENV_HOOK_SHELL=bash",
+		"NO_COLOR=1",
+	)
+
+	out, err := cmd.CombinedOutput()
+	assert.Require(t, assert.NoErr(t, err))
+	output := string(out)
+	assert.Contains(t, output, "WARN: failed to initialize xenv command")
+	assert.Contains(t, output, stateFile)
+	assert.Contains(t, output, "--Expression--")
+	assert.NotContains(t, output, "ERROR:")
+	assert.True(t, strings.Index(output, "WARN:") < strings.Index(output, "--Expression--"))
+}

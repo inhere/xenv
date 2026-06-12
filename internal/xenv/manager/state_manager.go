@@ -350,7 +350,7 @@ func (m *StateManager) LoadDirEnvState() error {
 	if xenvTomlPath != "" {
 		xenvcom.Debugf("Found xenv state file at: %s\n", xenvTomlPath)
 		if err1 := m.processDirenvToml(xenvTomlPath); err1 != nil {
-			return fmt.Errorf("failed to process xenv state file: %w", err1)
+			return fmt.Errorf("failed to process xenv state file %s: %w", xenvTomlPath, err1)
 		}
 	}
 

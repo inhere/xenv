@@ -2,6 +2,7 @@ package shell
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gookit/goutil/arrutil"
 	"github.com/inhere/xenv/internal/util"
@@ -19,6 +20,25 @@ func OutputScript(script string) {
 			return
 		}
 		fmt.Printf("%s\n%s\n", ScriptMark, script)
+	}
+}
+
+// OutputScriptWithMessage outputs a hook message before the script mark.
+func OutputScriptWithMessage(message, script string) {
+	if message == "" {
+		OutputScript(script)
+		return
+	}
+
+	newline := "\n"
+	if xenvcom.IsHookPwshOrCmd() {
+		newline = "\r\n"
+	}
+
+	message = strings.TrimRight(message, "\r\n")
+	fmt.Printf("%s%s%s%s%s", message, newline, ScriptMark, newline, script)
+	if script != "" && !strings.HasSuffix(script, "\n") && !strings.HasSuffix(script, "\r\n") {
+		fmt.Print(newline)
 	}
 }
 
