@@ -123,7 +123,7 @@ function Invoke-XenvResult {
     }
 }
 
-$script:XenvBinCommand = (Get-Command {{BinCommand}} -CommandType Application -ErrorAction Stop).Source
+$script:XenvBinCommand = (Get-Command {{BinCommand}} -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
 
 # 保存原始的 Set-Location
 $originalSetLocation = Get-Command Set-Location -CommandType Cmdlet
@@ -189,13 +189,19 @@ function Setup-Xenv {
 
     # Define the xenv function to activate tools
     function global:xenv {
-        param(
-            [Parameter(Position=0)]
-            [string]$Command,
+        $Command = $null
+        $Arguments = @()
+        if ($args.Count -gt 0) {
+            $Command = [string]$args[0]
+            if ($args.Count -gt 1) {
+                $Arguments = @($args[1..($args.Count - 1)])
+            }
+        }
 
-            [Parameter(ValueFromRemainingArguments)]
-            [string[]]$Arguments
-        )
+        if (-not $Command) {
+            & $script:XenvBinCommand
+            return
+        }
 
         switch ($Command) {
             { $_ -in @('use', 'u', 'unuse', 'un', 'env', 'e', 'path', 'p') } {

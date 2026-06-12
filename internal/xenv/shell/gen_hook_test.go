@@ -58,7 +58,7 @@ func TestGeneratedHooksBypassXenvWrapper(t *testing.T) {
 		}
 
 		assertNotContains(t, script, `$env:XENV_SESSION_ID =`)
-		assertContains(t, script, `$script:XenvBinCommand = (Get-Command xenv -CommandType Application -ErrorAction Stop).Source`)
+		assertContains(t, script, `$script:XenvBinCommand = (Get-Command xenv -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source`)
 		assertNotContains(t, script, `& xenv $Command @Arguments`)
 		assertNotContains(t, script, `& xenv env $Command @Arguments`)
 		assertNotContains(t, script, `& xenv shell-init-hook --type pwsh`)
@@ -272,6 +272,51 @@ exit 1
 		t.Fatalf("expected shell to continue after xenv failure, err=%v, output=%s", err, out)
 	}
 	assertContains(t, string(out), "still-alive")
+}
+
+func TestGeneratedPwshHookPassesLeadingDashArguments(t *testing.T) {
+	if _, err := exec.LookPath("pwsh"); err != nil {
+		t.Skip("pwsh is not available")
+	}
+
+	oldBinCommand := xenvcom.BinCommand
+	oldBinName := xenvcom.BinName
+	xenvcom.SetBinCommand("xenv")
+	xenvcom.SetBinName("xenv")
+	t.Cleanup(func() {
+		xenvcom.BinCommand = oldBinCommand
+		xenvcom.BinName = oldBinName
+	})
+
+	tempDir := t.TempDir()
+	hooksDir := filepath.Join(tempDir, "hooks")
+	assert.Require(t, assert.NoErr(t, os.MkdirAll(hooksDir, 0o755)))
+
+	fakeXenv := filepath.Join(tempDir, "xenv")
+	fakeContents := "#!/usr/bin/env sh\nif [ \"$1\" = \"shell-init-hook\" ]; then exit 0; fi\necho \"ARGS:$*\"\n"
+	if runtime.GOOS == "windows" {
+		fakeXenv += ".cmd"
+		fakeContents = "@echo off\r\nif \"%1\"==\"shell-init-hook\" exit /b 0\r\necho ARGS:%*\r\n"
+	}
+	assert.Require(t, assert.NoErr(t, os.WriteFile(fakeXenv, []byte(fakeContents), 0o755)))
+
+	hookScript, err := NewScriptGenerator(Pwsh).GenHookScripts(&models.GenInitScriptParams{ShellHooksDir: hooksDir})
+	assert.Require(t, assert.NoErr(t, err))
+	hookFile := filepath.Join(tempDir, "xenv-hook.ps1")
+	assert.Require(t, assert.NoErr(t, os.WriteFile(hookFile, []byte(hookScript), 0o644)))
+
+	cmd := exec.Command("pwsh", "-NoProfile", "-Command", `. $env:HOOK_SCRIPT; xenv -V`)
+	cmd.Env = append(os.Environ(),
+		"HOOK_SCRIPT="+hookFile,
+		"PATH="+tempDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+	)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("expected pwsh hook to run, err=%v, output=%s", err, out)
+	}
+	if !strings.Contains(string(out), "ARGS:-V") {
+		t.Fatalf("expected pwsh hook to pass -V to xenv binary, output=%s", out)
+	}
 }
 
 func assertContains(t *testing.T, s, substr string) {
