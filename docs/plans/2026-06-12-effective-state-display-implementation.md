@@ -15,6 +15,11 @@
 | 日期 | 版本 | 作者 | 说明 |
 | --- | --- | --- | --- |
 | 2026-06-12 | v0.1 | Codex | 初版实施计划，聚焦 Effective State 展示和后续 Runtime 检测评估。 |
+| 2026-06-12 | v0.2 | Codex | 补充状态语义设计文档链接，明确 Session State 是 Session Defaults/Context，不是 Runtime State。 |
+
+## 关联文档
+
+- 设计文档: [../design/2026-06-12-xenv-state-semantics-design.md](../design/2026-06-12-xenv-state-semantics-design.md)
 
 ## 背景
 
@@ -50,10 +55,10 @@ Directory State > Session State > Global State
 定义：
 
 - `Global State`: 机器级默认值，只在没有更近约束时生效。
-- `Session State`: 当前 shell 的临时默认值，用于无目录约束的目录，或离开目录后恢复。
+- `Session State`: 当前 shell 的持久化上下文。展示层应把其中的 SDK/ENV/PATH 称为 `Session Defaults`，用于无目录约束的目录，或离开目录后恢复；它不是 Runtime State。
 - `Directory State`: 项目级约束，进入目录后优先于 global 和普通 session。
 - `Effective State`: 根据上面的优先级推导出来的“当前目录期望生效状态”。
-- `Runtime Environment`: 当前 shell 真实环境，来自 hook 执行结果，可能与 Effective State 暂时不一致。
+- `Runtime State`: 当前 shell 真实环境，来自 hook eval 执行结果，可能与 Effective State 暂时不一致；后续应从当前 PATH/ENV 检测，而不是从 session JSON 直接得出。
 
 第一阶段不实现离开目录恢复，也不把 direnv 激活结果写回 `session.SDKs`。这样可以保留 session 作为恢复来源，避免进入项目目录后污染用户原本的 session 默认值。
 
