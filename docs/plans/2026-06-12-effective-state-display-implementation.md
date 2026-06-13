@@ -1049,7 +1049,7 @@ git commit -m "docs: document status command semantics"
 - Create: `docs/design/xenv-runtime-state-detection.md`
 - Test: no code test
 
-- [ ] **Step 1: 创建 Runtime 检测设计文档**
+- [x] **Step 1: 创建 Runtime 检测设计文档**
 
 创建 `docs/design/xenv-runtime-state-detection.md`：
 
@@ -1100,7 +1100,7 @@ go:
 ```
 ````
 
-- [ ] **Step 2: 提交**
+- [x] **Step 2: 提交**
 
 Run:
 
