@@ -122,21 +122,24 @@ func TestGeneratedHooksEvaluateCommandAliases(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertContains(t, bash, "use|u|unuse|un|env|e|path|p)")
-	assertContains(t, bash, `complete -W "use u unuse un env e set unset path p list help" xenv`)
+	assertContains(t, bash, `complete -W "use u unuse un env e set unset path p status st help" xenv`)
+	assertNotContains(t, bash, ` path p list help`)
 
 	zsh, err := NewScriptGenerator(Zsh).GenHookScripts(params)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertContains(t, zsh, "use|u|unuse|un|env|e|path|p)")
-	assertContains(t, zsh, `compctl -k "use u unuse un env e set unset path p list help" xenv`)
+	assertContains(t, zsh, `compctl -k "use u unuse un env e set unset path p status st help" xenv`)
+	assertNotContains(t, zsh, ` path p list help`)
 
 	pwsh, err := NewScriptGenerator(Pwsh).GenHookScripts(params)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertContains(t, pwsh, "{ $_ -in @('use', 'u', 'unuse', 'un', 'env', 'e', 'path', 'p') }")
-	assertContains(t, pwsh, "@('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset', 'path', 'p', 'list', '--help')")
+	assertContains(t, pwsh, "@('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset', 'path', 'p', 'status', 'st', '--help')")
+	assertNotContains(t, pwsh, "'list'")
 }
 
 func TestPwshUnsetEnvIgnoresMissingVariables(t *testing.T) {

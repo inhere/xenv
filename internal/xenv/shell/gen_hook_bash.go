@@ -168,6 +168,6 @@ setup_xenv
 
 # Enable command completion for xenv
 if command -v complete >/dev/null 2>&1; then
-    complete -W "use u unuse un env e set unset path p list help" xenv
+    complete -W "use u unuse un env e set unset path p status st help" xenv
 fi
 `

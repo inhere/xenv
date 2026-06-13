@@ -170,5 +170,5 @@ Setup-Xenv
 # Enable command completion for xenv
 Register-ArgumentCompleter -CommandName xenv -ParameterName Command -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    @('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset', 'path', 'p', 'list', '--help') | Where-Object { $_ -like "$wordToComplete*" }
+    @('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset', 'path', 'p', 'status', 'st', '--help') | Where-Object { $_ -like "$wordToComplete*" }
 }

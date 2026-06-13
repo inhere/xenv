@@ -155,6 +155,6 @@ setup_xenv
 
 # Enable command completion for xenv
 if command -v compctl >/dev/null 2>&1; then
-	compctl -k "use u unuse un env e set unset path p list help" xenv
+	compctl -k "use u unuse un env e set unset path p status st help" xenv
 fi
 `
