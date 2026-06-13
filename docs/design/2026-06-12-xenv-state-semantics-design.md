@@ -5,6 +5,7 @@
 | 日期 | 版本 | 作者 | 说明 |
 | --- | --- | --- | --- |
 | 2026-06-12 | v0.1 | Codex | 初版，明确 Global、Directory、Session、Effective、Runtime State 的职责、触发边界和展示语义。 |
+| 2026-06-13 | v0.2 | Codex | 确认 v0 不保留 `list/ls` 兼容入口，状态诊断收敛到一等 `status` 命令，`Session State` 展示为 `Session Context`。 |
 
 ## 关联文档
 
@@ -53,7 +54,7 @@ go version
 2. 保留 session JSON 作为 xenv 跨进程的 shell 会话记忆。
 3. 明确 `Directory State > Session State > Global State` 是 Effective State 的推导优先级。
 4. 明确 Runtime State 由 shell 执行表达式触发，不能只依赖持久化文件判断。
-5. 为 `xenv ls --group` 后续展示 Effective State、overridden 信息和 Runtime Warning 提供语义基础。
+5. 为 `xenv status` 后续展示 Effective State、Session Context、Runtime State 和 Runtime Warning 提供语义基础。
 
 ## 非目标
 
@@ -440,9 +441,41 @@ Runtime State:
 - Directory State 被重新应用到 Runtime State。
 - Session State 仍保留 `go1.24.x`，作为 session default 和未来恢复基线。
 
+## CLI 组织决策
+
+`xenv` 仍处于 v0 开发阶段，不需要为了兼容保留语义不清晰的旧入口。状态诊断应从 `list/ls` 中拆出，成为一等命令：
+
+```bash
+xenv status
+```
+
+顶层 `list` / `ls` 不再保留。需要列表能力时使用更明确的子命令：
+
+```bash
+xenv sdk list
+xenv env list
+xenv path list
+```
+
+职责边界：
+
+```text
+use / unuse      修改 SDK 激活状态
+env / path       修改 ENV/PATH 状态
+sdk              管理和查询本机 SDK inventory
+status           查看当前目录和当前 shell 的状态
+check            校验 Effective State / 项目要求是否满足
+shell            生成和安装 shell hook
+config           管理配置
+```
+
+`check` 保留 pass/fail 语义，不承担状态解释职责。Runtime State 的解释性输出归 `status`。
+
 ## 展示建议
 
-`xenv ls --group` 后续应明确展示状态层级，不再让用户误以为 Session State 一定是当前 runtime。
+`xenv status` 后续应明确展示状态层级，不再让用户误以为 Session State 一定是当前 runtime。
+
+默认 `xenv status` 输出当前最重要的信息：Effective State、Runtime State 和 warning。
 
 建议输出：
 
@@ -471,20 +504,41 @@ No global state found
 Directory SDKs:
           go => 1.23
 
-[Session State]
+[Session Context]
 ---------------------------------------------------------------------
  - from: C:\Users\inhere/.config/xenv/session/xenv_xxx.json
 Session Defaults:
           go => 1.24.6  (overridden by Directory State)
 ```
 
-第一阶段可以先不实现 `[Runtime State]`，但应先完成：
+分层详情通过参数显式展开：
 
-- `[Effective State]`
-- overridden 标注
-- `Session Defaults` 语义说明
+```bash
+xenv status --layers
+```
 
-第二阶段再实现 Runtime State 检测。
+Runtime 检测详情通过参数显式展示：
+
+```bash
+xenv status --runtime
+```
+
+参数可以组合：
+
+```bash
+xenv status --layers --runtime
+```
+
+第一阶段应完成：
+
+- 一等 `xenv status` 命令。
+- Effective State 展示。
+- `[Session Context]` 和 `Session Defaults` 展示。
+- overridden 标注。
+- 目录内普通 `xenv use` 与 Directory State 冲突时的临时 runtime override warning。
+- 移除顶层 `list` / `ls` 入口。
+
+Runtime State 检测可以作为第二阶段，但入口应预留在 `xenv status --runtime`，而不是 `xenv ls --group --runtime`。
 
 ## 设计原则
 
@@ -501,14 +555,22 @@ Session Defaults:
 已有实施计划需要按本文档调整：
 
 - 在计划中明确关联本设计文档。
-- 将 `Session State` 展示语义补充为 `Session Defaults`。
-- 第一阶段仍只实现 Effective State 和 overridden 标注。
-- Runtime State 保持第二阶段设计，不应从 session JSON 直接得出。
+- 将顶层状态诊断入口从 `xenv ls --group` 改为 `xenv status`。
+- 将 `[Session State]` 展示标题调整为 `[Session Context]`，内部展示 `Session Defaults`。
+- v0 阶段不保留顶层 `list` / `ls` 兼容入口。
+- 第一阶段实现 Effective State、overridden 标注和 session override warning。
+- Runtime State 检测保持第二阶段设计，不应从 session JSON 直接得出。
 - 后续如果实现 Runtime Warning，应从当前 PATH/ENV 检测，而不是信任 session JSON。
 
-## 待决策问题
+## 已确认决策
 
-1. 是否将 `[Session State]` 标题改为 `[Session Context]`，还是保留标题但把内部字段改成 `Session Defaults`。
-2. 是否为目录内普通 `xenv use` 增加临时 override warning。
-3. 是否新增 `xenv status --runtime` 或 `xenv ls --group --runtime` 来显式启用 Runtime State 检测。
-4. 是否在 session JSON 中新增 `applied_direnv` 元数据，用于未来离开目录恢复和调试。
+1. 使用 `[Session Context]` 作为展示标题，内部字段使用 `Session Defaults`。
+2. 为目录内普通 `xenv use` 与 Directory State 冲突的情况增加临时 runtime override warning。
+3. 使用一等 `xenv status` 命令承载状态诊断；Runtime 检测详情使用 `xenv status --runtime`。
+4. v0 阶段不保留顶层 `list` / `ls` 兼容入口。
+
+## 仍需后续决策
+
+1. 是否在 session JSON 中新增 `applied_direnv` 元数据，用于未来离开目录恢复和调试。
+2. Runtime State 检测是否默认启用，还是只在 `xenv status --runtime` 时执行完整检测。
+3. 是否为脚本和 IDE 集成增加 `xenv status --json`。
