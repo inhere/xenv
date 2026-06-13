@@ -50,7 +50,7 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 		"env",
 		"path",
 		"config",
-		"list",
+		"status",
 		"shell",
 		"shell-init-hook",
 		"shell-direnv",
@@ -62,6 +62,12 @@ func TestNewAppRegistersTopLevelCommands(t *testing.T) {
 
 	if app.HasCommand("tools") {
 		t.Fatalf("tools command must not be registered")
+	}
+	if app.HasCommand("list") {
+		t.Fatalf("list command must not be registered at top level; use status or sdk/env/path list")
+	}
+	if app.ResolveAlias("ls") == "list" {
+		t.Fatalf("ls alias must not resolve to removed top-level list command")
 	}
 	if app.HasCommand("init") {
 		t.Fatalf("init command must be registered under config, not at top level")
