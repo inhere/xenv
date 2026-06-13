@@ -45,3 +45,47 @@ func TestBuildEffectiveSDKRows(t *testing.T) {
 		assert.Eq(t, sourceSession, rows[2].Source)
 	})
 }
+
+func TestFormatEffectiveSDKRows(t *testing.T) {
+	rows := []effectiveSDKRow{
+		{
+			Name:    "go",
+			Version: "1.25",
+			Source:  sourceDirectory,
+			Overrides: []stateValue{
+				{Source: sourceSession, Version: "1.24.6"},
+				{Source: sourceGlobal, Version: "1.21.13"},
+			},
+		},
+		{
+			Name:    "node",
+			Version: "22.0.0",
+			Source:  sourceSession,
+		},
+	}
+
+	lines := formatEffectiveSDKRows(rows)
+
+	assert.Eq(t, []string{
+		"SDKs:",
+		"          go => 1.25  (Directory State)",
+		"        node => 22.0.0  (Session Context)",
+		"",
+		"Overrides:",
+		"          go: Session Context 1.24.6, Global State 1.21.13",
+	}, lines)
+}
+
+func TestFormatSessionContextLines(t *testing.T) {
+	session := models.NewActivityState("session.json")
+	session.SDKs["go"] = "1.24.6"
+	session.SDKs["node"] = "22.0.0"
+
+	lines := formatStateSDKLines("Session Defaults:", session, map[string]string{
+		"go": sourceDirectory,
+	})
+
+	assert.Contains(t, lines, "Session Defaults:")
+	assert.Contains(t, lines, "  <green>        go</> => 1.24.6  (overridden by Directory State)")
+	assert.Contains(t, lines, "  <green>      node</> => 22.0.0")
+}
