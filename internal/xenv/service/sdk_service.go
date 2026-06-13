@@ -166,6 +166,7 @@ func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*m
 		} else {
 			ccolor.Infof("Activate %s for current session\n", localSDK.ID)
 		}
+		ts.warnTemporaryRuntimeOverride(spec, opFlag)
 	}
 
 	var sb strutil.Builder
@@ -216,6 +217,35 @@ func (ts *SDKService) checkActivateSDK(spec *models.VersionSpec) (*models.Instal
 	localSDK.Config = sdkCfg
 	spec.RealVersion = localSDK.Version
 	return localSDK, nil
+}
+
+func (ts *SDKService) warnTemporaryRuntimeOverride(spec *models.VersionSpec, opFlag models.OpFlag) {
+	if opFlag != models.OpFlagSession {
+		return
+	}
+
+	deState := ts.state.Nearest()
+	if deState == nil || deState.IsEmpty() {
+		return
+	}
+
+	dirVersion := models.FilterSDKsForGOOS(deState.SDKs, runtime.GOOS)[spec.Name]
+	if dirVersion == "" || dirVersion == spec.Version || dirVersion == spec.RealVersion {
+		return
+	}
+
+	dirSpec := &models.VersionSpec{Name: spec.Name, Version: dirVersion}
+	if dirSDK, err := ts.checkActivateSDK(dirSpec); err == nil && dirSDK.Version == spec.RealVersion {
+		return
+	}
+
+	ccolor.Warnf(
+		"WARN: directory state wants %s:%s; this activation is a temporary runtime override. Use `xenv use -s %s:%s` to update .xenv.toml.\n",
+		spec.Name,
+		dirVersion,
+		spec.Name,
+		spec.Version,
+	)
 }
 
 func (ts *SDKService) SetupDirenv() (string, error) {

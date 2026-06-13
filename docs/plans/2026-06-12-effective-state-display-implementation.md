@@ -137,7 +137,7 @@ Runtime State 不从 session JSON 直接得出。第一阶段只预留 `xenv sta
 - Create: `internal/cli/status_cmd.go`
 - Test: `go test ./internal/cli -run TestNewAppRegistersTopLevelCommands -count=1 -v`
 
-- [ ] **Step 1: 更新失败测试**
+- [x] **Step 1: 更新失败测试**
 
 修改 `internal/cli/app_test.go` 中 `TestNewAppRegistersTopLevelCommands` 的命令列表：
 
@@ -168,7 +168,7 @@ Runtime State 不从 session JSON 直接得出。第一阶段只预留 `xenv sta
 	}
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -183,7 +183,7 @@ FAIL
 expected app to register command "status"
 ```
 
-- [ ] **Step 3: 新增最小 `StatusCmd`**
+- [x] **Step 3: 新增最小 `StatusCmd`**
 
 创建 `internal/cli/status_cmd.go`：
 
@@ -219,7 +219,7 @@ func StatusCmd() *gcli.Command {
 }
 ```
 
-- [ ] **Step 4: 更新 app 注册**
+- [x] **Step 4: 更新 app 注册**
 
 修改 `internal/cli/app.go`：
 
@@ -241,7 +241,7 @@ func StatusCmd() *gcli.Command {
 
 移除 `NewListCmd()` 注册。
 
-- [ ] **Step 5: 运行测试确认通过**
+- [x] **Step 5: 运行测试确认通过**
 
 Run:
 
@@ -255,7 +255,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 Run:
 
@@ -271,7 +271,7 @@ git commit -m "feat: add top-level status command"
 - Create: `internal/cli/status_cmd_test.go`
 - Test: `go test ./internal/cli -run TestBuildEffectiveSDKRows -count=1 -v`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 创建 `internal/cli/status_cmd_test.go`：
 
@@ -325,7 +325,7 @@ func TestBuildEffectiveSDKRows(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -340,7 +340,7 @@ FAIL
 undefined: buildEffectiveSDKRows
 ```
 
-- [ ] **Step 3: 实现纯计算函数**
+- [x] **Step 3: 实现纯计算函数**
 
 在 `internal/cli/status_cmd.go` 中加入：
 
@@ -424,7 +424,7 @@ func collectSDKValues(values map[string][]stateValue, source string, state *mode
 }
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run:
 
@@ -438,7 +438,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 Run:
 
@@ -454,7 +454,7 @@ git commit -m "test: cover effective status rows"
 - Modify: `internal/cli/status_cmd_test.go`
 - Test: `go test ./internal/cli -run "TestFormatEffectiveSDKRows|TestFormatSessionContextLines" -count=1 -v`
 
-- [ ] **Step 1: 写格式化测试**
+- [x] **Step 1: 写格式化测试**
 
 在 `internal/cli/status_cmd_test.go` 中添加：
 
@@ -504,7 +504,7 @@ func TestFormatSessionContextLines(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -519,7 +519,7 @@ FAIL
 undefined: formatEffectiveSDKRows
 ```
 
-- [ ] **Step 3: 实现格式化函数**
+- [x] **Step 3: 实现格式化函数**
 
 在 `internal/cli/status_cmd.go` 中添加：
 
@@ -579,7 +579,7 @@ func formatStateSDKLines(title string, state *models.ActivityState, overridden m
 import "strings"
 ```
 
-- [ ] **Step 4: 接入 `StatusCmd`**
+- [x] **Step 4: 接入 `StatusCmd`**
 
 将 `StatusCmd` 的 `Func` 改为：
 
@@ -649,7 +649,7 @@ func formatLayerLines(title string, state *models.ActivityState, emptyMessage st
 	"github.com/inhere/xenv/internal/xenv"
 ```
 
-- [ ] **Step 5: 运行测试**
+- [x] **Step 5: 运行测试**
 
 Run:
 
@@ -663,7 +663,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 Run:
 
@@ -680,7 +680,7 @@ git commit -m "feat: show effective status layers"
 - Modify: `internal/cli/app_test.go`
 - Test: `go test ./internal/cli -count=1`
 
-- [ ] **Step 1: 删除顶层 list 命令代码**
+- [x] **Step 1: 删除顶层 list 命令代码**
 
 如果 `internal/cli/list_cmd.go` 中只有顶层 `list` 相关逻辑，删除文件：
 
@@ -695,7 +695,7 @@ git rm internal/cli/list_cmd.go internal/cli/list_cmd_test.go
 - `listEnvPaths()` 保留在 `internal/cli/path_cmd.go`。
 - 状态展示 helper 由 `internal/cli/status_cmd.go` 承担。
 
-- [ ] **Step 2: 运行测试**
+- [x] **Step 2: 运行测试**
 
 Run:
 
@@ -709,7 +709,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 3: 手动确认 help**
+- [x] **Step 3: 手动确认 help**
 
 Run:
 
@@ -734,7 +734,7 @@ Available Commands:
 
 The output must not include top-level `list`.
 
-- [ ] **Step 4: 提交**
+- [x] **Step 4: 提交**
 
 Run:
 
@@ -752,7 +752,7 @@ git commit -m "refactor: remove top-level list command"
 - Modify: `internal/xenv/shell/gen_hook_test.go`
 - Test: `go test ./internal/xenv/shell -count=1`
 
-- [ ] **Step 1: 更新测试断言**
+- [x] **Step 1: 更新测试断言**
 
 在 `internal/xenv/shell/gen_hook_test.go` 的 command aliases 测试中，把 completion 断言改为包含 `status st` 且不包含 `list`：
 
@@ -767,7 +767,7 @@ assertContains(t, pwsh, "@('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset'
 assertNotContains(t, pwsh, "'list'")
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -781,7 +781,7 @@ Expected:
 FAIL
 ```
 
-- [ ] **Step 3: 更新 hook 模板**
+- [x] **Step 3: 更新 hook 模板**
 
 在 `internal/xenv/shell/gen_hook_bash.go` 中替换 completion：
 
@@ -801,7 +801,7 @@ compctl -k "use u unuse un env e set unset path p status st help" xenv
 @('use', 'u', 'unuse', 'un', 'env', 'e', 'set', 'unset', 'path', 'p', 'status', 'st', '--help') | Where-Object { $_ -like "$wordToComplete*" }
 ```
 
-- [ ] **Step 4: 运行 shell 测试**
+- [x] **Step 4: 运行 shell 测试**
 
 Run:
 
@@ -815,7 +815,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 Run:
 
@@ -831,7 +831,7 @@ git commit -m "fix: update hook completions for status"
 - Modify: `internal/xenv/service/tool_service_test.go`
 - Test: `go test ./internal/xenv/service -run TestActivateSDKWarnsWhenSessionUseOverridesDirectoryState -count=1 -v`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 在 `internal/xenv/service/tool_service_test.go` 中添加：
 
@@ -875,7 +875,7 @@ func captureColorOutput(t *testing.T, fn func()) string {
 	"github.com/gookit/goutil/byteutil"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run:
 
@@ -890,7 +890,7 @@ FAIL
 Should contain: "temporary runtime override"
 ```
 
-- [ ] **Step 3: 实现 warning**
+- [x] **Step 3: 实现 warning**
 
 在 `internal/xenv/service/sdk_service.go` 的 `activateSDKs` 中，成功匹配 `localSDK` 后、打印 activate message 后，调用：
 
@@ -924,7 +924,7 @@ func (ts *SDKService) warnTemporaryRuntimeOverride(spec *models.VersionSpec, opF
 }
 ```
 
-- [ ] **Step 4: 运行测试**
+- [x] **Step 4: 运行测试**
 
 Run:
 
@@ -938,7 +938,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 Run:
 

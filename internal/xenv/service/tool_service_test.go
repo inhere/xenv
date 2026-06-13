@@ -8,8 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gookit/goutil/byteutil"
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/x/assert"
+	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/xenv/internal/xenv/manager"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/shell"
@@ -416,6 +418,24 @@ func TestActivateSDKsStoresMatchedVersion(t *testing.T) {
 	}
 }
 
+func TestActivateSDKWarnsWhenSessionUseOverridesDirectoryState(t *testing.T) {
+	_, _, svc, _ := newDirenvTestService(t, "test-session-override-warning", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		err := os.WriteFile(xenvToml, []byte("[sdks]\n  go = \"1.23\"\n"), 0o644)
+		assert.Require(t, assert.NoErr(t, err))
+	})
+
+	out := captureColorOutput(t, func() {
+		_, err := svc.ActivateSDKs([]string{"go:1.24"}, models.OpFlagSession)
+		assert.Require(t, assert.NoErr(t, err))
+	})
+
+	assert.Contains(t, out, "Activate go:1.24")
+	assert.Contains(t, out, "WARN: directory state wants go:1.23")
+	assert.Contains(t, out, "temporary runtime override")
+	assert.Contains(t, out, "xenv use -s go:1.24")
+}
+
 func TestActivateSDKsResolvesAliasToConfiguredSDKName(t *testing.T) {
 	_, _, svc, state := newDirenvTestService(t, "test-activate-alias", nil)
 	svc.config.SDKs = append(svc.config.SDKs, models.ToolChain{
@@ -623,6 +643,18 @@ func writeTestEgetStore(t *testing.T, name, version, installDir string) string {
 		t.Fatal(err)
 	}
 	return storeFile
+}
+
+func captureColorOutput(t *testing.T, fn func()) string {
+	t.Helper()
+
+	buf := byteutil.NewBuffer()
+	ccolor.SetOutput(buf)
+	t.Cleanup(func() {
+		ccolor.SetOutput(os.Stdout)
+	})
+	fn()
+	return buf.String()
 }
 
 func newDirenvTestService(t *testing.T, sessionID string, setupProject func(projectDir string)) (tempHome, projectDir string, svc *SDKService, state *manager.StateManager) {
