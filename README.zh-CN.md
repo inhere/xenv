@@ -10,7 +10,7 @@
 - 管理全局、项目级、当前 Shell 会话级的环境变量。
 - 管理全局、项目级、当前 Shell 会话级的 `PATH` 条目。
 - 通过 Shell 集成，在进入目录时自动加载项目内的 `.xenv.toml`。
-- 检查当前激活的 SDK 和项目声明的工具依赖。
+- 检查 Effective State 中的 SDK 和项目声明的工具依赖。
 - 为 bash、zsh、PowerShell、cmd/clink 生成 Shell Hook。
 
 ## 安装
@@ -67,10 +67,10 @@ xenv set -s APP_ENV local
 xenv path add -s ./bin
 ```
 
-查看当前激活状态：
+查看状态并运行检查：
 
 ```bash
-xenv list activity
+xenv status
 xenv check
 ```
 
@@ -133,6 +133,16 @@ xenv use -g go:1.24
 xenv set -g GOPROXY https://proxy.golang.org,direct
 xenv path add -g ~/.local/bin
 ```
+
+## 命令职责
+
+- `xenv status`: 查看当前目录和当前 Shell 的状态，包括 Effective State、Session Context 和 Runtime State。
+- `xenv sdk list`: 列出本机 SDK inventory。
+- `xenv env list`: 列出 xenv 管理的环境变量状态。
+- `xenv path list`: 列出 xenv 管理的 `PATH` 状态。
+- `xenv check`: 校验 Effective State 和项目 tool requirements 是否满足。
+
+v0 阶段不保留顶层 `xenv list` / `xenv ls`；状态诊断请使用 `xenv status`。
 
 ## 项目状态
 
@@ -211,7 +221,6 @@ xenv unuse go:1.24 node:20
 ```bash
 xenv env
 xenv env list
-xenv list env
 ```
 
 设置和删除环境变量：
@@ -242,7 +251,6 @@ xenv unset -g GOPROXY
 ```bash
 xenv path
 xenv path list
-xenv list path
 ```
 
 添加、移除和搜索条目：
@@ -268,7 +276,7 @@ xenv path add -g ~/.local/bin
 xenv check
 ```
 
-检查当前激活的 SDK 是否可用：
+检查 Effective State 中的 SDK 是否可用：
 
 ```bash
 xenv check sdk
@@ -375,9 +383,11 @@ SDK 字段说明：
 | `xenv path add [-g] [-s] <path>` | 添加 `PATH` 条目 |
 | `xenv path remove [-g] [-s] <path>` | 删除 `PATH` 条目 |
 | `xenv path search <value>` | 搜索当前 `PATH` 条目 |
-| `xenv list activity [-t]` | 查看当前激活的 SDK、环境变量、路径和工具要求 |
+| `xenv status` | 查看当前目录的 Effective State |
+| `xenv status --layers` | 查看 Global State、Directory State 和 Session Context 分层 |
+| `xenv status --runtime` | 查看 Runtime State 检测详情，完整检测在后续阶段实现 |
 | `xenv check` | 运行 SDK 和工具检查 |
-| `xenv check sdk` | 检查当前激活 SDK 是否可用 |
+| `xenv check sdk` | 检查 Effective State 中的 SDK 是否可用 |
 | `xenv check tools` | 检查项目工具依赖 |
 | `xenv shell --type <shell>` | 输出 Shell Hook 脚本 |
 | `xenv shell --install -t <shell>` | 安装 Shell Hook 到配置文件 |
@@ -388,7 +398,7 @@ SDK 字段说明：
 别名：
 
 - `xenv sdks` 等同于 `xenv sdk`
-- `xenv ls` 等同于 `xenv list`
+- `xenv st` 等同于 `xenv status`
 - `xenv e` 等同于 `xenv env`
 - `xenv p` 等同于 `xenv path`
 - `xenv cfg` 等同于 `xenv config`

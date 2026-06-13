@@ -10,7 +10,7 @@ import (
 
 var CheckCmd = &gcli.Command{
 	Name: "check",
-	Desc: "Check active SDKs and project tool requirements",
+	Desc: "Check effective SDKs and project tool requirements",
 	Subs: []*gcli.Command{
 		CheckSDKCmd(),
 		CheckToolsCmd(),
@@ -28,7 +28,7 @@ var CheckCmd = &gcli.Command{
 func CheckSDKCmd() *gcli.Command {
 	return &gcli.Command{
 		Name: "sdk",
-		Desc: "Check active SDK availability",
+		Desc: "Check SDK availability for effective state",
 		Func: func(c *gcli.Command, args []string) error {
 			return runSDKChecks()
 		},

@@ -10,7 +10,7 @@ English | [简体中文](README.zh-CN.md)
 - Manage global, project-local, and shell-session environment variables.
 - Manage global, project-local, and shell-session `PATH` entries.
 - Load project state from `.xenv.toml` when you enter a directory through the shell integration.
-- Check active SDKs and project tool requirements.
+- Check effective SDKs and project tool requirements.
 - Generate shell hooks for bash, zsh, PowerShell, and cmd/clink.
 
 ## Install
@@ -77,10 +77,10 @@ xenv set -s APP_ENV local
 xenv path add -s ./bin
 ```
 
-Check the active environment:
+Inspect status and run checks:
 
 ```bash
-xenv list activity
+xenv status
 xenv check
 ```
 
@@ -143,6 +143,16 @@ xenv use -g go:1.24
 xenv set -g GOPROXY https://proxy.golang.org,direct
 xenv path add -g ~/.local/bin
 ```
+
+## Command Responsibilities
+
+- `xenv status`: Show current state for this directory and shell, including Effective State, Session Context, and Runtime State.
+- `xenv sdk list`: List local SDK inventory.
+- `xenv env list`: List xenv-managed environment variable state.
+- `xenv path list`: List xenv-managed `PATH` state.
+- `xenv check`: Check whether Effective State and project tool requirements are satisfied.
+
+Top-level `xenv list` / `xenv ls` is not kept in v0; use `xenv status` for state diagnostics.
 
 ## Project State
 
@@ -221,7 +231,6 @@ List environment variables managed by `xenv`:
 ```bash
 xenv env
 xenv env list
-xenv list env
 ```
 
 Set and unset values:
@@ -252,7 +261,6 @@ List managed `PATH` entries:
 ```bash
 xenv path
 xenv path list
-xenv list path
 ```
 
 Add, remove, and search entries:
@@ -278,7 +286,7 @@ Run all checks:
 xenv check
 ```
 
-Check active SDK availability:
+Check SDK availability for Effective State:
 
 ```bash
 xenv check sdk
@@ -385,9 +393,11 @@ SDK fields:
 | `xenv path add [-g] [-s] <path>` | Add a `PATH` entry |
 | `xenv path remove [-g] [-s] <path>` | Remove a `PATH` entry |
 | `xenv path search <value>` | Search current `PATH` entries |
-| `xenv list activity [-t]` | List active SDKs, env vars, paths, and tool requirements |
+| `xenv status` | Show Effective State for the current directory |
+| `xenv status --layers` | Show Global State, Directory State, and Session Context layers |
+| `xenv status --runtime` | Show Runtime State detection details when implemented |
 | `xenv check` | Run SDK and tool checks |
-| `xenv check sdk` | Check active SDK availability |
+| `xenv check sdk` | Check SDK availability for Effective State |
 | `xenv check tools` | Check project tool requirements |
 | `xenv shell --type <shell>` | Print shell hook script |
 | `xenv shell --install -t <shell>` | Install shell hook into a shell profile |
@@ -398,7 +408,7 @@ SDK fields:
 Aliases:
 
 - `xenv sdks` for `xenv sdk`
-- `xenv ls` for `xenv list`
+- `xenv st` for `xenv status`
 - `xenv e` for `xenv env`
 - `xenv p` for `xenv path`
 - `xenv cfg` for `xenv config`

@@ -956,7 +956,7 @@ git commit -m "feat: warn on temporary session sdk override"
 - Modify: `docs/design/2026-06-12-xenv-state-semantics-design.md`
 - Test: `go test ./internal/cli -count=1`
 
-- [ ] **Step 1: 更新 `check` 文案**
+- [x] **Step 1: 更新 `check` 文案**
 
 修改 `internal/cli/check_cmd.go`：
 
@@ -973,7 +973,7 @@ func CheckSDKCmd() *gcli.Command {
 		Desc: "Check SDK availability for effective state",
 ```
 
-- [ ] **Step 2: 更新 README 命令结构**
+- [x] **Step 2: 更新 README 命令结构**
 
 在 `README.zh-CN.md` 中加入或更新命令结构说明：
 
@@ -1003,7 +1003,7 @@ func CheckSDKCmd() *gcli.Command {
 Top-level `xenv list` / `xenv ls` is not kept in v0; use `xenv status` for state diagnostics.
 ````
 
-- [ ] **Step 3: 更新设计文档**
+- [x] **Step 3: 更新设计文档**
 
 确认 `docs/design/2026-06-12-xenv-state-semantics-design.md` 包含：
 
@@ -1020,7 +1020,7 @@ xenv ls --group
 xenv ls --group --runtime
 ```
 
-- [ ] **Step 4: 运行测试**
+- [x] **Step 4: 运行测试**
 
 Run:
 
@@ -1034,7 +1034,7 @@ Expected:
 PASS
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 Run:
 

@@ -6,6 +6,7 @@
 | --- | --- | --- | --- |
 | 2026-06-12 | v0.1 | Codex | 初版，明确 Global、Directory、Session、Effective、Runtime State 的职责、触发边界和展示语义。 |
 | 2026-06-13 | v0.2 | Codex | 确认 v0 不保留 `list/ls` 兼容入口，状态诊断收敛到一等 `status` 命令，`Session State` 展示为 `Session Context`。 |
+| 2026-06-13 | v0.3 | Codex | 同步第一阶段实现边界：默认 `status` 展示 Effective State，`--layers` 展示分层，`--runtime` 先保留入口。 |
 
 ## 关联文档
 
@@ -475,30 +476,32 @@ config           管理配置
 
 `xenv status` 后续应明确展示状态层级，不再让用户误以为 Session State 一定是当前 runtime。
 
-默认 `xenv status` 输出当前最重要的信息：Effective State、Runtime State 和 warning。
+默认 `xenv status` 输出当前最重要的信息：Effective State。第一阶段不从 PATH/ENV 推导 Runtime State，避免把 Session Context 误当成当前 shell 的真实状态。
 
 建议输出：
 
 ```text
 [Effective State]
 ---------------------------------------------------------------------
-Active Develop SDKs:
+SDKs:
           go => 1.23  (Directory State)
+```
 
-[Runtime State]
----------------------------------------------------------------------
-Active Develop SDKs:
-          go => 1.24.6  (detected from PATH)
-Warnings:
-          go runtime differs from Effective State go 1.23
-          run `cd .` or `xenv init-direnv` to re-apply directory state
+分层详情通过参数显式展开：
 
+```bash
+xenv status --layers
+```
+
+输出示例：
+
+```text
 [Global State]
 ---------------------------------------------------------------------
  - from: C:\Users\inhere/.config/xenv/global.toml
 No global state found
 
-[Directory States]
+[Directory State]
 ---------------------------------------------------------------------
  - from: D:\work\project\.xenv.toml
 Directory SDKs:
@@ -511,16 +514,30 @@ Session Defaults:
           go => 1.24.6  (overridden by Directory State)
 ```
 
-分层详情通过参数显式展开：
-
-```bash
-xenv status --layers
-```
-
-Runtime 检测详情通过参数显式展示：
+Runtime 检测详情通过参数显式展示。第一阶段只保留入口和占位输出，完整 PATH-based 检测进入第二阶段：
 
 ```bash
 xenv status --runtime
+```
+
+当前第一阶段输出：
+
+```text
+[Runtime State]
+---------------------------------------------------------------------
+Runtime detection is not implemented yet
+```
+
+第二阶段目标输出：
+
+```text
+[Runtime State]
+---------------------------------------------------------------------
+Active Develop SDKs:
+          go => 1.24.6  (detected from PATH)
+Warnings:
+          go runtime differs from Effective State go 1.23
+          run `cd .` or `xenv init-direnv` to re-apply directory state
 ```
 
 参数可以组合：
