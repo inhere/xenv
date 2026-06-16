@@ -322,6 +322,56 @@ func TestGeneratedPwshHookPassesLeadingDashArguments(t *testing.T) {
 	}
 }
 
+func TestGeneratedPwshHookKeepsShellAliasesAfterSetup(t *testing.T) {
+	if _, err := exec.LookPath("pwsh"); err != nil {
+		t.Skip("pwsh is not available")
+	}
+
+	oldBinCommand := xenvcom.BinCommand
+	oldBinName := xenvcom.BinName
+	xenvcom.SetBinCommand("xenv")
+	xenvcom.SetBinName("xenv")
+	t.Cleanup(func() {
+		xenvcom.BinCommand = oldBinCommand
+		xenvcom.BinName = oldBinName
+	})
+
+	tempDir := t.TempDir()
+	hooksDir := filepath.Join(tempDir, "hooks")
+	assert.Require(t, assert.NoErr(t, os.MkdirAll(hooksDir, 0o755)))
+
+	fakeXenv := filepath.Join(tempDir, "xenv")
+	fakeContents := "#!/usr/bin/env sh\nif [ \"$1\" = \"shell-init-hook\" ]; then exit 0; fi\n"
+	if runtime.GOOS == "windows" {
+		fakeXenv += ".cmd"
+		fakeContents = "@echo off\r\nif \"%1\"==\"shell-init-hook\" exit /b 0\r\n"
+	}
+	assert.Require(t, assert.NoErr(t, os.WriteFile(fakeXenv, []byte(fakeContents), 0o755)))
+
+	hookScript, err := NewScriptGenerator(Pwsh).GenHookScripts(&models.GenInitScriptParams{
+		ShellHooksDir: hooksDir,
+		ShellAliases: map[string]string{
+			"adb": "Get-ChildItem",
+			"llx": "Get-ChildItem -Force",
+		},
+	})
+	assert.Require(t, assert.NoErr(t, err))
+	hookFile := filepath.Join(tempDir, "xenv-hook.ps1")
+	assert.Require(t, assert.NoErr(t, os.WriteFile(hookFile, []byte(hookScript), 0o644)))
+
+	cmd := exec.Command("pwsh", "-NoProfile", "-Command", `. $env:HOOK_SCRIPT; Get-Command adb,llx | Select-Object -ExpandProperty Name`)
+	cmd.Env = append(os.Environ(),
+		"HOOK_SCRIPT="+hookFile,
+		"PATH="+tempDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+	)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("expected pwsh hook aliases to remain available, err=%v, output=%s", err, out)
+	}
+	assertContains(t, string(out), "adb")
+	assertContains(t, string(out), "llx")
+}
+
 func assertContains(t *testing.T, s, substr string) {
 	t.Helper()
 	if !strings.Contains(s, substr) {

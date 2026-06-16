@@ -33,10 +33,10 @@ func (sg *XenvScriptGenerator) generatePwshScripts(ps *models.GenInitScriptParam
 		maputil.EachTypedMap(ps.ShellAliases, func(key, value string) {
 			// 复杂 value, 封装为简易方法 eg: function ll { ls.exe -alh $args }
 			if strutil.ContainsByte(value, ' ') {
-				sb.WriteString(fmt.Sprintf("  function %s() { %s $args }\n", key, value))
+				sb.WriteString(fmt.Sprintf("  function global:%s() { %s $args }\n", key, value))
 			} else {
 				// 简单 value, 直接使用 Set-Alias
-				sb.WriteString(fmt.Sprintf("  Set-Alias -name %s -value %s\n", key, value))
+				sb.WriteString(fmt.Sprintf("  Set-Alias -name %s -value %s -Scope Global\n", key, value))
 			}
 		})
 	}
