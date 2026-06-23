@@ -78,6 +78,32 @@ func TestSetEnvDirenvCreatesXenvToml(t *testing.T) {
 	assert.StrContains(t, contents, `JAVA_TOOL_OPTIONS = "-Dfile.encoding=UTF-8"`)
 }
 
+func TestSetGlobalEnvUsesXenvConfigDir(t *testing.T) {
+	rootDir := t.TempDir()
+	homeDir := filepath.Join(rootDir, "home")
+	configDir := filepath.Join(rootDir, "xenv-config")
+	projectDir := filepath.Join(rootDir, "project")
+	err := os.MkdirAll(projectDir, 0o755)
+	assert.Require(t, assert.NoErr(t, err))
+	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
+	t.Setenv("XENV_CONFIG_DIR", configDir)
+	chdirForTest(t, projectDir)
+
+	state := NewStateManager()
+	err = state.Init()
+	assert.Require(t, assert.NoErr(t, err))
+	err = state.SetEnv("GOPROXY", "direct", models.OpFlagGlobal)
+	assert.Require(t, assert.NoErr(t, err))
+
+	data, err := os.ReadFile(filepath.Join(configDir, "global.toml"))
+	assert.Require(t, assert.NoErr(t, err))
+	assert.StrContains(t, string(data), `GOPROXY = "direct"`)
+
+	_, err = os.Stat(filepath.Join(homeDir, ".config", "xenv", "global.toml"))
+	assert.Require(t, assert.True(t, os.IsNotExist(err)))
+}
+
 func chdirForTest(t *testing.T, dir string) {
 	t.Helper()
 

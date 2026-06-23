@@ -11,6 +11,7 @@ import (
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/strutil"
+	"github.com/inhere/xenv/internal/xenv/config"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
@@ -25,7 +26,7 @@ type StateManager struct {
 	merged *models.ActivityState
 	// session current session state data. NOTE: 只有在 HOOK SHELL 中才会生效
 	session *models.ActivityState
-	// global state data from global state file xenvcom.GlobalStateFile
+	// global state data from global state file
 	global *models.ActivityState
 	// directory states. 从当前目录开始，会向上级目录递归查找 .xenv.local.toml/.xenv.toml
 	//  - index 越大的优先级越高，距离当前目录越近
@@ -36,8 +37,9 @@ type StateManager struct {
 
 // NewStateManager creates a new StateManager
 func NewStateManager() *StateManager {
-	globalFile := fsutil.ExpandHome(xenvcom.GlobalStateFile)
-	sessionFile := fsutil.ExpandHome(xenvcom.SessionFile())
+	paths := config.DefaultPaths()
+	globalFile := paths.GlobalStateFile
+	sessionFile := filepath.Join(paths.SessionDir, xenvcom.SessionID()+".json")
 
 	return &StateManager{
 		merged:    models.NewActivityState("MERGED"),
