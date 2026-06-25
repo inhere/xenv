@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gookit/gcli/v3"
-	"github.com/gookit/gcli/v3/events"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
@@ -31,7 +30,7 @@ func NewApp() *gcli.App {
 	})
 	app.Version = buildVersionString()
 
-	app.On(events.OnAppBindOptsAfter, func(ctx *gcli.HookCtx) bool {
+	app.On(gcli.EvtAppBindOptsAfter, func(ctx *gcli.HookCtx) bool {
 		ctx.App.Flags().BoolVar(&xenvcom.DebugMode, &gcli.CliOpt{
 			Name:   "debug",
 			Shorts: []string{"d"},
@@ -40,7 +39,7 @@ func NewApp() *gcli.App {
 		})
 		return false
 	})
-	app.On(events.OnAppRunError, func(ctx *gcli.HookCtx) bool {
+	app.On(gcli.EvtAppRunError, func(ctx *gcli.HookCtx) bool {
 		if errV := ctx.Get("err"); errV != nil {
 			if err, ok := errV.(error); ok {
 				_, _ = fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
