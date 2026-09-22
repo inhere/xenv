@@ -22,18 +22,18 @@ func splitPathList(value string) []string {
 //
 // return 未找到时返回 -1
 func pathListIndex(pathList []string, path string) int {
-	target := normalizeWinPath(path)
+	target := NormalizeWinPath(path)
 	for i, item := range pathList {
-		if strings.EqualFold(normalizeWinPath(item), target) {
+		if strings.EqualFold(NormalizeWinPath(item), target) {
 			return i
 		}
 	}
 	return -1
 }
 
-// normalizeWinPath 统一 Windows 路径分隔符并去掉末尾分隔符, 便于比较
+// NormalizeWinPath 统一 Windows 路径分隔符并去掉末尾分隔符, 便于比较
 //
 // 不展开 %USERPROFILE% 之类的变量, 也不解析 . / .. 段, 避免改动用户已有的 PATH 条目
-func normalizeWinPath(path string) string {
+func NormalizeWinPath(path string) string {
 	return strings.TrimRight(strings.ReplaceAll(path, "/", `\`), `\`)
 }
