@@ -160,7 +160,7 @@ func (u *StateTomlUpdater) Build(state *models.ActivityState) *StateTomlUpdater 
 		// 处理节标题 [section]: envs, tools, sdks
 		if trimmed[0] == '[' && lastChar == ']' {
 			// if 之前没有添加过 paths
-			if u.processedSecs["paths"] == false {
+			if !u.processedSecs["paths"] {
 				inPathsValues = false
 				u.addNewPaths(state)
 			}
