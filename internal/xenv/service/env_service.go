@@ -11,6 +11,7 @@ import (
 	"github.com/inhere/xenv/internal/util"
 	"github.com/inhere/xenv/internal/xenv/manager"
 	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/sysenv"
 )
 
 // EnvService handles environment variable and PATH management
@@ -49,9 +50,9 @@ func (s *EnvService) SetEnv(name, value string, opFlag models.OpFlag) (script st
 		return "", err1
 	}
 
-	name = strings.ToUpper(name)
-	if !strutil.IsVarName(name) {
-		return "", fmt.Errorf("invalid environment variable name: %s", name)
+	name, err = normalizeEnvName(name)
+	if err != nil {
+		return "", err
 	}
 
 	// 在shell hook环境中, 生成 ENV set 脚本
@@ -247,4 +248,129 @@ func (s *EnvService) SearchPath(path string) []string {
 	}
 
 	return matches
+}
+
+// endregion
+// region OS system ENV management
+//
+
+// SetSystemEnv 设置操作系统的用户级环境变量
+func (s *EnvService) SetSystemEnv(name, value string) (script string, err error) {
+	name, err = normalizeEnvName(name)
+	if err != nil {
+		return "", err
+	}
+
+	if err = sysenv.SetVar(name, value); err != nil {
+		return "", err
+	}
+
+	// 在shell hook环境中, 生成脚本让当前 shell 立即生效
+	gen, err := getShellGenerator(s.config)
+	if err != nil {
+		return "", err
+	}
+	if gen != nil {
+		script = gen.GenSetEnv(name, value)
+	}
+	return script, nil
+}
+
+// UnsetSystemEnvs 删除操作系统的用户级环境变量
+func (s *EnvService) UnsetSystemEnvs(names []string) (script string, err error) {
+	gen, err := getShellGenerator(s.config)
+	if err != nil {
+		return "", err
+	}
+
+	var sb strings.Builder
+	for _, name := range names {
+		name, err = normalizeEnvName(name)
+		if err != nil {
+			return "", err
+		}
+		if err = sysenv.UnsetVar(name); err != nil {
+			return "", err
+		}
+
+		if gen != nil {
+			sb.WriteString(gen.GenUnsetEnv(name))
+		}
+	}
+	return sb.String(), nil
+}
+
+// AddSystemPath 添加路径到操作系统的用户级 PATH
+func (s *EnvService) AddSystemPath(path string) (script string, err error) {
+	normalizedPath := util.NormalizePath(path)
+	if _, err = os.Stat(normalizedPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("path does not exist: %s", normalizedPath)
+	}
+
+	if err = sysenv.AddPath(normalizedPath); err != nil {
+		return "", err
+	}
+
+	// 在shell hook环境中, 生成脚本让当前 shell 立即生效
+	gen, err := getShellGenerator(s.config)
+	if err != nil {
+		return "", err
+	}
+	if gen != nil {
+		if _, found := withoutPath(sessionPath(), normalizedPath); !found {
+			script = gen.GenAddPath(normalizedPath)
+		}
+	}
+	return script, nil
+}
+
+// RemoveSystemPath 删除操作系统的用户级 PATH 中的路径
+func (s *EnvService) RemoveSystemPath(path string) (script string, err error) {
+	normalizedPath := util.NormalizePath(path)
+
+	if err = sysenv.RemovePath(normalizedPath); err != nil {
+		return "", err
+	}
+
+	// 在shell hook环境中, 生成脚本移除当前 shell 的 PATH 条目
+	gen, err := getShellGenerator(s.config)
+	if err != nil {
+		return "", err
+	}
+	if gen != nil {
+		if newPaths, found := withoutPath(sessionPath(), normalizedPath); found {
+			script = gen.GenSetPath(newPaths)
+		}
+	}
+	return script, nil
+}
+
+// sessionPath 返回当前 shell 会话的 PATH 条目
+func sessionPath() []string {
+	return util.SplitPath(os.Getenv("PATH"))
+}
+
+// withoutPath 删除列表中的指定路径, 第二个返回值表示是否找到并删除
+func withoutPath(pathList []string, path string) ([]string, bool) {
+	newPaths := make([]string, 0, len(pathList))
+	found := false
+	for _, p := range pathList {
+		if util.NormalizePath(p) == path {
+			found = true
+			continue
+		}
+		newPaths = append(newPaths, p)
+	}
+	return newPaths, found
+}
+
+// endregion
+
+// normalizeEnvName 规范化并校验环境变量名称
+func normalizeEnvName(name string) (string, error) {
+	name = strings.ToUpper(name)
+	if !strutil.IsVarName(name) {
+		return "", fmt.Errorf("invalid environment variable name: %s", name)
+	}
+	return name, nil
 }
