@@ -12,6 +12,7 @@ import (
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/x/assert"
 	"github.com/gookit/goutil/x/ccolor"
+	"github.com/inhere/xenv/internal/xenv/config"
 	"github.com/inhere/xenv/internal/xenv/manager"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/shell"
@@ -182,13 +183,15 @@ func TestGenHookScriptsSkipsStatePathsForOtherOS(t *testing.T) {
 }
 
 func TestSetupDirenvSkipsSDKsForOtherOS(t *testing.T) {
-	_, _, svc, _ := newDirenvTestService(t, "test-os-prefixed-direnv-sdks", func(projectDir string) {
+	tempHome, _, svc, _ := newDirenvTestService(t, "test-os-prefixed-direnv-sdks", func(projectDir string) {
 		xenvToml := filepath.Join(projectDir, ".xenv.toml")
 		data := "paths = []\n\n[sdks]\n  go = \"1.24\"\n  flutter = \"" + otherGOOSPrefix() + ":3.27\"\n\n[envs]\n\n[tools]\n"
 		if err := os.WriteFile(xenvToml, []byte(data), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	})
+	// 隔离 PATH, 避免环境中的同名版本(如 flutter 3.27)干扰断言
+	t.Setenv("PATH", filepath.Join(tempHome, "bin"))
 
 	script, err := svc.SetupDirenv()
 	if err != nil {
@@ -667,6 +670,8 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 	t.Setenv("HOME", tempHome)
 	t.Setenv("USERPROFILE", tempHome)
 	t.Setenv("XENV_HOOK_SHELL", "pwsh")
+	// 隔离外部配置目录, 保证状态文件落在临时 HOME 下
+	t.Setenv(config.EnvConfigDir, "")
 	xenvcom.SetHookShell("pwsh")
 	xenvcom.SetSessionID("")
 	t.Cleanup(func() {
