@@ -272,6 +272,12 @@ xenv unset -S GOPROXY
 
 On Windows the value is written to `HKCU\Environment`; on Linux/macOS it is written to the xenv block of `~/.bashrc` or `~/.zshrc`. `-S` can not be combined with `-g` or `-s`.
 
+List the OS user environment variables in addition to the xenv-managed state:
+
+```bash
+xenv env list -S
+```
+
 ## PATH Management
 
 List managed `PATH` entries:
@@ -304,6 +310,12 @@ xenv path remove -S ~/.local/bin
 ```
 
 The entry is prepended, and the original value type and `%VAR%` references are preserved on Windows. Adding or removing a path that does not change anything fails with a message instead of writing a duplicate entry.
+
+List the OS user `PATH` entries in addition to the xenv-managed state:
+
+```bash
+xenv path list -S
+```
 
 ## Tool Checks
 
@@ -413,10 +425,10 @@ SDK fields:
 | `xenv sdk where [--bin] <name:version>` | Print an SDK installation or binary path |
 | `xenv use [-g] [-s] <name:version>...` | Activate SDK versions |
 | `xenv unuse [-g] [-s] <name:version>...` | Deactivate SDK versions |
-| `xenv env list` | List managed environment variables |
+| `xenv env list` | List managed environment variables, `-S` also lists the OS user environment |
 | `xenv env set [-g] [-s] [-S] <name> <value>` | Set an environment variable |
 | `xenv env unset [-g] [-s] [-S] <name...>` | Remove environment variables |
-| `xenv path list` | List managed `PATH` entries |
+| `xenv path list` | List managed `PATH` entries, `-S` also lists the OS user `PATH` |
 | `xenv path add [-g] [-s] [-S] <path>` | Add a `PATH` entry |
 | `xenv path remove [-g] [-s] [-S] <path>` | Remove a `PATH` entry |
 | `xenv path search <value>` | Search current `PATH` entries |

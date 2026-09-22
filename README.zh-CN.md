@@ -262,6 +262,12 @@ xenv unset -S GOPROXY
 
 Windows 上写入注册表 `HKCU\Environment`；Linux/macOS 上写入 `~/.bashrc` 或 `~/.zshrc` 中的 xenv 托管块。`-S` 不能与 `-g`、`-s` 同时使用。
 
+在 xenv 自身状态之外，同时列出操作系统用户级环境变量：
+
+```bash
+xenv env list -S
+```
+
 ## PATH 管理
 
 列出已管理的 `PATH` 条目：
@@ -294,6 +300,12 @@ xenv path remove -S ~/.local/bin
 ```
 
 条目会添加到最前面（优先级最高）。Windows 上会保留原有的值类型（`REG_EXPAND_SZ`）和 `%VAR%` 引用。重复添加或移除不存在的路径会直接报错，不会写入重复条目。
+
+在 xenv 自身状态之外，同时列出操作系统用户级 `PATH` 条目：
+
+```bash
+xenv path list -S
+```
 
 ## 工具检查
 
@@ -403,10 +415,10 @@ SDK 字段说明：
 | `xenv sdk where [--bin] <name:version>` | 输出 SDK 安装目录或二进制目录 |
 | `xenv use [-g] [-s] <name:version>...` | 激活 SDK 版本 |
 | `xenv unuse [-g] [-s] <name:version>...` | 取消激活 SDK 版本 |
-| `xenv env list` | 列出已管理的环境变量 |
+| `xenv env list` | 列出已管理的环境变量，`-S` 同时列出操作系统用户级环境变量 |
 | `xenv env set [-g] [-s] [-S] <name> <value>` | 设置环境变量 |
 | `xenv env unset [-g] [-s] [-S] <name...>` | 删除环境变量 |
-| `xenv path list` | 列出已管理的 `PATH` 条目 |
+| `xenv path list` | 列出已管理的 `PATH` 条目，`-S` 同时列出操作系统用户级 `PATH` |
 | `xenv path add [-g] [-s] [-S] <path>` | 添加 `PATH` 条目 |
 | `xenv path remove [-g] [-s] [-S] <path>` | 删除 `PATH` 条目 |
 | `xenv path search <value>` | 搜索当前 `PATH` 条目 |
