@@ -29,7 +29,7 @@ var EnvCmd = &gcli.Command{
 	},
 	Aliases: []string{"e"},
 	Func: func(c *gcli.Command, args []string) error {
-		return listEnvs()
+		return listEnvs(false)
 	},
 }
 
@@ -175,17 +175,23 @@ func EnvUnsetCmd(desc ...string) *gcli.Command {
 
 // EnvListCmd command for listing environment variables
 func EnvListCmd() *gcli.Command {
+	var opts struct {
+		System bool
+	}
 	return &gcli.Command{
 		Name:    "list",
 		Desc:    "List environment variables",
 		Aliases: []string{"ls"},
+		Config: func(c *gcli.Command) {
+			c.BoolOpt(&opts.System, "system", "S", false, "Also list the OS user environment variables")
+		},
 		Func: func(c *gcli.Command, args []string) error {
-			return listEnvs()
+			return listEnvs(opts.System)
 		},
 	}
 }
 
-func listEnvs() error {
+func listEnvs(withSystem bool) error {
 	// Create env service
 	envSvc, err := xenv.EnvService()
 	if err != nil {
@@ -205,6 +211,20 @@ func listEnvs() error {
 		for name, envVar := range sessVars {
 			fmt.Printf("  %s=%s\n", name, envVar)
 		}
+	}
+
+	if !withSystem {
+		return nil
+	}
+
+	ccolor.Infoln("System Environment Variables:")
+	sysVars, err := envSvc.SystemEnv()
+	if err != nil {
+		ccolor.Warnf("  failed to read system environment: %v\n", err)
+		return nil
+	}
+	for name, envVar := range sysVars {
+		fmt.Printf("  %s=%s\n", name, envVar)
 	}
 	return nil
 }

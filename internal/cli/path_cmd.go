@@ -20,7 +20,7 @@ var PathCmd = &gcli.Command{
 	},
 	Aliases: []string{"p"},
 	Func: func(c *gcli.Command, args []string) error {
-		return listEnvPaths()
+		return listEnvPaths(false)
 	},
 }
 
@@ -146,17 +146,23 @@ func PathRemoveCmd() *gcli.Command {
 
 // PathListCmd command for listing PATH entries
 func PathListCmd() *gcli.Command {
+	var opts struct {
+		System bool
+	}
 	return &gcli.Command{
 		Name:    "list",
 		Desc:    "List PATH entries",
 		Aliases: []string{"ls"},
+		Config: func(c *gcli.Command) {
+			c.BoolOpt(&opts.System, "system", "S", false, "Also list the OS user PATH entries")
+		},
 		Func: func(c *gcli.Command, args []string) error {
-			return listEnvPaths()
+			return listEnvPaths(opts.System)
 		},
 	}
 }
 
-func listEnvPaths() error {
+func listEnvPaths(withSystem bool) error {
 	// Create env service
 	envSvc, err := xenv.EnvService()
 	if err != nil {
@@ -169,7 +175,7 @@ func listEnvPaths() error {
 		fmt.Printf("  %d. %s\n", i+1, path)
 	}
 	if len(envSvc.GlobalState().Paths) == 0 {
-		fmt.Printf("  - No configuration")
+		fmt.Printf("  - No configuration\n")
 	}
 
 	ccolor.Infoln("Session PATH Entries:")
@@ -177,9 +183,25 @@ func listEnvPaths() error {
 		fmt.Printf("  %d. %s\n", i+1, path)
 	}
 	if len(envSvc.SessionState().Paths) == 0 {
-		fmt.Printf("  - No configuration")
+		fmt.Printf("  - No configuration\n")
 	}
 
+	if !withSystem {
+		return nil
+	}
+
+	ccolor.Infoln("System PATH Entries:")
+	sysPaths, err := envSvc.SystemPaths()
+	if err != nil {
+		ccolor.Warnf("  failed to read system PATH: %v\n", err)
+		return nil
+	}
+	for i, path := range sysPaths {
+		fmt.Printf("  %d. %s\n", i+1, path)
+	}
+	if len(sysPaths) == 0 {
+		fmt.Printf("  - No configuration\n")
+	}
 	return nil
 }
 
