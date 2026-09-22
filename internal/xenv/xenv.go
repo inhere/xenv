@@ -69,3 +69,12 @@ func EnvService() (*service.EnvService, error) {
 	// Create env manager
 	return service.NewEnvService(config.Mgr.Config, stateMgr), nil
 }
+
+// RunService 返回一次性执行命令的服务
+func RunService() (*service.RunService, error) {
+	sdkSvc, err := SDKService()
+	if err != nil {
+		return nil, err
+	}
+	return service.NewRunService(sdkSvc), nil
+}
