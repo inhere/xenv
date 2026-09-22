@@ -153,6 +153,31 @@ xenv path remove -S ~/.local/bin
 
 `-S/--system` can not be combined with `-g/--global` or `-s/--direnv`. New PATH entries are prepended, so they take priority. Run `xenv` from a hooked shell to also update the current shell immediately.
 
+## One-shot Command Execution
+
+`xenv run` (alias `exec`) builds an SDK/ENV/PATH environment from options and runs a command inside it. Nothing is written to xenv state and no shell hook is required, so it also works from editors, CI runners and GUI-launched processes.
+
+```bash
+xenv run -u go:1.24,node:22 -p ./bin -e APP_ENV=local -- go build ./...
+xenv exec -u go:1.24 --cwd D:/work/proj -- go test ./...
+xenv run -u go --print -- go version
+```
+
+| Option | Description |
+| --- | --- |
+| `-u, --use <spec,...>` | SDK specs to activate, repeatable and comma separated (`go`, `go:1.24`, `go@1.24`) |
+| `-p, --path <dir>` | Directory prepended to `PATH`, repeatable |
+| `-e, --env <KEY=VALUE>` | Environment variable to set, repeatable |
+| `-c, --cwd <dir>` | Working directory for the command |
+| `--print` | Print the resolved environment and command without running it |
+
+Rules:
+
+- ENV order: inherited environment, then SDK `active_env`, then `--env`; the last value wins.
+- PATH order: `--path` entries, then SDK bin directories, then the inherited `PATH`; duplicate entries are dropped and new entries win.
+- Options of the target command must be placed after `--`, otherwise they are parsed as `xenv run` options.
+- The exit status is the child's status, `127` when the command is not found and `2` for `xenv` side errors.
+
 ## Command Responsibilities
 
 - `xenv status`: Show current state for this directory and shell, including Effective State, Session Context, and Runtime State.
@@ -432,6 +457,7 @@ SDK fields:
 | `xenv path add [-g] [-s] [-S] <path>` | Add a `PATH` entry |
 | `xenv path remove [-g] [-s] [-S] <path>` | Remove a `PATH` entry |
 | `xenv path search <value>` | Search current `PATH` entries |
+| `xenv run [-u spec,...] [-p dir] [-e KEY=VALUE] [-c dir] [--print] -- <cmd> [args...]` | Run a command with a one-shot environment |
 | `xenv status` | Show Effective State for the current directory |
 | `xenv status --layers` | Show Global State, Directory State, and Session Context layers |
 | `xenv status --runtime` | Show Runtime State detection details when implemented |

@@ -143,6 +143,31 @@ xenv path remove -S ~/.local/bin
 
 `-S/--system` 不能与 `-g/--global`、`-s/--direnv` 同时使用。新增的 PATH 条目会放到最前面，优先级最高。在已启用 Hook 的 Shell 中执行时，会同时输出脚本让当前 Shell 立即生效。
 
+## 一次性执行命令
+
+`xenv run`（别名 `exec`）用选项构造 SDK/ENV/PATH 环境并在其中执行命令。不写入任何 xenv 状态，也不需要 shell hook，因此编辑器任务、CI runner、GUI 启动的进程同样可用。
+
+```bash
+xenv run -u go:1.24,node:22 -p ./bin -e APP_ENV=local -- go build ./...
+xenv exec -u go:1.24 --cwd D:/work/proj -- go test ./...
+xenv run -u go --print -- go version
+```
+
+| 选项 | 说明 |
+| --- | --- |
+| `-u, --use <spec,...>` | 一次性激活的 SDK 规格，可重复、可逗号分隔（`go`、`go:1.24`、`go@1.24`） |
+| `-p, --path <dir>` | 追加到 `PATH` 最前面的目录，可重复 |
+| `-e, --env <KEY=VALUE>` | 设置环境变量，可重复 |
+| `-c, --cwd <dir>` | 命令的工作目录 |
+| `--print` | 只打印合成后的环境与命令，不执行 |
+
+规则：
+
+- 环境变量顺序：继承环境 → SDK `active_env` → `--env`，后者覆盖前者。
+- PATH 顺序：`--path` 条目 → SDK bin 目录 → 继承的 `PATH`；重复条目只保留首次出现的位置。
+- 目标命令自身的选项必须写在 `--` 之后，否则会被当作 `xenv run` 的选项解析。
+- 退出码为子进程退出码；命令不存在返回 `127`，xenv 自身错误返回 `2`。
+
 ## 命令职责
 
 - `xenv status`: 查看当前目录和当前 Shell 的状态，包括 Effective State、Session Context 和 Runtime State。
@@ -422,6 +447,7 @@ SDK 字段说明：
 | `xenv path add [-g] [-s] [-S] <path>` | 添加 `PATH` 条目 |
 | `xenv path remove [-g] [-s] [-S] <path>` | 删除 `PATH` 条目 |
 | `xenv path search <value>` | 搜索当前 `PATH` 条目 |
+| `xenv run [-u spec,...] [-p dir] [-e KEY=VALUE] [-c dir] [--print] -- <cmd> [args...]` | 用一次性环境执行命令 |
 | `xenv status` | 查看当前目录的 Effective State |
 | `xenv status --layers` | 查看 Global State、Directory State 和 Session Context 分层 |
 | `xenv status --runtime` | 查看 Runtime State 检测详情，完整检测在后续阶段实现 |
