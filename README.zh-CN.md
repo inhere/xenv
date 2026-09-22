@@ -107,13 +107,14 @@ xenv shell --type pwsh | Out-String | Invoke-Expression
 
 ## 状态作用域
 
-大多数会改变环境的命令都支持三种作用域：
+大多数会改变环境的命令都支持四种作用域：
 
 | 作用域 | 参数 | 存储位置 | 适用场景 |
 | --- | --- | --- | --- |
 | 会话级 | 无 | `~/.config/xenv/session/<session_id>.json` | 当前已启用 Hook 的 Shell 中临时生效 |
 | 项目级 | `-s`、`--save` 或 `-d` | 最近的 `.xenv.toml` | 项目专属 SDK、环境变量和路径 |
 | 全局级 | `-g` 或 `--global` | `~/.config/xenv/global.toml` | 所有项目共享的默认状态 |
+| 系统级 | `-S` 或 `--system` | 操作系统的用户级环境：Windows 为 `HKCU\Environment`，Linux/macOS 为 shell 启动文件（`~/.bashrc`、`~/.zshrc`）中的 xenv 托管块 | 需要新进程直接读取、不依赖 xenv hook 的值 |
 
 示例：
 
@@ -132,7 +133,15 @@ xenv path add -s ./bin
 xenv use -g go:1.24
 xenv set -g GOPROXY https://proxy.golang.org,direct
 xenv path add -g ~/.local/bin
+
+# 操作系统用户环境
+xenv set -S GOPROXY https://proxy.golang.org,direct
+xenv unset -S GOPROXY
+xenv path add -S ~/.local/bin
+xenv path remove -S ~/.local/bin
 ```
+
+`-S/--system` 不能与 `-g/--global`、`-s/--direnv` 同时使用。新增的 PATH 条目会放到最前面，优先级最高。在已启用 Hook 的 Shell 中执行时，会同时输出脚本让当前 Shell 立即生效。
 
 ## 命令职责
 
@@ -244,6 +253,15 @@ xenv set -s APP_ENV local
 xenv unset -g GOPROXY
 ```
 
+使用 `-S` 写入操作系统的用户级环境，新启动的进程无需 xenv hook 即可读取：
+
+```bash
+xenv set -S GOPROXY https://proxy.golang.org,direct
+xenv unset -S GOPROXY
+```
+
+Windows 上写入注册表 `HKCU\Environment`；Linux/macOS 上写入 `~/.bashrc` 或 `~/.zshrc` 中的 xenv 托管块。`-S` 不能与 `-g`、`-s` 同时使用。
+
 ## PATH 管理
 
 列出已管理的 `PATH` 条目：
@@ -267,6 +285,15 @@ xenv path search go
 xenv path add -s ./bin
 xenv path add -g ~/.local/bin
 ```
+
+使用 `-S` 添加或移除操作系统用户级 `PATH` 条目：
+
+```bash
+xenv path add -S ~/.local/bin
+xenv path remove -S ~/.local/bin
+```
+
+条目会添加到最前面（优先级最高）。Windows 上会保留原有的值类型（`REG_EXPAND_SZ`）和 `%VAR%` 引用。重复添加或移除不存在的路径会直接报错，不会写入重复条目。
 
 ## 工具检查
 
@@ -377,11 +404,11 @@ SDK 字段说明：
 | `xenv use [-g] [-s] <name:version>...` | 激活 SDK 版本 |
 | `xenv unuse [-g] [-s] <name:version>...` | 取消激活 SDK 版本 |
 | `xenv env list` | 列出已管理的环境变量 |
-| `xenv env set [-g] [-s] <name> <value>` | 设置环境变量 |
-| `xenv env unset [-g] [-s] <name...>` | 删除环境变量 |
+| `xenv env set [-g] [-s] [-S] <name> <value>` | 设置环境变量 |
+| `xenv env unset [-g] [-s] [-S] <name...>` | 删除环境变量 |
 | `xenv path list` | 列出已管理的 `PATH` 条目 |
-| `xenv path add [-g] [-s] <path>` | 添加 `PATH` 条目 |
-| `xenv path remove [-g] [-s] <path>` | 删除 `PATH` 条目 |
+| `xenv path add [-g] [-s] [-S] <path>` | 添加 `PATH` 条目 |
+| `xenv path remove [-g] [-s] [-S] <path>` | 删除 `PATH` 条目 |
 | `xenv path search <value>` | 搜索当前 `PATH` 条目 |
 | `xenv status` | 查看当前目录的 Effective State |
 | `xenv status --layers` | 查看 Global State、Directory State 和 Session Context 分层 |

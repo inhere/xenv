@@ -117,13 +117,14 @@ When shell integration is active, `xenv` keeps a shell-session state file and ca
 
 ## State Scopes
 
-Most environment-changing commands support three scopes:
+Most environment-changing commands support four scopes:
 
 | Scope | Flag | Storage | Use case |
 | --- | --- | --- | --- |
 | Session | none | `~/.config/xenv/session/<session_id>.json` | Temporary changes for the current hooked shell |
 | Project | `-s`, `--save`, or `-d` | nearest `.xenv.toml` | Project-specific SDKs, env vars, and paths |
 | Global | `-g` or `--global` | `~/.config/xenv/global.toml` | Defaults shared by all projects |
+| System | `-S` or `--system` | OS user environment: `HKCU\Environment` on Windows, the shell startup file (`~/.bashrc`, `~/.zshrc`) xenv block on Linux/macOS | Values that must be visible to new processes without the xenv hook |
 
 Examples:
 
@@ -142,7 +143,15 @@ xenv path add -s ./bin
 xenv use -g go:1.24
 xenv set -g GOPROXY https://proxy.golang.org,direct
 xenv path add -g ~/.local/bin
+
+# OS user environment
+xenv set -S GOPROXY https://proxy.golang.org,direct
+xenv unset -S GOPROXY
+xenv path add -S ~/.local/bin
+xenv path remove -S ~/.local/bin
 ```
+
+`-S/--system` can not be combined with `-g/--global` or `-s/--direnv`. New PATH entries are prepended, so they take priority. Run `xenv` from a hooked shell to also update the current shell immediately.
 
 ## Command Responsibilities
 
@@ -254,6 +263,15 @@ xenv set -s APP_ENV local
 xenv unset -g GOPROXY
 ```
 
+Use `-S` to write to the OS user environment, so new processes read the value without the xenv hook:
+
+```bash
+xenv set -S GOPROXY https://proxy.golang.org,direct
+xenv unset -S GOPROXY
+```
+
+On Windows the value is written to `HKCU\Environment`; on Linux/macOS it is written to the xenv block of `~/.bashrc` or `~/.zshrc`. `-S` can not be combined with `-g` or `-s`.
+
 ## PATH Management
 
 List managed `PATH` entries:
@@ -277,6 +295,15 @@ Use `-s` for project state or `-g` for global state:
 xenv path add -s ./bin
 xenv path add -g ~/.local/bin
 ```
+
+Use `-S` to add or remove an entry in the OS user `PATH`:
+
+```bash
+xenv path add -S ~/.local/bin
+xenv path remove -S ~/.local/bin
+```
+
+The entry is prepended, and the original value type and `%VAR%` references are preserved on Windows. Adding or removing a path that does not change anything fails with a message instead of writing a duplicate entry.
 
 ## Tool Checks
 
@@ -387,11 +414,11 @@ SDK fields:
 | `xenv use [-g] [-s] <name:version>...` | Activate SDK versions |
 | `xenv unuse [-g] [-s] <name:version>...` | Deactivate SDK versions |
 | `xenv env list` | List managed environment variables |
-| `xenv env set [-g] [-s] <name> <value>` | Set an environment variable |
-| `xenv env unset [-g] [-s] <name...>` | Remove environment variables |
+| `xenv env set [-g] [-s] [-S] <name> <value>` | Set an environment variable |
+| `xenv env unset [-g] [-s] [-S] <name...>` | Remove environment variables |
 | `xenv path list` | List managed `PATH` entries |
-| `xenv path add [-g] [-s] <path>` | Add a `PATH` entry |
-| `xenv path remove [-g] [-s] <path>` | Remove a `PATH` entry |
+| `xenv path add [-g] [-s] [-S] <path>` | Add a `PATH` entry |
+| `xenv path remove [-g] [-s] [-S] <path>` | Remove a `PATH` entry |
 | `xenv path search <value>` | Search current `PATH` entries |
 | `xenv status` | Show Effective State for the current directory |
 | `xenv status --layers` | Show Global State, Directory State, and Session Context layers |
