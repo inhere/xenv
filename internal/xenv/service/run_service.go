@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/gookit/goutil/fsutil"
 	"github.com/inhere/xenv/internal/util"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/sdk"
@@ -191,7 +192,7 @@ func resolveRunCwd(cwd string) (string, error) {
 		return "", nil
 	}
 
-	cwd = util.NormalizePath(cwd)
+	cwd = fsutil.ToAbsPath(util.NormalizePath(cwd))
 	info, err := os.Stat(cwd)
 	if err != nil || !info.IsDir() {
 		return "", fmt.Errorf("cwd is not a directory: %s", cwd)
@@ -200,6 +201,8 @@ func resolveRunCwd(cwd string) (string, error) {
 }
 
 // checkRunPaths 校验并规范化 --path 目录
+//
+// 统一转换为绝对路径, 避免子进程工作目录不同导致相对路径失效
 func checkRunPaths(paths []string) ([]string, error) {
 	if len(paths) == 0 {
 		return nil, nil
@@ -207,7 +210,7 @@ func checkRunPaths(paths []string) ([]string, error) {
 
 	cliPaths := make([]string, 0, len(paths))
 	for _, path := range paths {
-		item := util.NormalizePath(path)
+		item := fsutil.ToAbsPath(util.NormalizePath(path))
 		info, err := os.Stat(item)
 		if err != nil || !info.IsDir() {
 			return nil, fmt.Errorf("path does not exist: %s", item)
