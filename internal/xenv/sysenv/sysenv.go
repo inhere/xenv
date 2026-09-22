@@ -6,5 +6,9 @@
 //   - windows: 用户环境注册表 HKCU\Environment
 //   - linux/macOS: 当前 shell 的用户启动文件(bash: ~/.bashrc, zsh: ~/.zshrc)中的 xenv 托管块
 //
-// 各平台实现提供相同的函数: SetVar、UnsetVar、AddPath、RemovePath。
+// 各平台实现提供相同的函数:
+//
+//   - SetVar、UnsetVar: 设置和删除环境变量
+//   - AddPath、RemovePath: 添加和删除 PATH 条目
+//   - EnvVars、PathList: 读取当前保存的值
 package sysenv

@@ -113,6 +113,42 @@ func blockLineExists(filePath string, match func(string) bool) (bool, error) {
 	return false, nil
 }
 
+// blockContent 返回 xenv 托管块内的行, 块不存在时返回 nil
+func blockContent(filePath string) ([]string, error) {
+	lines, err := readRcLines(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	start, end := rcBlockRange(lines)
+	if start < 0 {
+		return nil, nil
+	}
+	return lines[start+1 : end], nil
+}
+
+// blockEnvVars 解析托管块中的环境变量, PATH 条目行由 blockPaths 解析
+func blockEnvVars(lines []string) map[string]string {
+	envs := make(map[string]string)
+	for _, line := range lines {
+		if name, value, ok := rcEnvEntry(line); ok {
+			envs[name] = value
+		}
+	}
+	return envs
+}
+
+// blockPaths 解析托管块中的 PATH 条目
+func blockPaths(lines []string) []string {
+	var paths []string
+	for _, line := range lines {
+		if path, ok := rcPathValue(line); ok {
+			paths = append(paths, path)
+		}
+	}
+	return paths
+}
+
 // rcBlockRange 返回 xenv 托管块的标记行位置
 //
 // note: 缺少结束标记的块视为无效, 返回 (-1, -1)
@@ -192,6 +228,25 @@ func writeRcLines(filePath string, lines []string) error {
 // rcEnvLine 渲染托管块中的环境变量行, eg: export FOO='bar'
 func rcEnvLine(name, value string) string {
 	return "export " + name + "=" + rcQuote(value)
+}
+
+// rcEnvEntry 解析托管块中的环境变量行
+func rcEnvEntry(line string) (name, value string, ok bool) {
+	rest, ok := strings.CutPrefix(line, "export ")
+	if !ok {
+		return "", "", false
+	}
+
+	name, quoted, ok := strings.Cut(rest, "=")
+	if !ok || name == "" {
+		return "", "", false
+	}
+
+	value, ok = rcUnquote(quoted)
+	if !ok {
+		return "", "", false
+	}
+	return name, value, true
 }
 
 // matchRcEnvLine 返回匹配指定环境变量行的匹配函数

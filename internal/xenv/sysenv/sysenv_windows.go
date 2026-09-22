@@ -108,6 +108,49 @@ func RemovePath(path string) error {
 	return setUserPathValue(key, strings.Join(pathList, winPathListSep), valType)
 }
 
+// EnvVars 返回用户级环境变量. NOTE: 返回注册表中的原始值, 不展开 %VAR% 引用
+func EnvVars() (map[string]string, error) {
+	key, err := openUserEnvKey()
+	if err != nil {
+		return nil, err
+	}
+	defer key.Close()
+
+	names, err := key.ReadValueNames(0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read user environment values: %w", err)
+	}
+
+	envs := make(map[string]string, len(names))
+	for _, name := range names {
+		value, _, err := key.GetStringValue(name)
+		if err != nil {
+			// 跳过 DWORD 等非字符串类型的值
+			if err == registry.ErrUnexpectedType {
+				continue
+			}
+			return nil, fmt.Errorf("failed to read user environment value %s: %w", name, err)
+		}
+		envs[name] = value
+	}
+	return envs, nil
+}
+
+// PathList 返回用户级 PATH 的条目
+func PathList() ([]string, error) {
+	key, err := openUserEnvKey()
+	if err != nil {
+		return nil, err
+	}
+	defer key.Close()
+
+	value, _, err := userPathValue(key)
+	if err != nil {
+		return nil, err
+	}
+	return splitPathList(value), nil
+}
+
 // openUserEnvKey 打开当前用户的环境变量注册表键
 func openUserEnvKey() (registry.Key, error) {
 	key, err := registry.OpenKey(registry.CURRENT_USER, userEnvKeyPath, registry.QUERY_VALUE|registry.SET_VALUE)

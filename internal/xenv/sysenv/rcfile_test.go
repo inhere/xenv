@@ -116,6 +116,49 @@ func TestRcFileFor(t *testing.T) {
 	assert.ErrMsgContains(t, err, "not supported")
 }
 
+func TestRcBlockEnvVarsAndPaths(t *testing.T) {
+	filePath := writeRcTestFile(t, "export EDITOR=vim\n")
+	assert.Require(t, assert.NoErr(t, upsertBlockLine(filePath, matchRcEnvLine("FOO"), rcEnvLine("FOO", "a b"))))
+	assert.Require(t, assert.NoErr(t, upsertBlockLine(filePath, matchRcEnvLine("BAZ"), rcEnvLine("BAZ", "qux"))))
+	assert.Require(t, assert.NoErr(t, upsertBlockLine(filePath, matchRcPathLine("/opt/bin"), rcPathLine("/opt/bin"))))
+
+	lines, err := blockContent(filePath)
+	assert.Require(t, assert.NoErr(t, err))
+	assert.Eq(t, map[string]string{"FOO": "a b", "BAZ": "qux"}, blockEnvVars(lines))
+	assert.Eq(t, []string{"/opt/bin"}, blockPaths(lines))
+
+	// 没有托管块的文件
+	missing := filepath.Join(t.TempDir(), ".zshrc")
+	lines, err = blockContent(missing)
+	assert.Require(t, assert.NoErr(t, err))
+	assert.Eq(t, 0, len(lines))
+	assert.Eq(t, map[string]string{}, blockEnvVars(lines))
+}
+
+func TestRcEnvEntry(t *testing.T) {
+	tests := map[string]struct {
+		name  string
+		value string
+		ok    bool
+	}{
+		"export FOO='bar'":             {name: "FOO", value: "bar", ok: true},
+		"export FOO='it'\\''s'":        {name: "FOO", value: "it's", ok: true},
+		"export FOO=":                  {ok: false},
+		"export FOO=bar":               {ok: false},
+		"export PATH='/opt/bin':$PATH": {ok: false},
+		"FOO='bar'":                    {ok: false},
+	}
+
+	for line, want := range tests {
+		t.Run(line, func(t *testing.T) {
+			name, value, ok := rcEnvEntry(line)
+			assert.Eq(t, want.ok, ok)
+			assert.Eq(t, want.name, name)
+			assert.Eq(t, want.value, value)
+		})
+	}
+}
+
 func writeRcTestFile(t *testing.T, content string) string {
 	t.Helper()
 
