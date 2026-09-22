@@ -43,12 +43,14 @@ func AddPath(path string) error {
 	}
 
 	match := matchRcPathLine(path)
-	exists, err := blockLineExists(filePath, match)
+	lines, err := blockContent(filePath)
 	if err != nil {
 		return err
 	}
-	if exists {
-		return fmt.Errorf("path already exists in system PATH: %s", path)
+	for _, line := range lines {
+		if match(line) {
+			return fmt.Errorf("path already exists in system PATH: %s", path)
+		}
 	}
 	return upsertBlockLine(filePath, match, rcPathLine(path))
 }

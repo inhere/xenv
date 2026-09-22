@@ -93,26 +93,6 @@ func removeBlockLine(filePath string, match func(string) bool) (found bool, err 
 	return true, writeRcLines(filePath, out)
 }
 
-// blockLineExists 检查 xenv 托管块中是否存在匹配的行
-func blockLineExists(filePath string, match func(string) bool) (bool, error) {
-	lines, err := readRcLines(filePath)
-	if err != nil {
-		return false, err
-	}
-
-	start, end := rcBlockRange(lines)
-	if start < 0 {
-		return false, nil
-	}
-
-	for _, line := range lines[start+1 : end] {
-		if match(line) {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 // blockContent 返回 xenv 托管块内的行, 块不存在时返回 nil
 func blockContent(filePath string) ([]string, error) {
 	lines, err := readRcLines(filePath)

@@ -67,15 +67,6 @@ func (sg *XenvScriptGenerator) InstallToProfile(pwshProfile string) error {
 	return nil
 }
 
-// installScriptsToProfile 安装 Shell Hook 脚本到配置文件(eg: .bashrc, .zshrc)
-//   - 检查文件是否存在，如果不存在则创建一个
-//   - 检查文件内容是否包含 xenv 脚本，如果存在则返回
-//   - 如果不存在内容则添加到文件的末尾
-func (sg *XenvScriptGenerator) installScriptsToProfile(script, profile string) error {
-
-	return nil
-}
-
 // endregion
 // region Generate Snippets
 //
