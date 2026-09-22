@@ -1,13 +1,14 @@
 <!-- template_id: design; template_version: 1.1.1 -->
 # xenv run 一次性环境执行命令设计
 
-> 状态：Draft 0.1 / 待人工计划批准
+> 状态：Draft 0.2 / 待人工计划批准
 
 ## 修订记录
 
 | 版本 | 日期 | 作者 | 摘要 |
 |---|---|---|---|
 | 0.1 | 2026-09-22 | Pi | 初稿，定义 `xenv run`/`exec` 的命令契约、环境合成规则、执行与退出码语义，并列出待确认事项。 |
+| 0.2 | 2026-09-22 | Pi | 用户批准设计并追加 `--cwd` 支持：纳入范围、CLI 契约、执行语义与决策 D10，Q2 关闭；记录批准证据。 |
 
 > 仅语义变化递增版本；纯 identity/provenance/元数据纠正沿用原版本，并在 Git/进度记录中留痕。
 
@@ -39,6 +40,7 @@
 ```bash
 xenv run --use go:1.24,node:22 --path D:/tools/bin --env APP_ENV=local -- go version
 xenv exec -u go:1.24 -- go build ./...
+xenv run -u go:1.24 --cwd D:/work/proj -- go test ./...
 ```
 
 - 不改动任何 xenv 状态文件，不依赖 shell hook。
@@ -62,7 +64,7 @@ xenv exec -u go:1.24 -- go build ./...
 
 范围：
 
-1. 新增 `xenv run` 命令与 `exec` 别名，选项 `--use/-u`、`--path/-p`、`--env/-e`、`--print`。
+1. 新增 `xenv run` 命令与 `exec` 别名，选项 `--use/-u`、`--path/-p`、`--env/-e`、`--cwd/-c`、`--print`。
 2. SDK 规格解析与本地安装解析（复用现有索引与版本匹配）。
 3. 环境与 PATH 合成规则、命令解析、子进程执行、退出码与错误提示。
 4. 跨平台行为（Windows 与 Unix）与单元测试、双语文档。
@@ -109,6 +111,7 @@ xenv exec [options] -- <command> [args...]
 | `-u, --use <spec,...>` | 一次性激活的 SDK 规格 | 可重复，也可逗号分隔；支持 `go`、`go:1.24`、`go@1.24` |
 | `-p, --path <dir>` | 追加到 PATH 最前面的目录 | 可重复；目录必须存在 |
 | `-e, --env <KEY=VALUE>` | 设置/覆盖环境变量 | 可重复；键名统一大写，`KEY=` 表示空值 |
+| `-c, --cwd <dir>` | 子进程的工作目录 | 目录必须存在且为目录；不改变 xenv 自身进程的工作目录 |
 | `--print` | 只打印本次合成结果与将执行的命令，不执行 | 只打印增量部分，不打印继承环境 |
 | `--` | 结束 xenv 选项，其后为命令与参数 | 命令自身带 `-`/`--` 参数时必须使用 |
 
@@ -138,7 +141,7 @@ PATH 组成（前置即优先）：
 1. 解析并校验选项；`--use` 逐个解析为 `InstalledSDK`，任一步失败即整体失败，不执行命令。
 2. 合成环境与 PATH。
 3. 用合成后的 PATH 解析命令可执行文件（见决策 D5）。
-4. 以继承的 stdin/stdout/stderr 启动子进程，并显式传入合成环境。
+4. 以继承的 stdin/stdout/stderr 启动子进程，并显式传入合成环境；`--cwd` 通过子进程的工作目录生效（见决策 D10）。
 5. 透传退出码：子进程退出码原样返回；命令找不到返回 127；xenv 自身参数/解析错误返回非 0 且不执行命令。
 
 ### 与既有命令的关系
@@ -188,14 +191,14 @@ internal/xenv/sdk（ParseVersionSpec，只读复用）
 正常路径：
 
 ```text
-xenv run -u go:1.24,node:22 -p D:/tools/bin -e APP_ENV=local -- go version
+xenv run -u go:1.24,node:22 -p D:/tools/bin -e APP_ENV=local --cwd D:/work/proj -- go version
 
 1. cli 解析选项，取 -- 之后的 ["go","version"]
 2. service 解析 go:1.24 / node:22 -> InstalledSDK（bin 目录 + active_env）
 3. 合成 ENV：os.Environ + GOROOT/... + APP_ENV=local
 4. 合成 PATH：D:/tools/bin ; <go bin> ; <node bin> ; 原 PATH
 5. 用合成 PATH 解析 "go" -> <go bin>/go.exe
-6. 启动子进程（继承 stdio，传入合成环境），等待结束
+6. 启动子进程（工作目录 D:/work/proj，继承 stdio，传入合成环境），等待结束
 7. 以子进程退出码结束 xenv 进程
 ```
 
@@ -206,6 +209,7 @@ xenv run -u go:1.24,node:22 -p D:/tools/bin -e APP_ENV=local -- go version
 | `--use` 引用的 SDK 未在 config 中定义 | 报错并提示 `sdk <name> config is not defined` | 非 0，不执行 |
 | 版本未安装 | 报错 `sdk <name>:<version> is not installed locally`，提示可用版本 | 非 0，不执行 |
 | `--path` 目录不存在 | 报错 `path does not exist: <dir>` | 非 0，不执行 |
+| `--cwd` 目录不存在或不是目录 | 报错 `cwd is not a directory: <dir>` | 非 0，不执行 |
 | `--env` 缺少 `=` 或键名非法 | 报错并给出正确格式 | 非 0，不执行 |
 | 命令不在合成 PATH 中 | 报错 `command not found: <name>` | 127 |
 | 子进程非零退出 | 不额外打印 ERROR，直接透传 | 子进程退出码 |
@@ -219,6 +223,7 @@ xenv run -u go:1.24,node:22 -p D:/tools/bin -e APP_ENV=local -- go version
 
 - 不写任何持久化状态（不写状态文件、注册表、shell 启动文件），失败时不留残留。
 - `--print` 只打印由选项引入的增量（SDK bin/active_env、`--path`、`--env`）与最终 PATH，不打印继承环境，避免把 CI 中的密钥变量写入日志。
+- `--cwd` 只设置子进程工作目录，不调用 `os.Chdir`，因此不改变 xenv 自身对相对路径（`--path`、`--env` 值中的相对路径）的解析基准，也不会影响同进程内其它逻辑。
 - 子进程环境由显式合成，不继承 `XENV_HOOK_SHELL`、`XENV_SESSION_ID` 之外的 xenv 内部变量做任何写操作。
 
 数据：无 schema、无迁移、无缓存文件。
@@ -240,30 +245,29 @@ xenv run -u go:1.24,node:22 -p D:/tools/bin -e APP_ENV=local -- go version
 | D7 | 退出码在命令内用 `os.Exit` 落地，不经由 gcli 错误通道 | gcli 的错误通道会打印 `ERROR:` 前缀且普通 error 返回 0，不适合透传子进程退出码；`main` 本身也是 `os.Exit(app.Run(...))`，语义等价 |
 | D8 | 命令参数必须用 `--` 分隔（文档与错误提示中说明） | gcli 的 `rearrangeArgs` 会把 `-x` 之类 token 重排为 xenv 选项；`--` 之后原样保留是框架既有语义。不采用关闭重排的全局配置，避免影响其他命令 |
 | D9 | 不实现信号转发 | Unix 下父子同进程组，Ctrl+C 会同时到达；Windows 控制台同理。实现转发会显著增加平台分支，收益不足（`SR1403`） |
+| D10 | `--cwd` 通过子进程工作目录（`exec.Cmd.Dir`）实现，不调用 `os.Chdir` | 保持 xenv 自身解析基准不变，避免全局副作用；代价是 `--path` 等选项中的相对路径仍相对调用目录解析，需在文档中写明 |
 
 ## 待确认事项
 
 | 编号 | 问题 | 备选与影响 |
 |---|---|---|
 | Q1 | 是否支持 `--unset KEY`（一次性删除变量） | 影响 CLI 契约与合成顺序；不实现时用户可用 `--env KEY=` 置空 |
-| Q2 | 是否支持 `--cwd <dir>` 指定工作目录 | 影响执行语义；不实现时用户可 `cd` 后调用 |
 | Q3 | `--path` 是否允许不存在的目录 | 当前设计按 `path add` 一致性要求目录存在；放宽则更灵活但掩盖拼写错误 |
 | Q4 | 是否允许叠加当前 `.xenv.toml` / session 状态（如 `--with-direnv`） | 与 D2 冲突，需要明确开关语义；默认不叠加 |
 | Q5 | 是否需要 `--json` 输出合成结果供脚本消费 | 影响输出契约；不实现时可解析 `--print` 文本 |
 | Q6 | 别名集合是否包含 `x` | 影响命令注册与文档 |
 | Q7 | `--use` 是否支持版本范围/别名（如 `lts`、`latest`）以外的匹配策略开关 | 现有 `allow_up_match` 配置已在匹配层生效，是否需要 per-command 覆盖待定 |
 
+Q2 已在 0.2 确认（支持 `--cwd`，语义见决策 D10），编号保持不变以便追溯；Q1、Q3-Q7 仍未确认，未确认项按“不实现”处理。
+
 ## 结论与人工计划 Gate
 
-本设计定义了一个无副作用的一次性执行入口：`xenv run`/`exec` 通过 `--use`/`--path`/`--env` 合成环境并执行目标命令，不写状态、不依赖 hook、透传退出码。
+本设计定义了一个无副作用的一次性执行入口：`xenv run`/`exec` 通过 `--use`/`--path`/`--env`/`--cwd` 合成环境并执行目标命令，不写状态、不依赖 hook、透传退出码。
 
-Delivery Track 判定为 Full（新增外部 CLI 接口与选项契约），治理暴露度低（本地开发工具、无生产数据、无出机器动作），评审封顶一轮合并轴评审。实施前需要用户批准，并按 `SR1204` 完成范围确认（预计 6 个文件、约 300 行业务代码）。
+批准证据：用户于 2026-09-22 在会话中批准本设计，并追加 `--cwd` 支持要求（对应 0.2 修订）。批准只授权进入计划；实施需要另行批准实施计划。
 
-待批准语句（可直接复制）：
+Delivery Track 判定为 Full（新增外部 CLI 接口与选项契约），治理暴露度低（本地开发工具、无生产数据、无出机器动作），评审封顶一轮合并轴评审。实施前需按 `SR1204` 完成范围确认（预计 6 个文件、约 320 行业务代码），并取得实施计划批准。
 
-```text
-批准 docs/design/2026-09-22-xenv-run-command-design.md 的设计，并按其中范围实施；
-待确认事项 Q1-Q7 中未确认的按设计默认值（不实现）处理。
-```
+下一步：编写实施计划（`docs/plans/2026-09-22-xenv-run-command-implementation.md`），在人工计划 Gate 再次停止。
 
-批准只授权进入计划与实施；设计本身不授权实施，评审结论也不构成批准。
+批准只授权进入计划阶段；实施需要实施计划的人工批准，评审结论不构成批准。
