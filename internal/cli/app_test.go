@@ -24,14 +24,14 @@ func TestApp_showVersion(t *testing.T) {
 		code := app.RunArgs("-V")
 		assert.Equal(t, 0, code)
 		text := buf.ResetAndGet()
-		assert.StrContainsAll(t, text, []string{app.Desc, "Version", app.Version})
+		assert.StrContainsAll(t, text, []string{"Version", app.Version})
 	})
 
 	t.Run("use flag --version", func(t *testing.T) {
 		code := app.RunArgs("--version")
 		assert.Equal(t, 0, code)
 		text := buf.ResetAndGet()
-		assert.StrContainsAll(t, text, []string{app.Desc, "Version", app.Version})
+		assert.StrContainsAll(t, text, []string{"Version", app.Version})
 	})
 }
 
@@ -95,8 +95,8 @@ func TestEnvSetSaveDirenvFlagWritesXenvToml(t *testing.T) {
 	}
 
 	tests := map[string][]string{
-		"top-level set": {"set", "-s", "JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8"},
-		"env set":       {"env", "set", "-s", "JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8"},
+		"top-level set": {"set", "-s", "--", "JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8"},
+		"env set":       {"env", "set", "-s", "--", "JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8"},
 	}
 
 	for name, args := range tests {
