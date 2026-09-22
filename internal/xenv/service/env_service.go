@@ -366,6 +366,16 @@ func withoutPath(pathList []string, path string) ([]string, bool) {
 
 // endregion
 
+// SystemEnv 返回操作系统的用户级环境变量
+func (s *EnvService) SystemEnv() (map[string]string, error) {
+	return sysenv.EnvVars()
+}
+
+// SystemPaths 返回操作系统的用户级 PATH 条目
+func (s *EnvService) SystemPaths() ([]string, error) {
+	return sysenv.PathList()
+}
+
 // normalizeEnvName 规范化并校验环境变量名称
 func normalizeEnvName(name string) (string, error) {
 	name = strings.ToUpper(name)
