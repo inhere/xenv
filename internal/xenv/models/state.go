@@ -81,11 +81,11 @@ type SessionState struct {
 // NewActivityState creates a new ActivityState
 func NewActivityState(filePath string) *ActivityState {
 	return &ActivityState{
-		File:  filePath,
-		SDKs:  make(map[string]string),
-		Envs:  make(map[string]string),
+		File:             filePath,
+		SDKs:             make(map[string]string),
+		Envs:             make(map[string]string),
 		ToolRequirements: make(map[string]string),
-		Paths: []string{},
+		Paths:            []string{},
 		// CreatedAt: time.Now(),
 		// UpdatedAt: time.Now(),
 	}
