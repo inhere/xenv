@@ -14,6 +14,7 @@ var (
 	// GlobalFlag option value
 	GlobalFlag bool
 	SaveDirenv bool
+	SystemFlag bool
 	DebugMode  bool
 )
 
@@ -42,14 +43,16 @@ func EnvSetCmd() *gcli.Command {
 	var opts struct {
 		Global     bool
 		SaveDirenv bool
+		System     bool
 	}
 	return &gcli.Command{
 		Name: "set",
-		Help: "set [-g] [-s|-d] <name> <value>",
+		Help: "set [-g] [-s|-d] [-S] <name> <value>",
 		Desc: "Set an environment variable",
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&opts.SaveDirenv, "direnv", "s,d", false, "Save change to direnv config .xenv.toml")
 			c.BoolOpt(&opts.Global, "global", "g", false, "Operate for global config")
+			c.BoolOpt(&opts.System, "system", "S", false, "Set to the OS user environment, take effect for new processes")
 
 			c.AddArg("name", "environment key name", true)
 			c.AddArg("value", "environment value", true)
@@ -65,6 +68,21 @@ func EnvSetCmd() *gcli.Command {
 					return nil
 				}
 				return err
+			}
+
+			if opts.System {
+				if err = checkSystemScope(opts.Global, opts.SaveDirenv); err != nil {
+					return err
+				}
+
+				script, err1 := envSvc.SetSystemEnv(name, value)
+				if err1 != nil {
+					return fmt.Errorf("failed to set system environment variable: %w", err1)
+				}
+
+				ccolor.Infof("Set %s=%s to system environment\n", name, value)
+				printScript(script)
+				return nil
 			}
 
 			// Set the environment variable
@@ -83,9 +101,7 @@ func EnvSetCmd() *gcli.Command {
 				ccolor.Infof("Set %s=%s for current session\n", name, value)
 			}
 
-			if script != "" {
-				fmt.Printf("%s\n%s\n", xenv.ScriptMark, script)
-			}
+			printScript(script)
 			return nil
 		},
 	}
@@ -96,14 +112,16 @@ func EnvUnsetCmd(desc ...string) *gcli.Command {
 	var opts struct {
 		Global     bool
 		SaveDirenv bool
+		System     bool
 	}
 	return &gcli.Command{
 		Name: "unset",
-		Help: "unset [-g] [-s|-d] <name...>",
+		Help: "unset [-g] [-s|-d] [-S] <name...>",
 		Desc: "Unset environment variables",
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&opts.SaveDirenv, "direnv", "s,d", false, "Operate for direnv config .xenv.toml")
 			c.BoolOpt(&opts.Global, "global", "g", false, "Operate for global config")
+			c.BoolOpt(&opts.System, "system", "S", false, "Unset from the OS user environment, take effect for new processes")
 			c.AddArg("names", "environment key name", true, true)
 		},
 		Func: func(c *gcli.Command, args []string) error {
@@ -117,6 +135,21 @@ func EnvUnsetCmd(desc ...string) *gcli.Command {
 			}
 
 			names := c.Arg("names").Strings()
+
+			if opts.System {
+				if err = checkSystemScope(opts.Global, opts.SaveDirenv); err != nil {
+					return err
+				}
+
+				script, err1 := envSvc.UnsetSystemEnvs(names)
+				if err1 != nil {
+					return fmt.Errorf("failed to unset system environment variable: %w", err1)
+				}
+
+				ccolor.Infof("Unset %s from system environment\n", names)
+				printScript(script)
+				return nil
+			}
 
 			// Unset the environment variables
 			opFlag := opFlagFrom(opts.Global, opts.SaveDirenv)
@@ -134,9 +167,7 @@ func EnvUnsetCmd(desc ...string) *gcli.Command {
 				ccolor.Infof("Unset %s for current session\n", names)
 			}
 
-			if script != "" {
-				fmt.Printf("%s\n%s\n", xenv.ScriptMark, script)
-			}
+			printScript(script)
 			return nil
 		},
 	}

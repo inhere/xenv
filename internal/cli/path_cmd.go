@@ -28,11 +28,12 @@ var PathCmd = &gcli.Command{
 func PathAddCmd() *gcli.Command {
 	return &gcli.Command{
 		Name: "add",
-		Help: "add [-g] <path>",
+		Help: "add [-g] [-S] <path>",
 		Desc: "Add a path to PATH environment variable",
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Global operation, not the current session")
 			c.BoolOpt(&SaveDirenv, "direnv", "s,d", false, "Operate for direnv config .xenv.toml")
+			c.BoolOpt(&SystemFlag, "system", "S", false, "Add to the OS user PATH, take effect for new processes")
 			c.AddArg("path", "PATH environment value", true)
 		},
 		Func: func(c *gcli.Command, args []string) error {
@@ -45,8 +46,23 @@ func PathAddCmd() *gcli.Command {
 				return err
 			}
 
-			// Add the path
 			path := c.Arg("path").String()
+			if SystemFlag {
+				if err = checkSystemScope(GlobalFlag, SaveDirenv); err != nil {
+					return err
+				}
+
+				script, err1 := envSvc.AddSystemPath(path)
+				if err1 != nil {
+					return fmt.Errorf("failed to add path to system PATH: %w", err1)
+				}
+
+				fmt.Printf("Added %s to system PATH\n", path)
+				printScript(script)
+				return nil
+			}
+
+			// Add the path
 			script, err1 := envSvc.AddPath(path, GetOpFlag())
 			if err1 != nil {
 				return fmt.Errorf("failed to add path: %w", err1)
@@ -59,9 +75,7 @@ func PathAddCmd() *gcli.Command {
 				fmt.Printf("Added %s to PATH for current session\n", path)
 			}
 
-			if script != "" {
-				fmt.Printf("%s\n%s\n", xenv.ScriptMark, script)
-			}
+			printScript(script)
 			return nil
 		},
 	}
@@ -75,13 +89,14 @@ func PathRemoveCmd() *gcli.Command {
 
 	return &gcli.Command{
 		Name:    "remove",
-		Help:    "remove [-g] <path>",
+		Help:    "remove [-g] [-S] <path>",
 		Desc:    "Remove a path from PATH environment variable",
 		Aliases: []string{"rm", "delete"},
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&GlobalFlag, "global", "g", false, "Global operation, not the current session")
 			c.BoolOpt(&SaveDirenv, "direnv", "s,d", false, "Operate for direnv config .xenv.toml")
 			c.BoolOpt(&pathRmOpts.matchMode, "match", "m", false, "Match mode, remove paths that match the given path")
+			c.BoolOpt(&SystemFlag, "system", "S", false, "Remove from the OS user PATH, take effect for new processes")
 			c.AddArg("path", "PATH environment value", true)
 		},
 		Func: func(c *gcli.Command, args []string) error {
@@ -94,8 +109,23 @@ func PathRemoveCmd() *gcli.Command {
 				return err
 			}
 
-			// Remove the path
 			path := c.Arg("path").String()
+			if SystemFlag {
+				if err = checkSystemScope(GlobalFlag, SaveDirenv); err != nil {
+					return err
+				}
+
+				script, err1 := envSvc.RemoveSystemPath(path)
+				if err1 != nil {
+					return fmt.Errorf("failed to remove path from system PATH: %w", err1)
+				}
+
+				fmt.Printf("Removed %s from system PATH\n", path)
+				printScript(script)
+				return nil
+			}
+
+			// Remove the path
 			script, err1 := envSvc.RemovePath(path, GetOpFlag())
 			if err1 != nil {
 				return fmt.Errorf("failed to remove path: %w", err1)
@@ -108,9 +138,7 @@ func PathRemoveCmd() *gcli.Command {
 				fmt.Printf("Removed %s from PATH for current session\n", path)
 			}
 
-			if script != "" {
-				fmt.Printf("%s\n%s\n", xenv.ScriptMark, script)
-			}
+			printScript(script)
 			return nil
 		},
 	}
