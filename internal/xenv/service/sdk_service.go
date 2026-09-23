@@ -133,17 +133,19 @@ func (ts *SDKService) ActivateSDKs(useSDKs []string, opFlag models.OpFlag) (scri
 		return "", err1
 	}
 
-	return ts.activateSDKs(gen, sdkSpecs, opFlag, true)
+	script, _, err = ts.activateSDKs(gen, sdkSpecs, opFlag, true)
+	return script, err
 }
 
-func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*models.VersionSpec, opFlag models.OpFlag, saveState bool) (script string, err error) {
-	actParams := models.NewActivateSDKsParams()
+// activateSDKs 激活 SDK 并返回本次应用的参数(用于记录可撤销变更)
+func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*models.VersionSpec, opFlag models.OpFlag, saveState bool) (script string, actParams *models.ActivateSDKsParams, err error) {
+	actParams = models.NewActivateSDKsParams()
 	actParams.OpFlag = opFlag
 
 	for _, spec := range sdkSpecs {
 		localSDK, err3 := ts.checkActivateSDK(spec)
 		if err3 != nil {
-			return "", fmt.Errorf("failed to activate sdk %q: %w", spec, err3)
+			return "", actParams, fmt.Errorf("failed to activate sdk %q: %w", spec, err3)
 		}
 
 		oldActiveVer := ts.state.Merged().SDKs[spec.Name]
@@ -184,7 +186,7 @@ func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*m
 	}
 
 	if !saveState {
-		return sb.String(), nil
+		return sb.String(), actParams, nil
 	}
 	if !isEmpty {
 		ts.state.SetBatchMode(true)
@@ -192,12 +194,12 @@ func (ts *SDKService) activateSDKs(gen *shell.XenvScriptGenerator, sdkSpecs []*m
 
 		err = ts.state.UseSDKsWithParams(actParams)
 		if err != nil {
-			return "", err
+			return "", actParams, err
 		}
 		err = ts.state.SaveStateFile()
-		return sb.String(), err
+		return sb.String(), actParams, err
 	}
-	return "", nil
+	return "", actParams, nil
 }
 
 func (ts *SDKService) checkActivateSDK(spec *models.VersionSpec) (*models.InstalledSDK, error) {
@@ -272,10 +274,44 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 		return "", nil
 	}
 
+	deState := ts.state.Nearest()
+	dirFile := ""
+	if deState != nil && !deState.IsEmpty() {
+		dirFile = deState.File
+	}
+
+	// 同一项目(含子目录)已应用过: 不重复应用, 也不撤销
+	applied := ts.state.AppliedDirenv()
+	if applied != nil && dirFile != "" && applied.File == dirFile {
+		return "", nil
+	}
+
+	var sb strutil.Builder
+	if applied != nil {
+		sb.WriteString(buildLeaveScript(gen, applied))
+	}
+
+	script, rec, err := ts.applyDirenvState(gen, deState)
+	if err != nil {
+		return "", err
+	}
+	sb.WriteString(script)
+
+	if err = ts.saveAppliedDirenv(rec); err != nil {
+		ccolor.Warnf("WARN: failed to save direnv state record: %v\n", err)
+	}
+
+	if sb.Len() > 0 {
+		return sb.String(), nil
+	}
+	return "", nil
+}
+
+// applyDirenvState 应用当前目录的 direnv 状态, 并返回本次的可撤销变更
+func (ts *SDKService) applyDirenvState(gen *shell.XenvScriptGenerator, deState *models.ActivityState) (string, *models.AppliedDirenv, error) {
 	var specMap = make(map[string]*models.VersionSpec)
 	opFlag := models.OpFlagSession
 
-	deState := ts.state.Nearest()
 	if deState != nil && !deState.IsEmpty() {
 		opFlag = models.OpFlagDirenv
 		xenvcom.Debugf("Detect xenv state file: %s\n", deState.File)
@@ -290,23 +326,26 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	}
 
 	var sb strutil.Builder
+	var actParams *models.ActivateSDKsParams
 	if len(specMap) > 0 {
 		sdkSpecs := make([]*models.VersionSpec, 0, len(specMap))
 		for _, spec := range specMap {
 			sdkSpecs = append(sdkSpecs, spec)
 		}
 		saveState := opFlag != models.OpFlagDirenv || deState == nil
-		script, err := ts.activateSDKs(gen, sdkSpecs, opFlag, saveState)
+		script, params, err := ts.activateSDKs(gen, sdkSpecs, opFlag, saveState)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 		sb.WriteString(script)
+		actParams = params
 	}
 
+	var dirPaths []string
 	if opFlag == models.OpFlagDirenv && deState != nil {
-		paths := models.FilterPathsForGOOS(deState.Paths, runtime.GOOS)
-		if len(paths) > 0 {
-			sb.WriteString(gen.GenAddPaths(paths))
+		dirPaths = models.FilterPathsForGOOS(deState.Paths, runtime.GOOS)
+		if len(dirPaths) > 0 {
+			sb.WriteString(gen.GenAddPaths(dirPaths))
 		}
 		if len(deState.Envs) > 0 {
 			sb.WriteString(gen.GenSetEnvs(deState.Envs))
@@ -325,10 +364,77 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 		ccolor.Warnf("WARN: %s\n", warning)
 	}
 
-	if sb.Len() > 0 {
-		return sb.String(), nil
+	if opFlag != models.OpFlagDirenv || deState == nil {
+		// 非 .xenv.toml 驱动的激活(如按 go.mod 自动检测)按会话默认值处理, 不记录撤销
+		return sb.String(), nil, nil
 	}
-	return "", nil
+
+	rec := models.NewAppliedDirenv(deState.File)
+	if actParams != nil {
+		for _, path := range actParams.AddPaths {
+			if !inSessionPath(path) {
+				rec.AddAppliedPath(path)
+			}
+		}
+		for name := range actParams.AddEnvs {
+			name = strings.ToUpper(name)
+			prev := os.Getenv(name)
+			rec.AddAppliedEnv(name, prev, prev != "")
+		}
+		for name, version := range actParams.AddSdks {
+			rec.AddAppliedSDK(name, version)
+		}
+	}
+	for _, path := range dirPaths {
+		normalized := util.NormalizePath(path)
+		if !inSessionPath(normalized) {
+			rec.AddAppliedPath(normalized)
+		}
+	}
+	for name := range deState.Envs {
+		name = strings.ToUpper(name)
+		prev := os.Getenv(name)
+		rec.AddAppliedEnv(name, prev, prev != "")
+	}
+	return sb.String(), rec, nil
+}
+
+// buildLeaveScript 生成撤销上一次 direnv 应用的脚本
+func buildLeaveScript(gen *shell.XenvScriptGenerator, rec *models.AppliedDirenv) string {
+	var sb strings.Builder
+
+	// 1. 移除本次应用加入的 PATH 条目
+	if len(rec.Paths) > 0 {
+		pathList := sessionPath()
+		for _, path := range rec.Paths {
+			pathList, _ = withoutPath(pathList, path)
+		}
+		sb.WriteString(gen.GenSetPath(pathList))
+	}
+
+	// 2. 恢复变量旧值, 应用前未设置的则取消设置
+	for _, item := range rec.Envs {
+		if item.HadPrev {
+			sb.WriteString(gen.GenSetEnv(item.Name, item.Prev))
+			continue
+		}
+		sb.WriteString(gen.GenUnsetEnv(item.Name))
+	}
+	return sb.String()
+}
+
+// saveAppliedDirenv 保存或清除 direnv 应用记录
+func (ts *SDKService) saveAppliedDirenv(rec *models.AppliedDirenv) error {
+	if rec == nil || rec.IsEmpty() {
+		return ts.state.ClearAppliedDirenv()
+	}
+	return ts.state.SetAppliedDirenv(rec)
+}
+
+// inSessionPath 检查路径是否已在当前 shell 会话的 PATH 中
+func inSessionPath(path string) bool {
+	_, found := withoutPath(sessionPath(), path)
+	return found
 }
 
 // direnvToolWarnings 返回 direnv 状态中工具要求的告警
