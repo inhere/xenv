@@ -260,9 +260,13 @@ xenv env list
 设置和删除环境变量：
 
 ```bash
+xenv env set APP_ENV=local
+xenv env set APP_ENV=local DEBUG=true
 xenv env set APP_ENV local
 xenv env unset APP_ENV
 ```
+
+`env set` 接收一个或多个 `KEY=VALUE`；当只传两个参数且第一个不含 `=` 时，按原来的 `<name> <value>` 处理。
 
 也可以使用顶层快捷命令：
 
@@ -441,7 +445,7 @@ SDK 字段说明：
 | `xenv use [-g] [-s] <name:version>...` | 激活 SDK 版本 |
 | `xenv unuse [-g] [-s] <name:version>...` | 取消激活 SDK 版本 |
 | `xenv env list` | 列出已管理的环境变量，`-S` 同时列出操作系统用户级环境变量 |
-| `xenv env set [-g] [-s] [-S] <name> <value>` | 设置环境变量 |
+| `xenv env set [-g] [-s] [-S] <KEY=VALUE>...` | 设置环境变量（也兼容 `<name> <value>`） |
 | `xenv env unset [-g] [-s] [-S] <name...>` | 删除环境变量 |
 | `xenv path list` | 列出已管理的 `PATH` 条目，`-S` 同时列出操作系统用户级 `PATH` |
 | `xenv path add [-g] [-s] [-S] <path>` | 添加 `PATH` 条目 |

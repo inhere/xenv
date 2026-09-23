@@ -270,9 +270,13 @@ xenv env list
 Set and unset values:
 
 ```bash
+xenv env set APP_ENV=local
+xenv env set APP_ENV=local DEBUG=true
 xenv env set APP_ENV local
 xenv env unset APP_ENV
 ```
+
+`env set` accepts one or more `KEY=VALUE` pairs. When exactly two arguments are given and the first one contains no `=`, they are read as `<name> <value>` (the original form).
 
 Top-level shortcuts are also available:
 
@@ -451,7 +455,7 @@ SDK fields:
 | `xenv use [-g] [-s] <name:version>...` | Activate SDK versions |
 | `xenv unuse [-g] [-s] <name:version>...` | Deactivate SDK versions |
 | `xenv env list` | List managed environment variables, `-S` also lists the OS user environment |
-| `xenv env set [-g] [-s] [-S] <name> <value>` | Set an environment variable |
+| `xenv env set [-g] [-s] [-S] <KEY=VALUE>...` | Set environment variables (`<name> <value>` also accepted) |
 | `xenv env unset [-g] [-s] [-S] <name...>` | Remove environment variables |
 | `xenv path list` | List managed `PATH` entries, `-S` also lists the OS user `PATH` |
 | `xenv path add [-g] [-s] [-S] <path>` | Add a `PATH` entry |
