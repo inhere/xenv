@@ -65,19 +65,6 @@ type ActivityState struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty" toml:"-"`
 }
 
-// SessionState represents a session state TODO
-type SessionState struct {
-	ActivityState
-	// Shell 当前使用的shell type
-	Shell string `json:"shell,omitempty" toml:"-"`
-	// 当前会话关联的所有目录状态数据. 用于跳转目录时，销毁之前的目录state
-	//  - key: state file path, value: state data
-	DirStates map[string]*ActivityState `json:"dir_states,omitempty" toml:"-"`
-	// 创建时间
-	CreatedAt time.Time `json:"created_at,omitempty" toml:"-"`
-	UpdatedAt time.Time `json:"updated_at,omitempty" toml:"-"`
-}
-
 // NewActivityState creates a new ActivityState
 func NewActivityState(filePath string) *ActivityState {
 	return &ActivityState{
@@ -94,14 +81,6 @@ func NewActivityState(filePath string) *ActivityState {
 // IsSession 检查当前状态数据是否为会话状态
 func (as *ActivityState) IsSession() bool {
 	return as.Shell != ""
-}
-
-// SessionID 从 as.File 获取当前会话ID. NOTE: 必须在 session 下使用
-func (as *ActivityState) SessionID() string {
-	if as.Shell == "" {
-		panic("state: session shell can not be empty")
-	}
-	return fsutil.NameNoExt(as.File)
 }
 
 // AddSDKs 新增激活工具
@@ -168,37 +147,12 @@ func (as *ActivityState) DelSDKs(names []string) {
 	}
 }
 
-// RemoveSDK 删除激活的SDK
-func (as *ActivityState) RemoveSDK(name string) bool {
-	_, exists := as.SDKs[name]
-	if exists {
-		as.HasUpdate = true
-		delete(as.SDKs, name)
-	}
-	return exists
-}
-
 // DelEnvs 删除多个环境变量
 func (as *ActivityState) DelEnvs(names []string) {
 	for _, name := range names {
 		as.HasUpdate = true
 		delete(as.Envs, name)
 	}
-}
-
-// DelToolRequirement 删除工具需求
-func (as *ActivityState) DelToolRequirement(name string) bool {
-	_, exists := as.ToolRequirements[name]
-	if exists {
-		as.HasUpdate = true
-		delete(as.ToolRequirements, name)
-	}
-	return exists
-}
-
-// DelThenAddPaths 先删除然后新增激活路径
-func (as *ActivityState) DelThenAddPaths(rmPaths, addPaths []string) *ActivityState {
-	return as.DelPaths(rmPaths).AddPaths(addPaths)
 }
 
 // DelPaths 删除激活路径

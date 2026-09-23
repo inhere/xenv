@@ -45,8 +45,6 @@ const (
 const ScriptMark = "--Expression--"
 
 var (
-	// AllShellTypes 所有支持的shell类型
-	AllShellTypes  = []ShType{Bash, Zsh, Pwsh, Cmd}
 	AllTypeStrings = []string{"bash", "zsh", "pwsh", "cmd"}
 )
 

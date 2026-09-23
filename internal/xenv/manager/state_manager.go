@@ -96,30 +96,6 @@ func (m *StateManager) UseSDKsWithParams(ps *models.ActivateSDKsParams) error {
 }
 
 // ActivateSDK activates a specific SDK version
-func (m *StateManager) ActivateSDK(name, version string, opFlag models.OpFlag) error {
-	if err := m.requireInit(); err != nil {
-		return err
-	}
-
-	// update 合并数据
-	m.merged.SDKs[name] = version
-
-	switch opFlag {
-	case models.OpFlagGlobal:
-		m.global.SDKs[name] = version
-	case models.OpFlagDirenv:
-		m.DirenvOrNew().SDKs[name] = version
-	default:
-		m.session.SDKs[name] = version
-	}
-
-	// Save the state file
-	if !m.batchMode {
-		return m.SaveStateFile()
-	}
-	return nil
-}
-
 // DelSDKsWithEnvsPaths deletes multiple tools and with envs, paths
 func (m *StateManager) DelSDKsWithEnvsPaths(names, envs, paths []string, opFlag models.OpFlag) error {
 	if err := m.requireInit(); err != nil {

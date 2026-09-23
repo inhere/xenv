@@ -20,10 +20,6 @@ const (
 	SessionStateDir = "~/.config/xenv/session"
 )
 
-const (
-	InstalledMetaFile = "~/.config/xenv/sdks.local.json"
-)
-
 // 升级匹配级别 see config#AllowUpMatch
 const (
 	UpMatchNone uint8 = iota

@@ -40,18 +40,6 @@ type Configuration struct {
 }
 
 // IsDefinedSDK returns true if the SDK configuration is defined
-func (c *Configuration) IsDefinedSDK(name string) bool {
-	// Check if the tool is installed
-	toolFound := false
-	for _, tool := range c.SDKs {
-		if tool.Name == name || tool.Alias == name {
-			toolFound = true
-			break
-		}
-	}
-	return toolFound
-}
-
 // FindSDKConfig returns the SDK configuration if it is defined
 func (c *Configuration) FindSDKConfig(name string) *ToolChain {
 	for _, tool := range c.SDKs {
@@ -80,10 +68,6 @@ func (c *Configuration) SetConfigFile(filePath string) {
 }
 
 // ConfigDir returns the directory path where the configuration file is located
-func (c *Configuration) ConfigDir() string {
-	return c.configDir
-}
-
 // SetConfigDir sets the directory path where the configuration file is located
 func (c *Configuration) SetConfigDir(dirPath string) {
 	c.configDir = dirPath

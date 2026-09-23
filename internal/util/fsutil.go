@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -105,38 +104,5 @@ func EnsureDir(path string) error {
 }
 
 // FileExists checks if a file exists and is not a directory.
-func FileExists(path string) (bool, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return !info.IsDir(), nil
-}
-
 // CopyFile copies a file from src to dst.
-func CopyFile(src, dst string) error {
-	input, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(dst, input, 0644)
-}
-
 // CreateSymlink creates a symbolic link.
-func CreateSymlink(target, linkPath string) error {
-	exists, err := FileExists(linkPath)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		if err := os.Remove(linkPath); err != nil {
-			return fmt.Errorf("failed to remove existing file: %w", err)
-		}
-	}
-
-	return os.Symlink(target, linkPath)
-}

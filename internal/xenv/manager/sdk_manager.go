@@ -99,19 +99,6 @@ func (m *SDKManager) LoadLocalIndex() (*models.SDKLocalIndex, error) {
 	return m.localSDKs, nil
 }
 
-func (m *SDKManager) FindLocalSDK(name, version string) *models.InstalledSDK {
-	_ = m.ensureLocalLoad(true)
-
-	for i := range m.localSDKs.SDKs {
-		sdk := &m.localSDKs.SDKs[i]
-		if sdk.Name == name && sdk.Version == version {
-			sdk.Index = i
-			return sdk
-		}
-	}
-	return nil
-}
-
 func (m *SDKManager) IndexLocalSDKs() error {
 	if err := m.ensureLocalLoad(false); err != nil {
 		return err
@@ -187,43 +174,6 @@ func (m *SDKManager) SaveLocalIndex() error {
 	}
 
 	return os.WriteFile(m.localFile, jsonBytes, 0o664)
-}
-
-func (m *SDKManager) AddSDK(name, version, installDir string) error {
-	if err := m.ensureLocalLoad(false); err != nil {
-		return err
-	}
-
-	currentTime := time.Now()
-	if m.localSDKs.CreatedAt.IsZero() {
-		m.localSDKs.CreatedAt = currentTime
-	}
-	m.localSDKs.UpdatedAt = currentTime
-	m.localSDKs.SDKs = append(m.localSDKs.SDKs, models.InstalledSDK{
-		ID:         fmt.Sprintf("%s:%s", name, version),
-		Name:       name,
-		Version:    version,
-		InstallDir: installDir,
-		Source:     "xenv",
-		CreatedAt:  currentTime,
-		UpdatedAt:  currentTime,
-	})
-	delete(m.groupSDKs, name)
-
-	return m.SaveLocalIndex()
-}
-
-func (m *SDKManager) DeleteSDK(localSDK *models.InstalledSDK) error {
-	if err := m.ensureLocalLoad(false); err != nil {
-		return err
-	}
-
-	sdks := m.localSDKs.SDKs
-	sdkIndex := localSDK.Index
-	m.localSDKs.SDKs = append(sdks[:sdkIndex], sdks[sdkIndex+1:]...)
-	delete(m.groupSDKs, localSDK.Name)
-
-	return m.SaveLocalIndex()
 }
 
 func (m *SDKManager) FindSDKByID(id string) *models.InstalledSDK {
@@ -361,8 +311,4 @@ func pickLowestHigherVersion(localSDKs []models.InstalledSDK, version, prefix st
 		}
 	}
 	return found
-}
-
-func (m *SDKManager) LocalIndex() *models.SDKLocalIndex {
-	return m.localSDKs
 }

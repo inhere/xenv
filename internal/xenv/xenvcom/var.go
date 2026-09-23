@@ -3,7 +3,6 @@ package xenvcom
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,10 +88,6 @@ func sanitizeSessionIDPart(s string) string {
 }
 
 // SessionFile 获取当前会话状态文件
-func SessionFile() string {
-	return SessionStateDir + "/" + SessionID() + ".json"
-}
-
 // SetSessionID 设置当前会话ID (用于测试)
 func SetSessionID(id string) {
 	sessionID = id
@@ -105,11 +100,5 @@ var DebugMode = envutil.GetBool(XenvDebugEnvName, false)
 func Debugf(format string, args ...any) {
 	if DebugMode {
 		ccolor.Printf("<cyan>DEBUG</>: "+format, args...)
-	}
-}
-
-func Debugln(args ...any) {
-	if DebugMode {
-		ccolor.Println("<cyan>DEBUG</>: ", fmt.Sprint(args...))
 	}
 }

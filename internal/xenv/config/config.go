@@ -132,7 +132,3 @@ func (cm *Manager) SaveConfig(configPath string) error {
 func GetDefaultConfigPath() string {
 	return DefaultPaths().ConfigFile
 }
-
-func GetDefaultConfigDir() string {
-	return DefaultPaths().ConfigDir
-}

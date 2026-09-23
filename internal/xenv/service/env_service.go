@@ -266,29 +266,6 @@ func (s *EnvService) scopePaths(opFlag models.OpFlag) []string {
 	return s.state.Session().Paths
 }
 
-// ListPaths lists PATH entries
-func (s *EnvService) ListPaths() []models.PathEntry {
-	var paths []models.PathEntry
-	for _, entry := range s.state.Global().Paths {
-		paths = append(paths, models.PathEntry{
-			Path:     entry,
-			Priority: 0,
-			IsActive: true,
-			Scope:    "global",
-		})
-	}
-
-	for _, entry := range s.state.Session().Paths {
-		paths = append(paths, models.PathEntry{
-			Path:     entry,
-			Priority: 0,
-			IsActive: true,
-			Scope:    "session",
-		})
-	}
-	return paths
-}
-
 // SearchPath searches for a path in PATH
 func (s *EnvService) SearchPath(path string) []string {
 	normalizedPath := util.NormalizePath(path)
