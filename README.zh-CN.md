@@ -241,7 +241,11 @@ xenv use node@20
 
 ```bash
 xenv use go
+xenv use go:latest
+xenv use go:stable
 ```
+
+`latest` 与 `stable` 都解析为已安装的最高版本；`lts` 等别名暂不支持，会提示改用明确版本号。
 
 也可以一次激活或取消多个 SDK：
 

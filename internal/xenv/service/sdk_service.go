@@ -213,6 +213,9 @@ func (ts *SDKService) checkActivateSDK(spec *models.VersionSpec) (*models.Instal
 		localSDK = ts.sdks.MatchSDKByVersion(ts.sdks.ListMergedSDKVersions(sdkCfg.Name), spec.Version)
 	}
 	if localSDK == nil {
+		if !strings.ContainsAny(spec.Version, "0123456789") {
+			return nil, fmt.Errorf("sdk version alias %q is not supported yet, use an explicit version", spec.Version)
+		}
 		return nil, fmt.Errorf("sdk %s is not installed locally", spec.ID())
 	}
 

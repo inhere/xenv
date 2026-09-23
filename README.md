@@ -251,7 +251,11 @@ When the version is omitted, `latest` is used:
 
 ```bash
 xenv use go
+xenv use go:latest
+xenv use go:stable
 ```
+
+`latest` and `stable` both resolve to the highest installed version. Other aliases such as `lts` are not supported yet and fail with a message asking for an explicit version.
 
 Activate or deactivate multiple SDKs at once:
 

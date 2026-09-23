@@ -282,6 +282,8 @@ func TestSDKManagerMatchSDKByVersionUpMatchLevels(t *testing.T) {
 		// want 为空表示期望返回 nil
 		want string
 	}{
+		{"stable picks the highest version", xenvcom.UpMatchOne, sameMajor, "stable", "2.0.0"},
+		{"latest picks the highest version", xenvcom.UpMatchOne, sameMajor, "latest", "2.0.0"},
 		{"level 2 picks lowest higher within same major", xenvcom.UpMatchTwo, sameMajor, "1.24.9", "1.25.0"},
 		{"level 2 stops at major line", xenvcom.UpMatchTwo, sameMajor, "1.27.0", ""},
 		{"level 9 picks lowest higher, not list head", xenvcom.UpMatchAll, sameMajor, "1.24.9", "1.25.0"},

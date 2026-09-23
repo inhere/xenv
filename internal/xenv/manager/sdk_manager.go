@@ -247,8 +247,8 @@ func (m *SDKManager) MatchSDKByVersion(localSDKs []models.InstalledSDK, version 
 		}
 	}
 
-	if version == "latest" {
-		// latest 取比较器意义上的最大版本，不依赖列表顺序
+	if version == "latest" || version == "stable" {
+		// latest/stable 取比较器意义上的最大版本，不依赖列表顺序
 		latest := &localSDKs[0]
 		for i := 1; i < len(localSDKs); i++ {
 			if models.CompareVersionStrings(localSDKs[i].Version, latest.Version) > 0 {
