@@ -3,10 +3,14 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/gookit/cliui/show"
 	"github.com/gookit/gcli/v3"
+	"github.com/gookit/goutil/envutil"
 	"github.com/inhere/xenv/internal/xenv/config"
 )
 
@@ -39,6 +43,12 @@ var ConfigCmd = &gcli.Command{
 			return fmt.Errorf("failed to load configuration: %w", err)
 		}
 		cfg := config.Mgr.Config
+
+		// 打开配置文件编辑器
+		if configOpts.edit {
+			return openConfigInEditor(configPathOf(config.Mgr))
+		}
+
 		c.Infoln("Loading config file:", cfg.ConfigFile())
 
 		// Display current configuration
@@ -229,4 +239,30 @@ func configPathOf(cfgMgr *config.Manager) string {
 		return path
 	}
 	return config.GetDefaultConfigPath()
+}
+
+// openConfigInEditor 使用系统编辑器打开配置文件
+func openConfigInEditor(filePath string) error {
+	editor := envutil.Getenv("XENV_EDITOR", envutil.Getenv("VISUAL", os.Getenv("EDITOR")))
+	if editor == "" {
+		editor = defaultEditor()
+	}
+
+	parts := strings.Fields(editor)
+	cmd := exec.Command(parts[0], append(parts[1:], filePath)...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to open editor %s: %w", parts[0], err)
+	}
+	return nil
+}
+
+// defaultEditor 返回当前平台的默认编辑器
+func defaultEditor() string {
+	if runtime.GOOS == "windows" {
+		return "notepad"
+	}
+	return "vi"
 }

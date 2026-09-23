@@ -283,6 +283,31 @@ func (m *StateManager) AddPath(path string, opFlag models.OpFlag) error {
 	return nil
 }
 
+// DelPaths removes multiple paths from the PATH environment variable
+func (m *StateManager) DelPaths(paths []string, opFlag models.OpFlag) error {
+	if err := m.requireInit(); err != nil {
+		return err
+	}
+
+	m.merged.DelPaths(paths)
+
+	switch opFlag {
+	case models.OpFlagGlobal:
+		m.global.DelPaths(paths)
+	case models.OpFlagDirenv:
+		if ds := m.Nearest(); ds != nil {
+			ds.DelPaths(paths)
+		}
+	default:
+		m.session.DelPaths(paths)
+	}
+
+	if !m.batchMode {
+		return m.SaveStateFile()
+	}
+	return nil
+}
+
 // DelPath removes a path from the PATH environment variable
 func (m *StateManager) DelPath(path string, opFlag models.OpFlag) error {
 	if err := m.requireInit(); err != nil {

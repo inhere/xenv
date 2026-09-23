@@ -202,6 +202,54 @@ func (s *EnvService) RemovePath(path string, opFlag models.OpFlag) (script strin
 	return
 }
 
+// RemoveMatchedPaths 删除 PATH 中包含指定值的条目
+//
+// return 被删除的条目列表
+func (s *EnvService) RemoveMatchedPaths(value string, opFlag models.OpFlag) (script string, removed []string, err error) {
+	normalizedPath := util.NormalizePath(value)
+
+	for _, path := range s.scopePaths(opFlag) {
+		if strings.Contains(path, normalizedPath) {
+			removed = append(removed, path)
+		}
+	}
+	if len(removed) == 0 {
+		return "", nil, fmt.Errorf("no path matched in PATH: %s", normalizedPath)
+	}
+
+	if err = s.state.DelPaths(removed, opFlag); err != nil {
+		return "", nil, err
+	}
+
+	// 在shell hook环境中, 生成脚本移除当前 shell 的 PATH 条目
+	gen, err := getShellGenerator(s.config)
+	if err != nil {
+		return "", nil, err
+	}
+	if gen != nil {
+		pathList := sessionPath()
+		for _, item := range removed {
+			pathList, _ = withoutPath(pathList, item)
+		}
+		script = gen.GenSetPath(pathList)
+	}
+	return script, removed, nil
+}
+
+// scopePaths 返回指定作用域下已配置的 PATH 条目
+func (s *EnvService) scopePaths(opFlag models.OpFlag) []string {
+	switch opFlag {
+	case models.OpFlagGlobal:
+		return s.state.Global().Paths
+	case models.OpFlagDirenv:
+		if ds := s.state.Nearest(); ds != nil {
+			return ds.Paths
+		}
+		return nil
+	}
+	return s.state.Session().Paths
+}
+
 // ListPaths lists PATH entries
 func (s *EnvService) ListPaths() []models.PathEntry {
 	var paths []models.PathEntry

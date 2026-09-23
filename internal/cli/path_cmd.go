@@ -110,6 +110,24 @@ func PathRemoveCmd() *gcli.Command {
 			}
 
 			path := c.Arg("path").String()
+			if pathRmOpts.matchMode {
+				script, removed, err1 := envSvc.RemoveMatchedPaths(path, GetOpFlag())
+				if err1 != nil {
+					return fmt.Errorf("failed to remove matched paths: %w", err1)
+				}
+
+				for _, item := range removed {
+					if GlobalFlag {
+						fmt.Printf("Removed %s from PATH globally\n", item)
+					} else {
+						fmt.Printf("Removed %s from PATH for current session\n", item)
+					}
+				}
+
+				printScript(script)
+				return nil
+			}
+
 			if SystemFlag {
 				if err = checkSystemScope(GlobalFlag, SaveDirenv); err != nil {
 					return err

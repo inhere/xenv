@@ -19,6 +19,23 @@ import (
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
+func TestRemoveMatchedPaths(t *testing.T) {
+	_, _, _, state := newDirenvTestService(t, "test-match-remove", nil)
+	envSvc := NewEnvService(&models.Configuration{}, state)
+
+	paths := []string{`D:\tools\bin`, `D:\other\bin`, `D:\keep`}
+	assert.Require(t, assert.NoErr(t, state.AddPaths(paths, models.OpFlagGlobal)))
+
+	script, removed, err := envSvc.RemoveMatchedPaths("bin", models.OpFlagGlobal)
+	assert.Require(t, assert.NoErr(t, err))
+	assert.Eq(t, []string{`D:\tools\bin`, `D:\other\bin`}, removed)
+	assert.Eq(t, []string{`D:\keep`}, state.Global().Paths)
+	assert.True(t, script != "", "expected a script to update the current shell")
+
+	_, _, err = envSvc.RemoveMatchedPaths("no-such-dir", models.OpFlagGlobal)
+	assert.ErrMsgContains(t, err, "no path matched")
+}
+
 func TestSetupDirenvDetectsGoModWithoutCreatingXenvToml(t *testing.T) {
 	tempHome, projectDir, svc, state := newDirenvTestService(t, "test-session", func(projectDir string) {
 		if err := os.WriteFile(filepath.Join(projectDir, "go.mod"), []byte("module example.com/test\n\ngo 1.24\n"), 0644); err != nil {

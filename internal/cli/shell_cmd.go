@@ -150,6 +150,11 @@ func ShellDirenvCmd() *gcli.Command {
 			c.VarOpt(&direnvOpts.Type, "type", "t", "Shell type (bash, zsh, pwsh, cmd)")
 		},
 		Func: func(c *gcli.Command, args []string) error {
+			// 显式指定 --type 时, 本次调用按该 shell 类型生成脚本
+			if shellType := direnvOpts.Type.String(); shellType != "" {
+				xenvcom.SetHookShell(shellType)
+			}
+
 			sdkSvc, err := xenv.SDKService()
 			if err != nil {
 				if outputHookWarningExpression("failed to initialize xenv direnv state", err) {
