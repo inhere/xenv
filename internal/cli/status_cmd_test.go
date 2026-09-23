@@ -111,6 +111,26 @@ func TestFormatEffectiveSDKRows(t *testing.T) {
 	}, lines)
 }
 
+func TestFormatAppliedRecordLines(t *testing.T) {
+	assert.Eq(t, []string{"No applied direnv record found"}, formatAppliedRecordLines(nil))
+	assert.Eq(t, []string{"No applied direnv record found"},
+		formatAppliedRecordLines(models.NewAppliedDirenv("/proj/.xenv.toml")))
+
+	rec := models.NewAppliedDirenv("/proj/.xenv.toml")
+	rec.AddAppliedPath("/proj/bin")
+	rec.AddAppliedEnv("APP_ENV", "dev", true)
+	rec.AddAppliedEnv("NEW_ENV", "", false)
+	rec.AddAppliedSDK("go", "1.24.13")
+
+	lines := formatAppliedRecordLines(rec)
+	assert.Contains(t, lines, " - from: /proj/.xenv.toml")
+	assert.Contains(t, lines, "Applied PATH:")
+	assert.Contains(t, lines, "  <green>1</>. /proj/bin")
+	assert.Contains(t, lines, "  <green>APP_ENV</> (prev: dev)")
+	assert.Contains(t, lines, "  <green>NEW_ENV</> (prev: unset)")
+	assert.Contains(t, lines, "  <green>        go</> => 1.24.13")
+}
+
 func TestFormatSessionContextLines(t *testing.T) {
 	session := models.NewActivityState("session.json")
 	session.SDKs["go"] = "1.24.6"

@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gookit/gcli/v3"
 	"github.com/gookit/goutil/x/ccolor"
@@ -12,6 +13,7 @@ import (
 	"github.com/inhere/xenv/internal/xenv"
 	"github.com/inhere/xenv/internal/xenv/config"
 	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/service"
 )
 
 const (
@@ -76,8 +78,51 @@ func handleStatus(opts statusOptions) error {
 		}
 		fmt.Println()
 		printStatusSection("Session Context", formatLayerLines("Session Defaults:", session, "No session context found", overridden[session]))
+		fmt.Println()
+		printStatusSection("Applied Direnv", formatAppliedRecordLines(service.AppliedDirenvRecord()))
 	}
 	return nil
+}
+
+// formatAppliedRecordLines 展示当前 shell 的 direnv 应用记录
+func formatAppliedRecordLines(rec *models.AppliedDirenv) []string {
+	if rec == nil || rec.IsEmpty() {
+		return []string{"No applied direnv record found"}
+	}
+
+	lines := []string{" - from: " + rec.File}
+	if len(rec.Paths) > 0 {
+		lines = appendStatusSection(lines, "Applied PATH:")
+		for i, path := range rec.Paths {
+			lines = append(lines, fmt.Sprintf("  <green>%d</>. %s", i+1, path))
+		}
+	}
+	if len(rec.Envs) > 0 {
+		lines = appendStatusSection(lines, "Applied Envs:")
+		for _, item := range rec.Envs {
+			prev := "unset"
+			if item.HadPrev {
+				prev = item.Prev
+			}
+			lines = append(lines, fmt.Sprintf("  <green>%s</> (prev: %s)", item.Name, prev))
+		}
+	}
+	if len(rec.SDKs) > 0 {
+		names := make([]string, 0, len(rec.SDKs))
+		for name := range rec.SDKs {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+
+		lines = appendStatusSection(lines, "Applied SDKs:")
+		for _, name := range names {
+			lines = append(lines, fmt.Sprintf("  <green>%10s</> => %s", name, rec.SDKs[name]))
+		}
+	}
+	if !rec.AppliedAt.IsZero() {
+		lines = append(lines, " - applied at: "+rec.AppliedAt.Format(time.RFC3339))
+	}
+	return lines
 }
 
 func buildEffectiveSDKRows(global, session *models.ActivityState, dirStates []*models.ActivityState) []effectiveSDKRow {

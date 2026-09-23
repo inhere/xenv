@@ -43,6 +43,11 @@ func loadAppliedRecord() *models.AppliedDirenv {
 	return rec
 }
 
+// AppliedDirenvRecord 返回当前 shell 的 direnv 应用记录, 无记录时返回 nil
+func AppliedDirenvRecord() *models.AppliedDirenv {
+	return loadAppliedRecord()
+}
+
 // writeAppliedRecord 生成写入或清除 direnv 应用记录的脚本
 func writeAppliedRecord(gen *shell.XenvScriptGenerator, rec *models.AppliedDirenv) string {
 	if rec == nil || rec.IsEmpty() {
