@@ -511,6 +511,41 @@ func (m *StateManager) Global() *models.ActivityState { return m.global }
 // DirStates returns the direnv activity states
 func (m *StateManager) DirStates() []*models.ActivityState { return m.dirStates }
 
+// AppliedDirenv 返回当前会话的 direnv 应用记录
+func (m *StateManager) AppliedDirenv() *models.AppliedDirenv {
+	return m.session.AppliedDirenv
+}
+
+// SetAppliedDirenv 保存 direnv 应用记录
+func (m *StateManager) SetAppliedDirenv(rec *models.AppliedDirenv) error {
+	if err := m.requireInit(); err != nil {
+		return err
+	}
+
+	m.session.SetAppliedDirenv(rec)
+	if !m.batchMode {
+		return m.SaveStateFile()
+	}
+	return nil
+}
+
+// ClearAppliedDirenv 清除 direnv 应用记录
+func (m *StateManager) ClearAppliedDirenv() error {
+	if err := m.requireInit(); err != nil {
+		return err
+	}
+
+	if !m.session.HasAppliedDirenv() {
+		return nil
+	}
+
+	m.session.ClearAppliedDirenv()
+	if !m.batchMode {
+		return m.SaveStateFile()
+	}
+	return nil
+}
+
 // EnvrcFiles returns the .envrc files found for the current directory
 func (m *StateManager) EnvrcFiles() []string { return m.envrcFiles }
 

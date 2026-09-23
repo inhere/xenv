@@ -6,9 +6,69 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/x/assert"
+	"github.com/inhere/xenv/internal/xenv/config"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
+
+func TestStateManagerAppliedDirenvRoundTrip(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+	t.Setenv(config.EnvConfigDir, "")
+	t.Setenv("XENV_HOOK_SHELL", "bash")
+	xenvcom.SetHookShell("bash")
+	xenvcom.SetSessionID("")
+	t.Cleanup(func() {
+		xenvcom.SetHookShell("")
+		xenvcom.SetSessionID("")
+	})
+
+	state := NewStateManager()
+	assert.Require(t, assert.NoErr(t, state.Init()))
+
+	rec := models.NewAppliedDirenv("/proj/.xenv.toml")
+	rec.AddAppliedPath("/proj/bin")
+	rec.AddAppliedEnv("APP_ENV", "dev", true)
+	assert.Require(t, assert.NoErr(t, state.SetAppliedDirenv(rec)))
+
+	// 重新加载同一 session 文件时必须能读回记录
+	reloaded := NewStateManager()
+	assert.Require(t, assert.NoErr(t, reloaded.Init()))
+	assert.Require(t, assert.NotNil(t, reloaded.AppliedDirenv()))
+	assert.Eq(t, "/proj/.xenv.toml", reloaded.AppliedDirenv().File)
+	assert.Eq(t, []string{"/proj/bin"}, reloaded.AppliedDirenv().Paths)
+
+	assert.Require(t, assert.NoErr(t, reloaded.ClearAppliedDirenv()))
+	assert.Nil(t, reloaded.AppliedDirenv())
+
+	// 再次加载后记录仍然为空
+	afterClear := NewStateManager()
+	assert.Require(t, assert.NoErr(t, afterClear.Init()))
+	assert.Nil(t, afterClear.AppliedDirenv())
+}
+
+func TestStateManagerLoadsSessionFileWithoutAppliedDirenv(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+	t.Setenv(config.EnvConfigDir, "")
+	t.Setenv("XENV_HOOK_SHELL", "bash")
+	xenvcom.SetHookShell("bash")
+	xenvcom.SetSessionID("")
+	t.Cleanup(func() {
+		xenvcom.SetHookShell("")
+		xenvcom.SetSessionID("")
+	})
+
+	sessionFile := filepath.Join(config.DefaultPaths().SessionDir, xenvcom.SessionID()+".json")
+	assert.Require(t, assert.NoErr(t, os.MkdirAll(filepath.Dir(sessionFile), 0o755)))
+	assert.Require(t, assert.NoErr(t, os.WriteFile(sessionFile, []byte(`{"shell":"bash","sdks":{}}`), 0o644)))
+
+	state := NewStateManager()
+	assert.Require(t, assert.NoErr(t, state.Init()))
+	assert.Nil(t, state.AppliedDirenv())
+}
 
 func TestEnvrcFileName(t *testing.T) {
 	oldShell := xenvcom.HookShell()
