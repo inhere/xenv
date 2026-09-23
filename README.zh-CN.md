@@ -214,6 +214,23 @@ golangci-lint = ">=1.60,required"
 
 当 `config.yaml` 中 `source_project_scripts: true` 时，进入目录还会 source 项目脚本：`.xenv.sh` / `.xenv.ps1`，以及兼容的 `.envrc`（bash/zsh）或 `.envrc.ps1`（pwsh），会在当前目录及其父目录中查找。这些脚本以当前 shell 权限执行，不可信目录请保持关闭。
 
+### 离开目录
+
+每次 `init-direnv` 都会把本次应用的内容记录到环境变量 `XENV_APPLIED_DIRENV`（JSON 记录：应用的 `.xenv.toml`、新增的 `PATH` 条目、被修改的变量及其旧值、激活的 SDK）。
+
+- `cd` 到其它项目或离开项目：会移除记录的 `PATH` 条目、把变量恢复为应用前的值（原本未设置的则取消设置），并在同一条 shell 命令里应用新目录。
+- 在同一项目内部切换（含子目录）：不重复应用，也不撤销。
+- `-s/--direnv` 系列命令（`use -s`、`set -s`、`unset -s`、`path add/remove -s`）会同步更新记录，离开目录时同样被恢复。
+- 记录只存在于当前 shell 环境中：天然 per-shell，shell 退出即消失，不会写入任何状态文件。
+
+离开目录时不会恢复：
+
+- `source_project_scripts` / `.envrc` 的副作用：脚本在当前 shell 中执行（不可信目录请保持该选项关闭）。
+- 在 xenv 之外做的改动（例如自己修改 `PATH`），以及未被记录过的删除操作。
+- `-g/--global` 与 `-S/--system` 的改动，它们不属于目录作用域。
+
+可以用 `xenv status --layers` 查看当前记录。
+
 ## SDK 管理
 
 SDK 先在 `config.yaml` 中声明，再从本地安装目录建立索引。

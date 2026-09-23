@@ -224,6 +224,23 @@ Sections:
 
 When `source_project_scripts: true` is set in `config.yaml`, entering a directory also sources project scripts: `.xenv.sh` / `.xenv.ps1` and a compatible `.envrc` (bash/zsh) or `.envrc.ps1` (pwsh) found in the directory or its parents. Keep this disabled for untrusted directories, since those files run with your shell's privileges.
 
+### Leaving a directory
+
+Each `init-direnv` run records what it applied to the current shell in the `XENV_APPLIED_DIRENV` environment variable (a JSON record: applied `.xenv.toml`, added `PATH` entries, changed variables with their previous values, activated SDKs).
+
+- `cd` into another project or out of the project: the recorded `PATH` entries are removed, variables are restored to their previous values (`unset` when they were not set before), and the new directory is applied in the same shell command.
+- `cd` inside the same project (including subdirectories): nothing is re-applied or reverted.
+- `-s/--direnv` commands (`use -s`, `set -s`, `unset -s`, `path add/remove -s`) update the record too, so their effect is reverted on leave.
+- The record lives in the shell environment only: it is per-shell, disappears with the shell, and is never written to state files.
+
+Not reverted on leave:
+
+- `source_project_scripts` / `.envrc` side effects, since the scripts run in your current shell (keep the option off for directories you do not trust).
+- Changes made outside xenv (for example editing `PATH` yourself), and removals that were not recorded.
+- `-g/--global` and `-S/--system` changes, which are not directory scoped.
+
+Use `xenv status --layers` to inspect the current record.
+
 ## SDK Management
 
 SDKs are configured in `config.yaml`, then indexed from local installation directories.
