@@ -43,12 +43,21 @@ func (sg *XenvScriptGenerator) GenHookScripts(ps *models.GenInitScriptParams) (s
 }
 
 func (sg *XenvScriptGenerator) GenSourceProjectScript(projectDir string) string {
-	projectDir = filepath.ToSlash(projectDir)
+	fileName := ".xenv.sh"
+	if sg.shell == Pwsh {
+		fileName = ".xenv.ps1"
+	}
+	return sg.GenSourceFile(filepath.Join(projectDir, fileName))
+}
+
+// GenSourceFile 生成 source 指定脚本文件的代码
+func (sg *XenvScriptGenerator) GenSourceFile(filePath string) string {
+	filePath = filepath.ToSlash(filePath)
 	switch sg.shell {
 	case Bash, Zsh:
-		return fmt.Sprintf("source \"%s/.xenv.sh\"\n", projectDir)
+		return fmt.Sprintf("source %s\n", shQuote(filePath))
 	case Pwsh:
-		return fmt.Sprintf(". \"%s/.xenv.ps1\"\n", projectDir)
+		return fmt.Sprintf(". %s\n", pwshQuote(filePath))
 	default:
 		return ""
 	}

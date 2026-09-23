@@ -212,6 +212,8 @@ golangci-lint = ">=1.60,required"
 - `envs`: 项目需要加载的环境变量。
 - `tools`: `xenv check tools` 会检查的外部工具要求。
 
+当 `config.yaml` 中 `source_project_scripts: true` 时，进入目录还会 source 项目脚本：`.xenv.sh` / `.xenv.ps1`，以及兼容的 `.envrc`（bash/zsh）或 `.envrc.ps1`（pwsh），会在当前目录及其父目录中查找。这些脚本以当前 shell 权限执行，不可信目录请保持关闭。
+
 ## SDK 管理
 
 SDK 先在 `config.yaml` 中声明，再从本地安装目录建立索引。
@@ -389,6 +391,12 @@ xenv config get bin_dir
 xenv config get shell_hooks_dir
 ```
 
+使用 `$XENV_EDITOR`、`$VISUAL` 或 `$EDITOR` 打开配置文件：
+
+```bash
+xenv config --edit
+```
+
 导出配置：
 
 ```bash
@@ -449,7 +457,7 @@ SDK 字段说明：
 | `xenv env unset [-g] [-s] [-S] <name...>` | 删除环境变量 |
 | `xenv path list` | 列出已管理的 `PATH` 条目，`-S` 同时列出操作系统用户级 `PATH` |
 | `xenv path add [-g] [-s] [-S] <path>` | 添加 `PATH` 条目 |
-| `xenv path remove [-g] [-s] [-S] <path>` | 删除 `PATH` 条目 |
+| `xenv path remove [-g] [-s] [-S] <path>` | 删除 `PATH` 条目，`--match` 会删除所有包含该值的条目 |
 | `xenv path search <value>` | 搜索当前 `PATH` 条目 |
 | `xenv run [-u spec,...] [-p dir] [-e KEY=VALUE] [-c dir] [--print] -- <cmd> [args...]` | 用一次性环境执行命令 |
 | `xenv status` | 查看当前目录的 Effective State |

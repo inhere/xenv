@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
@@ -302,10 +303,28 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	if projectScript := ts.genProjectScriptForDirenv(gen, deState); projectScript != "" {
 		sb.WriteString(projectScript)
 	}
+	if envrcScript := ts.genEnvrcScript(gen); envrcScript != "" {
+		sb.WriteString(envrcScript)
+	}
 	if sb.Len() > 0 {
 		return sb.String(), nil
 	}
 	return "", nil
+}
+
+// genEnvrcScript 生成 source .envrc / .envrc.ps1 的脚本
+//
+// 与项目脚本一致, 仅在 source_project_scripts 开启时生效
+func (ts *SDKService) genEnvrcScript(gen *shell.XenvScriptGenerator) string {
+	if !ts.config.SourceProjectScripts {
+		return ""
+	}
+
+	var sb strings.Builder
+	for _, filePath := range ts.state.EnvrcFiles() {
+		sb.WriteString(gen.GenSourceFile(filePath))
+	}
+	return sb.String()
 }
 
 func (ts *SDKService) WriteHookToProfile(st shell.ShType, pwshProfile string) error {

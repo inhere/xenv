@@ -222,6 +222,8 @@ Sections:
 - `envs`: Environment variables loaded for the project.
 - `tools`: External tool requirements checked by `xenv check tools`.
 
+When `source_project_scripts: true` is set in `config.yaml`, entering a directory also sources project scripts: `.xenv.sh` / `.xenv.ps1` and a compatible `.envrc` (bash/zsh) or `.envrc.ps1` (pwsh) found in the directory or its parents. Keep this disabled for untrusted directories, since those files run with your shell's privileges.
+
 ## SDK Management
 
 SDKs are configured in `config.yaml`, then indexed from local installation directories.
@@ -399,6 +401,12 @@ xenv config get bin_dir
 xenv config get shell_hooks_dir
 ```
 
+Edit the configuration file with `$XENV_EDITOR`, `$VISUAL` or `$EDITOR`:
+
+```bash
+xenv config --edit
+```
+
 Export configuration:
 
 ```bash
@@ -459,7 +467,7 @@ SDK fields:
 | `xenv env unset [-g] [-s] [-S] <name...>` | Remove environment variables |
 | `xenv path list` | List managed `PATH` entries, `-S` also lists the OS user `PATH` |
 | `xenv path add [-g] [-s] [-S] <path>` | Add a `PATH` entry |
-| `xenv path remove [-g] [-s] [-S] <path>` | Remove a `PATH` entry |
+| `xenv path remove [-g] [-s] [-S] <path>` | Remove a `PATH` entry, `--match` removes every entry containing the value |
 | `xenv path search <value>` | Search current `PATH` entries |
 | `xenv run [-u spec,...] [-p dir] [-e KEY=VALUE] [-c dir] [--print] -- <cmd> [args...]` | Run a command with a one-shot environment |
 | `xenv status` | Show Effective State for the current directory |

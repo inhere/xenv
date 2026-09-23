@@ -10,7 +10,6 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/jsonutil"
-	"github.com/gookit/goutil/strutil"
 	"github.com/inhere/xenv/internal/xenv/config"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
@@ -382,7 +381,7 @@ func (m *StateManager) LoadDirEnvState() error {
 	}
 
 	// Check for .envrc file in the current directory and parent directories up to the root
-	fileName := strutil.OrCond(xenvcom.IsHookBash(), ".envrc", ".envrc.ps1")
+	fileName := envrcFileName()
 	envrcPath := fsutil.FindOneInParentDirs(wd, fileName)
 	if envrcPath != "" {
 		xenvcom.Debugf("Found envrc at: %s\n", envrcPath)
@@ -390,6 +389,17 @@ func (m *StateManager) LoadDirEnvState() error {
 	}
 
 	return nil
+}
+
+// envrcFileName 返回当前 shell 需要加载的 envrc 文件名
+//
+//   - pwsh 使用 .envrc.ps1
+//   - 其它 shell 使用 .envrc
+func envrcFileName() string {
+	if xenvcom.HookShell() == "pwsh" {
+		return ".envrc.ps1"
+	}
+	return ".envrc"
 }
 
 func findDirenvStateFile(wd string) string {
@@ -523,6 +533,9 @@ func (m *StateManager) Global() *models.ActivityState { return m.global }
 
 // DirStates returns the direnv activity states
 func (m *StateManager) DirStates() []*models.ActivityState { return m.dirStates }
+
+// EnvrcFiles returns the .envrc files found for the current directory
+func (m *StateManager) EnvrcFiles() []string { return m.envrcFiles }
 
 // Session returns the session activity state
 func (m *StateManager) Session() *models.ActivityState { return m.session }

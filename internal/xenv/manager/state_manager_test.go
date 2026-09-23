@@ -7,7 +7,27 @@ import (
 
 	"github.com/gookit/goutil/x/assert"
 	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
+
+func TestEnvrcFileName(t *testing.T) {
+	oldShell := xenvcom.HookShell()
+	t.Cleanup(func() { xenvcom.SetHookShell(oldShell) })
+
+	tests := map[string]string{
+		"bash": ".envrc",
+		"zsh":  ".envrc",
+		"":     ".envrc",
+		"pwsh": ".envrc.ps1",
+	}
+
+	for shellName, want := range tests {
+		t.Run(shellName, func(t *testing.T) {
+			xenvcom.SetHookShell(shellName)
+			assert.Eq(t, want, envrcFileName())
+		})
+	}
+}
 
 func TestLoadDirEnvStatePrefersLocalToml(t *testing.T) {
 	projectDir := t.TempDir()

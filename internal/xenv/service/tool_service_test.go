@@ -291,6 +291,29 @@ func TestSetupDirenvKeepsDirenvPathsBeforeSDKPaths(t *testing.T) {
 	}
 }
 
+func TestSetupDirenvSourcesEnvrcWhenEnabled(t *testing.T) {
+	_, projectDir, svc, state := newDirenvTestService(t, "test-envrc-source", func(projectDir string) {
+		if err := os.WriteFile(filepath.Join(projectDir, ".envrc"), []byte("export FROM_ENVRC=1\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("XENV_HOOK_SHELL", "bash")
+		xenvcom.SetHookShell("bash")
+	})
+
+	assert.Eq(t, []string{filepath.Join(projectDir, ".envrc")}, state.EnvrcFiles())
+
+	// 未开启 source_project_scripts 时不 source .envrc
+	script, err := svc.SetupDirenv()
+	assert.Require(t, assert.NoErr(t, err))
+	assert.Eq(t, "", script)
+
+	svc.config.SourceProjectScripts = true
+	script, err = svc.SetupDirenv()
+	assert.Require(t, assert.NoErr(t, err))
+	assert.Contains(t, script, ".envrc")
+	assert.Contains(t, script, "source ")
+}
+
 func TestSetupDirenvAppendsProjectScriptWithoutSDK(t *testing.T) {
 	_, projectDir, svc, _ := newDirenvTestService(t, "test-existing-project-script-no-sdk", func(projectDir string) {
 		xenvToml := filepath.Join(projectDir, ".xenv.toml")
@@ -307,7 +330,7 @@ func TestSetupDirenvAppendsProjectScriptWithoutSDK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `. "` + filepath.ToSlash(projectDir) + `/.xenv.ps1"`
+	want := `. '` + filepath.ToSlash(projectDir) + `/.xenv.ps1'`
 	if !containsNormalized(script, want) {
 		t.Fatalf("expected setup direnv script to source project pwsh script without SDK, want %q, got %q", want, script)
 	}
@@ -329,7 +352,7 @@ func TestSetupDirenvAppendsProjectScriptForPwsh(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `. "` + filepath.ToSlash(projectDir) + `/.xenv.ps1"`
+	want := `. '` + filepath.ToSlash(projectDir) + `/.xenv.ps1'`
 	if !containsNormalized(script, want) {
 		t.Fatalf("expected setup direnv script to source project pwsh script, want %q, got %q", want, script)
 	}
@@ -353,7 +376,7 @@ func TestSetupDirenvAppendsProjectScriptForBash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `source "` + filepath.ToSlash(projectDir) + `/.xenv.sh"`
+	want := `source '` + filepath.ToSlash(projectDir) + `/.xenv.sh'`
 	if !containsNormalized(script, want) {
 		t.Fatalf("expected setup direnv script to source project bash script, want %q, got %q", want, script)
 	}
