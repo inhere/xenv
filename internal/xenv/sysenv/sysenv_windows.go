@@ -27,13 +27,8 @@ func SetVar(name, value string) error {
 	}
 	defer key.Close()
 
-	if isExpandString(key, name) {
-		err = key.SetExpandStringValue(name, value)
-	} else {
-		err = key.SetStringValue(name, value)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to set system environment variable %s: %w", name, err)
+	if err = setVarIn(key, name, value); err != nil {
+		return err
 	}
 
 	notifyEnvChanged()
@@ -48,15 +43,8 @@ func UnsetVar(name string) error {
 	}
 	defer key.Close()
 
-	if _, _, err = key.GetStringValue(name); err != nil {
-		if err == registry.ErrNotExist {
-			return fmt.Errorf("environment variable %s is not found in system environment", name)
-		}
-		return fmt.Errorf("failed to read system environment variable %s: %w", name, err)
-	}
-
-	if err = key.DeleteValue(name); err != nil {
-		return fmt.Errorf("failed to unset system environment variable %s: %w", name, err)
+	if err = unsetVarIn(key, name); err != nil {
+		return err
 	}
 
 	notifyEnvChanged()
@@ -71,6 +59,94 @@ func AddPath(path string) error {
 	}
 	defer key.Close()
 
+	if err = addPathIn(key, path); err != nil {
+		return err
+	}
+
+	notifyEnvChanged()
+	return nil
+}
+
+// RemovePath 从用户级 PATH 中删除路径
+func RemovePath(path string) error {
+	key, err := openUserEnvKey()
+	if err != nil {
+		return err
+	}
+	defer key.Close()
+
+	if err = removePathIn(key, path); err != nil {
+		return err
+	}
+
+	notifyEnvChanged()
+	return nil
+}
+
+// EnvVars 返回用户级环境变量. NOTE: 返回注册表中的原始值, 不展开 %VAR% 引用
+func EnvVars() (map[string]string, error) {
+	key, err := openUserEnvKey()
+	if err != nil {
+		return nil, err
+	}
+	defer key.Close()
+
+	return envVarsIn(key)
+}
+
+// PathList 返回用户级 PATH 的条目
+func PathList() ([]string, error) {
+	key, err := openUserEnvKey()
+	if err != nil {
+		return nil, err
+	}
+	defer key.Close()
+
+	return pathListIn(key)
+}
+
+// openUserEnvKey 打开当前用户的环境变量注册表键
+func openUserEnvKey() (registry.Key, error) {
+	key, err := registry.OpenKey(registry.CURRENT_USER, userEnvKeyPath, registry.QUERY_VALUE|registry.SET_VALUE)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open user environment registry key: %w", err)
+	}
+	return key, nil
+}
+
+// setVarIn 在指定注册表键中设置环境变量
+//
+// 已存在的 REG_EXPAND_SZ 值会保持类型, 避免 %USERPROFILE% 之类的引用被展开
+func setVarIn(key registry.Key, name, value string) error {
+	var err error
+	if isExpandString(key, name) {
+		err = key.SetExpandStringValue(name, value)
+	} else {
+		err = key.SetStringValue(name, value)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to set system environment variable %s: %w", name, err)
+	}
+	return nil
+}
+
+// unsetVarIn 从指定注册表键中删除环境变量
+func unsetVarIn(key registry.Key, name string) error {
+	if _, _, err := key.GetStringValue(name); err != nil {
+		if err == registry.ErrNotExist {
+			return fmt.Errorf("environment variable %s is not found in system environment", name)
+		}
+		return fmt.Errorf("failed to read system environment variable %s: %w", name, err)
+	}
+
+	if err := key.DeleteValue(name); err != nil {
+		return fmt.Errorf("failed to unset system environment variable %s: %w", name, err)
+	}
+	return nil
+}
+
+// addPathIn 在指定注册表键的 PATH 最前面插入路径
+func addPathIn(key registry.Key, path string) error {
 	value, valType, err := userPathValue(key)
 	if err != nil {
 		return err
@@ -85,14 +161,8 @@ func AddPath(path string) error {
 	return setUserPathValue(key, strings.Join(pathList, winPathListSep), valType)
 }
 
-// RemovePath 从用户级 PATH 中删除路径
-func RemovePath(path string) error {
-	key, err := openUserEnvKey()
-	if err != nil {
-		return err
-	}
-	defer key.Close()
-
+// removePathIn 从指定注册表键的 PATH 中删除路径
+func removePathIn(key registry.Key, path string) error {
 	value, valType, err := userPathValue(key)
 	if err != nil {
 		return err
@@ -108,14 +178,8 @@ func RemovePath(path string) error {
 	return setUserPathValue(key, strings.Join(pathList, winPathListSep), valType)
 }
 
-// EnvVars 返回用户级环境变量. NOTE: 返回注册表中的原始值, 不展开 %VAR% 引用
-func EnvVars() (map[string]string, error) {
-	key, err := openUserEnvKey()
-	if err != nil {
-		return nil, err
-	}
-	defer key.Close()
-
+// envVarsIn 读取指定注册表键中的环境变量. NOTE: 返回原始值, 不展开 %VAR% 引用
+func envVarsIn(key registry.Key) (map[string]string, error) {
 	names, err := key.ReadValueNames(0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read user environment values: %w", err)
@@ -136,28 +200,13 @@ func EnvVars() (map[string]string, error) {
 	return envs, nil
 }
 
-// PathList 返回用户级 PATH 的条目
-func PathList() ([]string, error) {
-	key, err := openUserEnvKey()
-	if err != nil {
-		return nil, err
-	}
-	defer key.Close()
-
+// pathListIn 读取指定注册表键中 PATH 的条目
+func pathListIn(key registry.Key) ([]string, error) {
 	value, _, err := userPathValue(key)
 	if err != nil {
 		return nil, err
 	}
 	return splitPathList(value), nil
-}
-
-// openUserEnvKey 打开当前用户的环境变量注册表键
-func openUserEnvKey() (registry.Key, error) {
-	key, err := registry.OpenKey(registry.CURRENT_USER, userEnvKeyPath, registry.QUERY_VALUE|registry.SET_VALUE)
-	if err != nil {
-		return 0, fmt.Errorf("failed to open user environment registry key: %w", err)
-	}
-	return key, nil
 }
 
 // isExpandString 检查已存在的值是否为 REG_EXPAND_SZ
@@ -166,20 +215,20 @@ func isExpandString(key registry.Key, name string) bool {
 	return err == nil && valType == registry.EXPAND_SZ
 }
 
-// userPathValue 读取用户 PATH 的原始值和值类型. NOTE: GetStringValue 不会展开 %VAR%
+// userPathValue 读取 PATH 的原始值和值类型. NOTE: GetStringValue 不会展开 %VAR%
 func userPathValue(key registry.Key) (string, uint32, error) {
 	value, valType, err := key.GetStringValue(pathVarName)
 	if err == nil {
 		return value, valType, nil
 	}
 	if err == registry.ErrNotExist {
-		// 尚未设置用户 PATH, 新建时使用 REG_EXPAND_SZ, 与系统默认一致
+		// 尚未设置 PATH, 新建时使用 REG_EXPAND_SZ, 与系统默认一致
 		return "", registry.EXPAND_SZ, nil
 	}
 	return "", 0, fmt.Errorf("failed to read user PATH: %w", err)
 }
 
-// setUserPathValue 写回用户 PATH, 保持原有的值类型
+// setUserPathValue 写回 PATH, 保持原有的值类型
 func setUserPathValue(key registry.Key, value string, valType uint32) error {
 	var err error
 	if valType == registry.EXPAND_SZ {
@@ -190,8 +239,6 @@ func setUserPathValue(key registry.Key, value string, valType uint32) error {
 	if err != nil {
 		return fmt.Errorf("failed to update user PATH: %w", err)
 	}
-
-	notifyEnvChanged()
 	return nil
 }
 
