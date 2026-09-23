@@ -20,6 +20,37 @@ import (
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
+func TestDirenvScopeOpsMergeAppliedRecord(t *testing.T) {
+	_, projectDir, _, state := newDirenvTestService(t, "test-direnv-merge", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		assert.Require(t, assert.NoErr(t, os.WriteFile(xenvToml, []byte("[envs]\nAPP_ENV = \"local\"\n"), 0o644)))
+	})
+
+	config := &models.Configuration{}
+	xenvcom.SetHookShell("bash")
+	envSvc := NewEnvService(config, state)
+
+	applied := models.NewAppliedDirenv(filepath.Join(projectDir, ".xenv.toml"))
+	applied.AddAppliedEnv("APP_ENV", "", false)
+	t.Setenv(xenvcom.AppliedDirenvEnvName, mustRecordJSON(t, applied))
+
+	// set -s: 记录本次变量及其应用前的值
+	t.Setenv("XENV_TEST_SCOPE_ENV", "before")
+	script, err := envSvc.SetEnvs([]string{"XENV_TEST_SCOPE_ENV=after"}, models.OpFlagDirenv)
+	assert.Require(t, assert.NoErr(t, err))
+
+	rec := decodeRecordFromScript(t, script)
+	assert.Eq(t, []string{filepath.Join(projectDir, ".xenv.toml")}, []string{rec.File})
+	assert.Require(t, assert.Len(t, rec.Envs, 2))
+	assert.Eq(t, []string{"APP_ENV", "XENV_TEST_SCOPE_ENV"}, []string{rec.Envs[0].Name, rec.Envs[1].Name})
+	assert.Eq(t, "before", rec.Envs[1].Prev)
+
+	// 非 direnv 作用域不写记录
+	script, err = envSvc.SetEnvs([]string{"XENV_TEST_SESSION_ENV=1"}, models.OpFlagSession)
+	assert.Require(t, assert.NoErr(t, err))
+	assert.NotContains(t, script, xenvcom.AppliedDirenvEnvName)
+}
+
 func TestUnsetEnvsKeepsGoingWhenOneIsMissing(t *testing.T) {
 	_, _, _, state := newDirenvTestService(t, "test-unset-partial", nil)
 	envSvc := NewEnvService(&models.Configuration{}, state)
@@ -323,17 +354,15 @@ func TestSetupDirenvKeepsDirenvPathsBeforeSDKPaths(t *testing.T) {
 }
 
 func TestLoadAndWriteAppliedRecord(t *testing.T) {
-	svc := NewSDKService(&models.Configuration{}, manager.NewStateManager(), nil)
-
 	t.Run("no record variable", func(t *testing.T) {
 		t.Setenv(xenvcom.AppliedDirenvEnvName, "")
-		assert.Nil(t, svc.loadAppliedRecord())
+		assert.Nil(t, loadAppliedRecord())
 	})
 
 	t.Run("valid record", func(t *testing.T) {
 		t.Setenv(xenvcom.AppliedDirenvEnvName, `{"file":"/proj/.xenv.toml","paths":["/proj/bin"]}`)
 
-		rec := svc.loadAppliedRecord()
+		rec := loadAppliedRecord()
 		assert.Require(t, assert.NotNil(t, rec))
 		assert.Eq(t, "/proj/.xenv.toml", rec.File)
 		assert.Eq(t, []string{"/proj/bin"}, rec.Paths)
@@ -341,7 +370,7 @@ func TestLoadAndWriteAppliedRecord(t *testing.T) {
 
 	t.Run("invalid record is ignored", func(t *testing.T) {
 		t.Setenv(xenvcom.AppliedDirenvEnvName, "{not json")
-		assert.Nil(t, svc.loadAppliedRecord())
+		assert.Nil(t, loadAppliedRecord())
 	})
 
 	t.Run("write and clear script lines", func(t *testing.T) {
@@ -350,14 +379,85 @@ func TestLoadAndWriteAppliedRecord(t *testing.T) {
 		rec := models.NewAppliedDirenv("/proj/.xenv.toml")
 		rec.AddAppliedPath("/proj/bin")
 
-		line := svc.writeAppliedRecord(gen, rec)
+		line := writeAppliedRecord(gen, rec)
 		assert.Contains(t, line, "export XENV_APPLIED_DIRENV=")
 		assert.Contains(t, line, "/proj/bin")
 
-		assert.Contains(t, svc.writeAppliedRecord(gen, nil), "unset XENV_APPLIED_DIRENV")
-		assert.Contains(t, svc.writeAppliedRecord(gen, models.NewAppliedDirenv("/proj/.xenv.toml")),
+		assert.Contains(t, writeAppliedRecord(gen, nil), "unset XENV_APPLIED_DIRENV")
+		assert.Contains(t, writeAppliedRecord(gen, models.NewAppliedDirenv("/proj/.xenv.toml")),
 			"unset XENV_APPLIED_DIRENV")
 	})
+}
+
+func TestMergeAppliedRecord(t *testing.T) {
+	gen := shell.NewScriptGenerator(shell.Bash)
+
+	t.Run("merges into an existing record", func(t *testing.T) {
+		t.Setenv("XENV_TEST_MERGE_ENV", "before")
+		rec := models.NewAppliedDirenv("/proj/.xenv.toml")
+		rec.AddAppliedPath("/proj/bin")
+		rec.AddAppliedEnv("XENV_TEST_MERGE_ENV", "original", true)
+		t.Setenv(xenvcom.AppliedDirenvEnvName, mustRecordJSON(t, rec))
+
+		line := mergeAppliedRecord(gen, recordDelta{
+			AddPaths: []string{"/proj/extra"},
+			EnvNames: []string{"XENV_TEST_MERGE_ENV"},
+			SDKs:     map[string]string{"go": "1.24.13"},
+		})
+
+		merged := decodeRecordFromScript(t, line)
+		assert.Eq(t, "/proj/.xenv.toml", merged.File)
+		assert.Eq(t, []string{"/proj/bin", "/proj/extra"}, merged.Paths)
+		assert.Eq(t, map[string]string{"go": "1.24.13"}, merged.SDKs)
+		// 同名变量保留最早的旧值
+		assert.Require(t, assert.Len(t, merged.Envs, 1))
+		assert.Eq(t, "original", merged.Envs[0].Prev)
+	})
+
+	t.Run("removes a recorded path", func(t *testing.T) {
+		rec := models.NewAppliedDirenv("/proj/.xenv.toml")
+		rec.AddAppliedPath("/proj/bin")
+		rec.AddAppliedPath("/proj/keep")
+		t.Setenv(xenvcom.AppliedDirenvEnvName, mustRecordJSON(t, rec))
+
+		merged := decodeRecordFromScript(t, mergeAppliedRecord(gen, recordDelta{RemPaths: []string{"/proj/bin"}}))
+		assert.Eq(t, []string{"/proj/keep"}, merged.Paths)
+	})
+
+	t.Run("clears the record when nothing is left", func(t *testing.T) {
+		rec := models.NewAppliedDirenv("/proj/.xenv.toml")
+		rec.AddAppliedPath("/proj/bin")
+		t.Setenv(xenvcom.AppliedDirenvEnvName, mustRecordJSON(t, rec))
+
+		line := mergeAppliedRecord(gen, recordDelta{RemPaths: []string{"/proj/bin"}})
+		assert.Contains(t, line, "unset XENV_APPLIED_DIRENV")
+	})
+
+	t.Run("creates a record without file when missing", func(t *testing.T) {
+		t.Setenv(xenvcom.AppliedDirenvEnvName, "")
+
+		merged := decodeRecordFromScript(t, mergeAppliedRecord(gen, recordDelta{AddPaths: []string{"/proj/bin"}}))
+		assert.Eq(t, "", merged.File)
+		assert.Eq(t, []string{"/proj/bin"}, merged.Paths)
+	})
+}
+
+func decodeRecordFromScript(t *testing.T, script string) *models.AppliedDirenv {
+	t.Helper()
+
+	prefix := "export XENV_APPLIED_DIRENV="
+	assert.Require(t, assert.Contains(t, script, prefix))
+
+	line := script[strings.Index(script, prefix)+len(prefix):]
+	line = strings.TrimSpace(strings.SplitN(line, "\n", 2)[0])
+
+	// 生成的值为 shQuote 单引号字符串, 内部单引号以 '\'' 转义
+	raw := strings.TrimSuffix(strings.TrimPrefix(line, "'"), "'")
+	raw = strings.ReplaceAll(raw, `'\''`, "'")
+
+	rec := &models.AppliedDirenv{}
+	assert.Require(t, assert.NoErr(t, json.Unmarshal([]byte(raw), rec)))
+	return rec
 }
 
 func TestSetupDirenvWarnsMissingToolsWhenEnabled(t *testing.T) {

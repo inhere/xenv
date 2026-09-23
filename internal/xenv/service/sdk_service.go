@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -134,8 +133,16 @@ func (ts *SDKService) ActivateSDKs(useSDKs []string, opFlag models.OpFlag) (scri
 		return "", err1
 	}
 
-	script, _, err = ts.activateSDKs(gen, sdkSpecs, opFlag, true)
-	return script, err
+	script, params, err := ts.activateSDKs(gen, sdkSpecs, opFlag, true)
+	if err != nil {
+		return "", err
+	}
+
+	// direnv 作用域下变更会留在当前 shell, 需同步记录以便离开目录时恢复
+	if script != "" && opFlag == models.OpFlagDirenv {
+		script += mergeAppliedRecord(gen, deltaFromActivate(params))
+	}
+	return script, nil
 }
 
 // activateSDKs 激活 SDK 并返回本次应用的参数(用于记录可撤销变更)
@@ -282,7 +289,7 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	}
 
 	// 同一项目(含子目录)已应用过: 不重复应用, 也不撤销
-	applied := ts.loadAppliedRecord()
+	applied := loadAppliedRecord()
 	if applied != nil && dirFile != "" && applied.File == dirFile {
 		return "", nil
 	}
@@ -303,7 +310,7 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	sb.WriteString(script)
 
 	// 记录随脚本写入 shell 环境, 供下一次 cd 读取
-	sb.WriteString(ts.writeAppliedRecord(gen, rec))
+	sb.WriteString(writeAppliedRecord(gen, rec))
 
 	if sb.Len() > 0 {
 		return sb.String(), nil
@@ -473,37 +480,6 @@ func simulateLeaveInProcess(rec *models.AppliedDirenv) func() {
 func inSessionPath(path string) bool {
 	_, found := withoutPath(sessionPath(), path)
 	return found
-}
-
-// loadAppliedRecord 读取当前 shell 的 direnv 应用记录
-//
-// 记录由应用脚本写入 XENV_APPLIED_DIRENV, 内容损坏时视为无记录
-func (ts *SDKService) loadAppliedRecord() *models.AppliedDirenv {
-	raw := os.Getenv(xenvcom.AppliedDirenvEnvName)
-	if raw == "" {
-		return nil
-	}
-
-	rec := &models.AppliedDirenv{}
-	if err := json.Unmarshal([]byte(raw), rec); err != nil {
-		ccolor.Warnf("WARN: invalid %s, ignore the previous direnv record: %v\n", xenvcom.AppliedDirenvEnvName, err)
-		return nil
-	}
-	return rec
-}
-
-// writeAppliedRecord 生成写入或清除 direnv 应用记录的脚本代码
-func (ts *SDKService) writeAppliedRecord(gen *shell.XenvScriptGenerator, rec *models.AppliedDirenv) string {
-	if rec == nil || rec.IsEmpty() {
-		return gen.GenUnsetEnv(xenvcom.AppliedDirenvEnvName)
-	}
-
-	data, err := json.Marshal(rec)
-	if err != nil {
-		ccolor.Warnf("WARN: failed to encode the direnv record: %v\n", err)
-		return gen.GenUnsetEnv(xenvcom.AppliedDirenvEnvName)
-	}
-	return gen.GenSetEnv(xenvcom.AppliedDirenvEnvName, string(data))
 }
 
 // direnvToolWarnings 返回 direnv 状态中工具要求的告警

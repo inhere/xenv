@@ -110,6 +110,17 @@ func (ad *AppliedDirenv) AddAppliedPath(path string) bool {
 	return true
 }
 
+// RemoveAppliedPath 移除记录的 PATH 条目, 不存在时返回 false
+func (ad *AppliedDirenv) RemoveAppliedPath(path string) bool {
+	for i, item := range ad.Paths {
+		if item == path {
+			ad.Paths = append(ad.Paths[:i], ad.Paths[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
 // AddAppliedEnv 记录被设置的环境变量, 已记录时保留最早的旧值
 func (ad *AppliedDirenv) AddAppliedEnv(name, prev string, hadPrev bool) {
 	for _, item := range ad.Envs {

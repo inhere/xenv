@@ -68,6 +68,11 @@ func (s *EnvService) SetEnvs(envs []string, opFlag models.OpFlag) (script string
 
 	// Add to activity state data
 	err = s.state.AddEnvs(envMap, opFlag)
+
+	// direnv 作用域下变更会留在当前 shell, 需同步记录以便离开目录时恢复
+	if err == nil && opFlag == models.OpFlagDirenv && script != "" {
+		script += mergeAppliedRecord(gen, recordDelta{EnvNames: sortedNames(envMap)})
+	}
 	return
 }
 
@@ -89,6 +94,7 @@ func (s *EnvService) UnsetEnvs(names []string, opFlag models.OpFlag) (script str
 	defer s.state.SetBatchMode(false)
 
 	unsetNum := 0
+	var unsetNames []string
 	for _, name := range names {
 		if name, err = normalizeEnvName(name); err != nil {
 			return "", err
@@ -100,6 +106,7 @@ func (s *EnvService) UnsetEnvs(names []string, opFlag models.OpFlag) (script str
 		}
 
 		unsetNum++
+		unsetNames = append(unsetNames, name)
 		if gen != nil {
 			sb.WriteString(gen.GenUnsetEnv(name))
 		}
@@ -110,6 +117,11 @@ func (s *EnvService) UnsetEnvs(names []string, opFlag models.OpFlag) (script str
 	}
 
 	err = s.state.SaveStateFile()
+
+	// direnv 作用域下变更会留在当前 shell, 需同步记录以便离开目录时恢复
+	if err == nil && opFlag == models.OpFlagDirenv {
+		sb.WriteString(mergeAppliedRecord(gen, recordDelta{EnvNames: unsetNames}))
+	}
 	return sb.String(), err
 }
 
@@ -182,6 +194,11 @@ func (s *EnvService) AddPath(path string, opFlag models.OpFlag) (script string, 
 
 	// Add to activity state
 	err = s.state.AddPath(normalizedPath, opFlag)
+
+	// direnv 作用域下变更会留在当前 shell, 需同步记录以便离开目录时恢复
+	if err == nil && opFlag == models.OpFlagDirenv && script != "" {
+		script += mergeAppliedRecord(gen, recordDelta{AddPaths: []string{normalizedPath}})
+	}
 	return
 }
 
@@ -222,6 +239,11 @@ func (s *EnvService) RemovePath(path string, opFlag models.OpFlag) (script strin
 
 	// Remove from activity state
 	err = s.state.DelPath(normalizedPath, opFlag)
+
+	// direnv 作用域下变更会留在当前 shell, 需同步记录以便离开目录时恢复
+	if err == nil && opFlag == models.OpFlagDirenv && script != "" {
+		script += mergeAppliedRecord(gen, recordDelta{RemPaths: []string{normalizedPath}})
+	}
 	return
 }
 
@@ -255,6 +277,11 @@ func (s *EnvService) RemoveMatchedPaths(value string, opFlag models.OpFlag) (scr
 			pathList, _ = withoutPath(pathList, item)
 		}
 		script = gen.GenSetPath(pathList)
+
+		// direnv 作用域下变更会留在当前 shell, 需同步记录以便离开目录时恢复
+		if opFlag == models.OpFlagDirenv {
+			script += mergeAppliedRecord(gen, recordDelta{RemPaths: removed})
+		}
 	}
 	return script, removed, nil
 }
