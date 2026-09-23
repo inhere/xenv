@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gookit/gcli/v3"
 	"github.com/gookit/goutil/x/ccolor"
@@ -38,7 +39,7 @@ var EnvCmd = &gcli.Command{
 // Test run:
 //
 //	// pwsh
-//	$env:XENV_HOOK_SHELL="pwsh"; xenv set TEST003 value003
+//	$env:XENV_HOOK_SHELL="pwsh"; xenv set TEST003=value003
 func EnvSetCmd() *gcli.Command {
 	var opts struct {
 		Global     bool
@@ -47,19 +48,17 @@ func EnvSetCmd() *gcli.Command {
 	}
 	return &gcli.Command{
 		Name: "set",
-		Help: "set [-g] [-s|-d] [-S] <name> <value>",
-		Desc: "Set an environment variable",
+		Help: "set [-g] [-s|-d] [-S] KEY=VALUE ...",
+		Desc: "Set environment variables",
 		Config: func(c *gcli.Command) {
 			c.BoolOpt(&opts.SaveDirenv, "direnv", "s,d", false, "Save change to direnv config .xenv.toml")
 			c.BoolOpt(&opts.Global, "global", "g", false, "Operate for global config")
 			c.BoolOpt(&opts.System, "system", "S", false, "Set to the OS user environment, take effect for new processes")
 
-			c.AddArg("name", "environment key name", true)
-			c.AddArg("value", "environment value", true)
+			c.AddArg("values", "Environment variable pairs, format KEY=VALUE, allow multi. Two args without '=' are read as: name value", true, true)
 		},
 		Func: func(c *gcli.Command, args []string) error {
-			name := c.Arg("name").String()
-			value := c.Arg("value").String()
+			envs := parseSetArgs(c.Arg("values").Strings())
 
 			// Create env service
 			envSvc, err := xenv.EnvService()
@@ -75,36 +74,55 @@ func EnvSetCmd() *gcli.Command {
 					return err
 				}
 
-				script, err1 := envSvc.SetSystemEnv(name, value)
+				script, err1 := envSvc.SetSystemEnvs(envs)
 				if err1 != nil {
 					return fmt.Errorf("failed to set system environment variable: %w", err1)
 				}
 
-				ccolor.Infof("Set %s=%s to system environment\n", name, value)
+				for _, item := range envs {
+					ccolor.Infof("Set %s to system environment\n", item)
+				}
 				printScript(script)
 				return nil
 			}
 
-			// Set the environment variable
+			// Set the environment variables
 			opFlag := opFlagFrom(opts.Global, opts.SaveDirenv)
-			script, err := envSvc.SetEnv(name, value, opFlag)
+			script, err := envSvc.SetEnvs(envs, opFlag)
 			if err != nil {
 				return fmt.Errorf("failed to set environment variable: %w", err)
 			}
 
 			// Save configuration if global
 			if opFlag == models.OpFlagGlobal {
-				ccolor.Infof("Set %s=%s globally\n", name, value)
+				for _, item := range envs {
+					ccolor.Infof("Set %s globally\n", item)
+				}
 			} else if opFlag == models.OpFlagDirenv {
-				ccolor.Infof("Set %s=%s for direnv state\n", name, value)
+				for _, item := range envs {
+					ccolor.Infof("Set %s for direnv state\n", item)
+				}
 			} else {
-				ccolor.Infof("Set %s=%s for current session\n", name, value)
+				for _, item := range envs {
+					ccolor.Infof("Set %s for current session\n", item)
+				}
 			}
 
 			printScript(script)
 			return nil
 		},
 	}
+}
+
+// parseSetArgs 解析 set 命令的参数
+//
+//   - KEY=VALUE ...: 多个环境变量键值对
+//   - <name> <value>: 只有两个参数且第一个不含 '=' 时, 按 name value 处理
+func parseSetArgs(args []string) []string {
+	if len(args) == 2 && !strings.Contains(args[0], "=") {
+		return []string{args[0] + "=" + args[1]}
+	}
+	return args
 }
 
 // EnvUnsetCmd command for unsetting environment variables

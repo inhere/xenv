@@ -42,33 +42,32 @@ func (s *EnvService) SessionState() *models.ActivityState {
 // region ENV management
 //
 
-// SetEnv sets an environment variable
-func (s *EnvService) SetEnv(name, value string, opFlag models.OpFlag) (script string, err error) {
+// SetEnvs sets multiple environment variables, envs is a list of KEY=VALUE
+func (s *EnvService) SetEnvs(envs []string, opFlag models.OpFlag) (script string, err error) {
+	envMap, err := parseEnvMap(envs)
+	if err != nil {
+		return "", err
+	}
+
 	// Generate shell eval scripts
 	gen, err1 := getShellGenerator(s.config)
 	if err1 != nil {
 		return "", err1
 	}
 
-	name, err = normalizeEnvName(name)
-	if err != nil {
-		return "", err
-	}
-
-	// 在shell hook环境中, 生成 ENV set 脚本
+	// 在shell hook环境中, 按名称排序生成脚本, 保证输出稳定
 	if gen != nil {
-		script = gen.GenSetEnv(name, value)
+		var sb strings.Builder
+		for _, name := range sortedNames(envMap) {
+			sb.WriteString(gen.GenSetEnv(name, envMap[name]))
+		}
+		script = sb.String()
 	} else {
 		ccolor.Warnln("TIP: The operation will not take effect, please setup the SHELL HOOK first.")
 	}
 
-	// TIP: 设置程序内部 ENV 没有意义
-	// if err := os.Setenv(name, value); err != nil {
-	// 	return "", fmt.Errorf("failed to set environment variable: %w", err)
-	// }
-
 	// Add to activity state data
-	err = s.state.SetEnv(name, value, opFlag)
+	err = s.state.AddEnvs(envMap, opFlag)
 	return
 }
 
@@ -254,24 +253,31 @@ func (s *EnvService) SearchPath(path string) []string {
 // region OS system ENV management
 //
 
-// SetSystemEnv 设置操作系统的用户级环境变量
-func (s *EnvService) SetSystemEnv(name, value string) (script string, err error) {
-	name, err = normalizeEnvName(name)
+// SetSystemEnvs 批量设置操作系统的用户级环境变量, envs 为 KEY=VALUE 列表
+func (s *EnvService) SetSystemEnvs(envs []string) (script string, err error) {
+	envMap, err := parseEnvMap(envs)
 	if err != nil {
 		return "", err
 	}
 
-	if err = sysenv.SetVar(name, value); err != nil {
-		return "", err
+	// 逐个写入, 前一个失败时后面的不再处理
+	for _, name := range sortedNames(envMap) {
+		if err = sysenv.SetVar(name, envMap[name]); err != nil {
+			return "", err
+		}
 	}
 
-	// 在shell hook环境中, 生成脚本让当前 shell 立即生效
+	// 在shell hook环境中, 按名称排序生成脚本让当前 shell 立即生效
 	gen, err := getShellGenerator(s.config)
 	if err != nil {
 		return "", err
 	}
 	if gen != nil {
-		script = gen.GenSetEnv(name, value)
+		var sb strings.Builder
+		for _, name := range sortedNames(envMap) {
+			sb.WriteString(gen.GenSetEnv(name, envMap[name]))
+		}
+		script = sb.String()
 	}
 	return script, nil
 }
@@ -374,6 +380,20 @@ func (s *EnvService) SystemEnv() (map[string]string, error) {
 // SystemPaths 返回操作系统的用户级 PATH 条目
 func (s *EnvService) SystemPaths() ([]string, error) {
 	return sysenv.PathList()
+}
+
+// parseEnvMap 解析 KEY=VALUE 列表为 map, 键名统一大写并校验
+func parseEnvMap(envs []string) (map[string]string, error) {
+	pairs, err := parseEnvPairs(envs)
+	if err != nil {
+		return nil, err
+	}
+
+	envMap := make(map[string]string, len(pairs))
+	for _, pair := range pairs {
+		envMap[pair.name] = pair.value
+	}
+	return envMap, nil
 }
 
 // normalizeEnvName 规范化并校验环境变量名称
