@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'go.mod'
+      - 'go.sum'
       - '**.go'
       - '**.yml'
   push:
@@ -10,6 +11,7 @@ on:
       - '**'
     paths:
       - 'go.mod'
+      - 'go.sum'
       - '**.go'
       - '**.yml'
 
@@ -22,6 +24,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         go_version: [1.25, stable]
+        include:
+          # macOS only needs one leg; it guards the darwin specific paths
+          - os: macos-latest
+            go_version: stable
 
     steps:
     - name: Check out code
@@ -33,6 +39,21 @@ jobs:
       with:
         go-version: ${{ matrix.go_version }}
 
+    - name: Check gofmt
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.go_version == 'stable' }}
+      shell: bash
+      run: |
+        unformatted="$(gofmt -l .)"
+        if [ -n "$unformatted" ]; then
+          echo "gofmt required for:"
+          echo "$unformatted"
+          exit 1
+        fi
+
+    - name: Run go vet
+      shell: bash
+      run: go vet ./...
+
     - name: Run staticcheck
       uses: reviewdog/action-staticcheck@v1
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.go_version == 'stable' }}
@@ -43,11 +64,13 @@ jobs:
         # Report all results. [added,diff_context,file,nofilter].
         filter_mode: added
         # Exit with 1 when it finds at least one finding.
-        fail_level: 'none'
+        fail_level: 'error'
 
     - name: Mod tidy
+      shell: bash
       run: |
         go mod tidy
+        git diff --exit-code -- go.mod go.sum
 
     - name: Run unit tests
       # run: go test -v -cover ./...
