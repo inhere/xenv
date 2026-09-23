@@ -183,19 +183,20 @@ func (u *StateTomlUpdater) Build(state *models.ActivityState) *StateTomlUpdater 
 			fullKey := strutil.OrCond(u.currentSection == "", key, u.currentSection+"."+key)
 			u.processedKeys[fullKey] = true
 
-			newVal := ""
+			newVal, exists := "", false
 			switch u.currentSection {
 			case "envs":
-				newVal = state.Envs[key]
+				newVal, exists = state.Envs[key]
 			case "sdks":
-				newVal = state.SDKs[key]
+				newVal, exists = state.SDKs[key]
 			case "tools":
-				newVal = state.ToolRequirements[key]
+				newVal, exists = state.ToolRequirements[key]
 			default:
 				u.newBuf.WriteStr1Nl(line)
 			}
 
-			if newVal != "" {
+			// 空值也是有效配置, 只有 state 中已删除的键才移除该行
+			if exists {
 				u.newBuf.Writef("%s = %q%s\n", key, newVal, inlineComment)
 			}
 		}

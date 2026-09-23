@@ -23,6 +23,21 @@ func TestStateTomlUpdaterAddsToolsSection(t *testing.T) {
 	}
 }
 
+func TestStateTomlUpdaterKeepsEmptyEnvValue(t *testing.T) {
+	contents := "paths = []\n\n[envs]\nFOO = \"bar\"\n"
+
+	state := models.NewActivityState(".xenv.toml")
+	state.Envs["FOO"] = ""
+
+	got := string(NewTomlUpdater().SetContents([]byte(contents)).Build(state).LastContents())
+	assert.Contains(t, got, `FOO = ""`)
+
+	// state 中删除该键时, 行才会被移除
+	delete(state.Envs, "FOO")
+	got = string(NewTomlUpdater().SetContents([]byte(contents)).Build(state).LastContents())
+	assert.NotContains(t, got, "FOO")
+}
+
 func TestStateTomlUpdaterWritesNewStateWhenFileIsEmpty(t *testing.T) {
 	stateFile := filepath.Join(t.TempDir(), ".xenv.toml")
 	err := os.WriteFile(stateFile, nil, 0o644)
