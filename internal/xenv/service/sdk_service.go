@@ -10,6 +10,7 @@ import (
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/goutil/x/ccolor"
+	"github.com/inhere/xenv/internal/util"
 	"github.com/inhere/xenv/internal/xenv/manager"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/sdk"
@@ -114,7 +115,7 @@ func (ts *SDKService) WhereSDK(spec string, bin bool) (string, error) {
 	if bin {
 		return localSDK.BinDirPath(), nil
 	}
-	return localSDK.InstallDir, nil
+	return util.NormalizePath(localSDK.InstallDir), nil
 }
 
 func (ts *SDKService) ActivateSDKs(useSDKs []string, opFlag models.OpFlag) (script string, err error) {
