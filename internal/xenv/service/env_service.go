@@ -117,6 +117,22 @@ func (s *EnvService) SessionEnv() map[string]string {
 	return s.state.Session().Envs
 }
 
+// DirEnv 返回目录级(.xenv.toml)环境变量
+func (s *EnvService) DirEnv() map[string]string {
+	if ds := s.state.Nearest(); ds != nil {
+		return ds.Envs
+	}
+	return nil
+}
+
+// DirPaths 返回目录级(.xenv.toml)PATH 条目
+func (s *EnvService) DirPaths() []string {
+	if ds := s.state.Nearest(); ds != nil {
+		return ds.Paths
+	}
+	return nil
+}
+
 // endregion
 // region PATH management
 //

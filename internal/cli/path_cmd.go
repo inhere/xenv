@@ -204,6 +204,15 @@ func listEnvPaths(withSystem bool) error {
 		fmt.Printf("  - No configuration\n")
 	}
 
+	dirPaths := envSvc.DirPaths()
+	ccolor.Infoln("Directory PATH Entries:")
+	for i, path := range dirPaths {
+		fmt.Printf("  %d. %s\n", i+1, path)
+	}
+	if len(dirPaths) == 0 {
+		fmt.Printf("  - No configuration\n")
+	}
+
 	if !withSystem {
 		return nil
 	}

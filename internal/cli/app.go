@@ -47,6 +47,13 @@ func NewApp() *gcli.App {
 		}
 		return true
 	})
+	// 未知子命令直接以用法错误码退出, 避免脚本无法察觉命令拼错
+	app.On(gcli.EvtCmdSubNotFound, func(ctx *gcli.HookCtx) bool {
+		name, _ := ctx.Get("name").(string)
+		_, _ = fmt.Fprintf(os.Stderr, "ERROR: %s - subcommand %q is not found\n", ctx.Cmd.Name, name)
+		os.Exit(2)
+		return true
+	})
 
 	app.Add(
 		SDKCmd,

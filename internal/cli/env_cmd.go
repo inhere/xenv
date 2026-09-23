@@ -231,6 +231,15 @@ func listEnvs(withSystem bool) error {
 		}
 	}
 
+	dirVars := envSvc.DirEnv()
+	ccolor.Infoln("Directory Environment Variables:")
+	for name, envVar := range dirVars {
+		fmt.Printf("  %s=%s\n", name, envVar)
+	}
+	if len(dirVars) == 0 {
+		fmt.Printf("  - No configuration\n")
+	}
+
 	if !withSystem {
 		return nil
 	}

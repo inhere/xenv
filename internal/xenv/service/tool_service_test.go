@@ -19,6 +19,18 @@ import (
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
+func TestDirEnvAndPathsFromDirenvState(t *testing.T) {
+	_, _, _, state := newDirenvTestService(t, "test-dir-list", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = [\"./bin\"]\n\n[envs]\nAPP_ENV = \"local\"\n"
+		assert.Require(t, assert.NoErr(t, os.WriteFile(xenvToml, []byte(data), 0o644)))
+	})
+
+	envSvc := NewEnvService(&models.Configuration{}, state)
+	assert.Eq(t, map[string]string{"APP_ENV": "local"}, envSvc.DirEnv())
+	assert.Eq(t, []string{"./bin"}, envSvc.DirPaths())
+}
+
 func TestRemoveMatchedPaths(t *testing.T) {
 	_, _, _, state := newDirenvTestService(t, "test-match-remove", nil)
 	envSvc := NewEnvService(&models.Configuration{}, state)
