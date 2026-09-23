@@ -462,7 +462,7 @@ SDK 字段说明：
 | `xenv run [-u spec,...] [-p dir] [-e KEY=VALUE] [-c dir] [--print] -- <cmd> [args...]` | 用一次性环境执行命令 |
 | `xenv status` | 查看当前目录的 Effective State |
 | `xenv status --layers` | 查看 Global State、Directory State 和 Session Context 分层 |
-| `xenv status --runtime` | 查看 Runtime State 检测详情，完整检测在后续阶段实现 |
+| `xenv status --runtime` | 从 `PATH` 与 SDK active env 反推的 Runtime State |
 | `xenv check` | 运行 SDK 和工具检查 |
 | `xenv check sdk` | 检查 Effective State 中的 SDK 是否可用 |
 | `xenv check tools` | 检查项目工具依赖 |

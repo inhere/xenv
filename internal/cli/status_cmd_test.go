@@ -1,11 +1,46 @@
 package cli
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gookit/goutil/x/assert"
 	"github.com/inhere/xenv/internal/xenv/models"
 )
+
+func TestBuildRuntimeSDKRows(t *testing.T) {
+	installDir := filepath.Join(string(filepath.Separator), "tools", "go", "1.24.0")
+	binDir := filepath.Join(installDir, "bin")
+
+	sdks := []models.InstalledSDK{
+		{
+			Name:       "go",
+			Version:    "1.24.0",
+			InstallDir: installDir,
+			Config:     &models.ToolChain{Name: "go", BinDir: "bin"},
+		},
+		{
+			Name:       "node",
+			Version:    "22.0.0",
+			InstallDir: filepath.Join(string(filepath.Separator), "tools", "node", "22.0.0"),
+			Config:     &models.ToolChain{Name: "node", BinDir: "bin"},
+		},
+	}
+
+	sep := string(os.PathListSeparator)
+	pathValue := strings.Join([]string{"/other/bin", binDir, "/more/bin"}, sep)
+
+	rows := buildRuntimeSDKRows(sdks, pathValue)
+	assert.Require(t, assert.Eq(t, 1, len(rows)))
+	assert.Contains(t, rows[0], "go")
+	assert.Contains(t, rows[0], "1.24.0")
+	assert.Contains(t, rows[0], "PATH #2")
+
+	// PATH 中没有 SDK bin 目录时不输出
+	assert.Eq(t, 0, len(buildRuntimeSDKRows(sdks, "/other/bin")))
+}
 
 func TestBuildEffectiveSDKRows(t *testing.T) {
 	global := models.NewActivityState("global.toml")

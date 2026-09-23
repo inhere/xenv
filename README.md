@@ -472,7 +472,7 @@ SDK fields:
 | `xenv run [-u spec,...] [-p dir] [-e KEY=VALUE] [-c dir] [--print] -- <cmd> [args...]` | Run a command with a one-shot environment |
 | `xenv status` | Show Effective State for the current directory |
 | `xenv status --layers` | Show Global State, Directory State, and Session Context layers |
-| `xenv status --runtime` | Show Runtime State detection details when implemented |
+| `xenv status --runtime` | Show Runtime State detected from `PATH` and SDK active env vars |
 | `xenv check` | Run SDK and tool checks |
 | `xenv check sdk` | Check SDK availability for Effective State |
 | `xenv check tools` | Check project tool requirements |

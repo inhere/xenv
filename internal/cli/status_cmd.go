@@ -2,12 +2,15 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
 	"github.com/gookit/gcli/v3"
 	"github.com/gookit/goutil/x/ccolor"
+	"github.com/inhere/xenv/internal/util"
 	"github.com/inhere/xenv/internal/xenv"
+	"github.com/inhere/xenv/internal/xenv/config"
 	"github.com/inhere/xenv/internal/xenv/models"
 )
 
@@ -61,7 +64,7 @@ func handleStatus(opts statusOptions) error {
 	printStatusSection("Effective State", formatEffectiveSDKRows(buildEffectiveSDKRows(global, session, dirStates)))
 	if opts.Runtime {
 		fmt.Println()
-		printStatusSection("Runtime State", []string{"Runtime detection is not implemented yet"})
+		printStatusSection("Runtime State", buildRuntimeStateLines())
 	}
 	if opts.Layers {
 		overridden := buildOverriddenSDKSources(global, session, dirStates)
@@ -242,6 +245,67 @@ func stateBySource(source, name, version string, global, session *models.Activit
 		}
 	}
 	return nil
+}
+
+// buildRuntimeStateLines 从当前进程环境反推实际生效的 SDK 与激活变量
+//
+//   - PATH 中命中已安装 SDK 的 bin 目录时, 报告该 SDK 与所在位置
+//   - 报告 SDK active_env 中在当前环境已设置的变量(如 GOROOT/JAVA_HOME)
+func buildRuntimeStateLines() []string {
+	if err := config.Mgr.Init(); err != nil {
+		return []string{"failed to load configuration: " + err.Error()}
+	}
+
+	sdkMgr := xenv.SDKMgr()
+	if err := sdkMgr.InitLoad(); err != nil {
+		return []string{"failed to load sdk index: " + err.Error()}
+	}
+
+	cfg := config.Mgr.Config
+	var installed []models.InstalledSDK
+	for _, sdkName := range cfg.SDKNames() {
+		if sdkCfg := cfg.FindSDKConfig(sdkName); sdkCfg != nil {
+			installed = append(installed, sdkMgr.ListSDKVersions(sdkCfg.Name)...)
+		}
+	}
+
+	lines := buildRuntimeSDKRows(installed, os.Getenv("PATH"))
+	for _, sdkName := range cfg.SDKNames() {
+		sdkCfg := cfg.FindSDKConfig(sdkName)
+		if sdkCfg == nil {
+			continue
+		}
+
+		for _, envName := range sdkCfg.ActiveEnvNames() {
+			if value := os.Getenv(envName); value != "" {
+				lines = append(lines, fmt.Sprintf("  <green>%s</> => %s", envName, value))
+			}
+		}
+	}
+
+	if len(lines) == 0 {
+		return []string{"No xenv SDK detected in the current PATH"}
+	}
+	return lines
+}
+
+// buildRuntimeSDKRows 报告 PATH 中命中的已安装 SDK bin 目录
+func buildRuntimeSDKRows(localSDKs []models.InstalledSDK, pathValue string) []string {
+	pathList := util.SplitPath(pathValue)
+
+	var lines []string
+	for _, localSDK := range localSDKs {
+		binDir := util.NormalizePath(localSDK.BinDirPath())
+		for i, entry := range pathList {
+			if util.NormalizePath(entry) != binDir {
+				continue
+			}
+
+			lines = append(lines, fmt.Sprintf("  <green>%s</> => %s (PATH #%d)", localSDK.Name, localSDK.Version, i+1))
+			break
+		}
+	}
+	return lines
 }
 
 func printStatusSection(name string, lines []string) {
