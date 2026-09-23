@@ -86,10 +86,10 @@ func ConfigSetCmd() *gcli.Command {
 				return fmt.Errorf("unknown configuration option: %s", name)
 			}
 
-			// Save the configuration TODO
-			// if err := cfgMgr.SaveConfig(""); err != nil {
-			// 	return fmt.Errorf("failed to save configuration: %w", err)
-			// }
+			// Save the configuration
+			if err := cfgMgr.SaveConfig(configPathOf(cfgMgr)); err != nil {
+				return fmt.Errorf("failed to save configuration: %w", err)
+			}
 
 			fmt.Printf("Set %s=%s\n", name, value)
 			return nil
@@ -212,13 +212,21 @@ func ConfigImportCmd() *gcli.Command {
 				return fmt.Errorf("failed to import configuration: %w", err)
 			}
 
-			// Save the imported configuration TODO
-			// if err := cfgMgr.SaveConfig("configPath"); err != nil {
-			// 	return fmt.Errorf("failed to save imported configuration: %w", err)
-			// }
+			// Save the imported configuration
+			if err := cfgMgr.SaveConfig(configPathOf(cfgMgr)); err != nil {
+				return fmt.Errorf("failed to save imported configuration: %w", err)
+			}
 
 			fmt.Printf("Configuration imported from: %s\n", importPath)
 			return nil
 		},
 	}
+}
+
+// configPathOf 返回当前加载的配置文件路径, 未加载时回退到默认路径
+func configPathOf(cfgMgr *config.Manager) string {
+	if path := cfgMgr.Config.ConfigFile(); path != "" {
+		return path
+	}
+	return config.GetDefaultConfigPath()
 }

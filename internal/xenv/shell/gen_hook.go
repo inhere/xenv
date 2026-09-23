@@ -6,9 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/maputil"
 	"github.com/inhere/xenv/internal/util"
 	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 // XenvScriptGenerator xenv Shell脚本生成器实现
@@ -53,16 +55,109 @@ func (sg *XenvScriptGenerator) GenSourceProjectScript(projectDir string) string 
 }
 
 // InstallToProfile 安装 Shell Hook 脚本到配置文件(eg: .bashrc, .zshrc)
-func (sg *XenvScriptGenerator) InstallToProfile(pwshProfile string) error {
+//
+// 返回实际写入的配置文件路径
+func (sg *XenvScriptGenerator) InstallToProfile(pwshProfile string) (string, error) {
+	profilePath, err := sg.profilePath(pwshProfile)
+	if err != nil {
+		return "", err
+	}
+
+	content, err := readProfileFile(profilePath)
+	if err != nil {
+		return "", err
+	}
+
+	updated := upsertHookBlock(content, sg.hookEvalLine())
+	if err = writeProfileFile(profilePath, updated); err != nil {
+		return "", err
+	}
+	return profilePath, nil
+}
+
+// profilePath 返回需要写入的 shell 配置文件路径
+func (sg *XenvScriptGenerator) profilePath(pwshProfile string) (string, error) {
 	switch sg.shell {
-	case Bash:
-	case Zsh:
+	case Bash, Zsh:
+		return util.NormalizePath(sg.shell.ProfilePath()), nil
 	case Pwsh:
-		// echo $PROFILE.CurrentUserAllHosts
-		// v1: path-to-users\Documents\WindowsPowerShell\profile.ps1
-		// v7: path-to-users\Documents\PowerShell\profile.ps1
-	default:
-		// C:\Users\{username}\AppData\Local\clink\ 创建 profile.lua
+		if pwshProfile == "" {
+			return "", fmt.Errorf("please provide the pwsh profile path, eg: --profile $PROFILE.CurrentUserAllHosts")
+		}
+		return util.NormalizePath(pwshProfile), nil
+	}
+	return "", fmt.Errorf("install to profile is not supported for shell %s, please add the hook manually", sg.shell)
+}
+
+// hookEvalLine 返回在配置文件中加载 hook 的命令
+func (sg *XenvScriptGenerator) hookEvalLine() string {
+	if sg.shell == Pwsh {
+		return fmt.Sprintf("Invoke-Expression (& %s shell --type pwsh)", xenvcom.BinCommand)
+	}
+	return fmt.Sprintf(`eval "$(%s shell --type %s)"`, xenvcom.BinCommand, sg.shell)
+}
+
+// hookBlockStart/hookBlockEnd hook 托管块的开始/结束标记
+const (
+	hookBlockStart = "# >>> xenv hook >>>"
+	hookBlockEnd   = "# <<< xenv hook <<<"
+)
+
+// upsertHookBlock 写入或替换配置文件中由 xenv 管理的 hook 块
+func upsertHookBlock(content, evalLine string) string {
+	block := hookBlockStart + "\n" + evalLine + "\n" + hookBlockEnd
+
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	start, end := -1, -1
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		switch {
+		case start < 0 && trimmed == hookBlockStart:
+			start = i
+		case start >= 0 && trimmed == hookBlockEnd:
+			end = i
+		}
+	}
+
+	// 已存在托管块: 替换块内容
+	if start >= 0 && end > start {
+		out := append([]string{}, lines[:start]...)
+		out = append(out, strings.Split(block, "\n")...)
+		out = append(out, lines[end+1:]...)
+		return strings.Join(out, "\n") + "\n"
+	}
+
+	// 新文件或空文件
+	if len(lines) == 1 && lines[0] == "" {
+		return block + "\n"
+	}
+	return strings.Join(lines, "\n") + "\n\n" + block + "\n"
+}
+
+// readProfileFile 读取配置文件内容, 文件不存在时返回空内容
+func readProfileFile(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", fmt.Errorf("failed to read %s: %w", filePath, err)
+	}
+	return string(data), nil
+}
+
+// writeProfileFile 写入配置文件, 保留原有文件权限
+func writeProfileFile(filePath, content string) error {
+	mode := os.FileMode(0o644)
+	if info, err := os.Stat(filePath); err == nil {
+		mode = info.Mode().Perm()
+	}
+
+	if err := fsutil.MkParentDir(filePath); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filePath, []byte(content), mode); err != nil {
+		return fmt.Errorf("failed to write %s: %w", filePath, err)
 	}
 	return nil
 }

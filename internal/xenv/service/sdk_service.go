@@ -309,13 +309,18 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 }
 
 func (ts *SDKService) WriteHookToProfile(st shell.ShType, pwshProfile string) error {
-	gen := shell.NewScriptGenerator(st)
 	if xenvcom.InHookShell() {
 		ccolor.Infoln("The hook script is already installed in the current shell")
 		return nil
 	}
 
-	return gen.InstallToProfile(pwshProfile)
+	profilePath, err := shell.NewScriptGenerator(st).InstallToProfile(pwshProfile)
+	if err != nil {
+		return err
+	}
+
+	ccolor.Infof("Installed xenv hook to: %s\n", profilePath)
+	return nil
 }
 
 func (ts *SDKService) GenHookScripts(st shell.ShType) (string, error) {

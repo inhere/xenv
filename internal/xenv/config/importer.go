@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/inhere/xenv/internal/xenv/models"
 )
 
 // Importer handles configuration import functionality
@@ -61,37 +63,7 @@ func (i *Importer) importFromZip(importPath string) error {
 			if err != nil {
 				return fmt.Errorf("failed to read config data: %w", err)
 			}
-
-			// Unmarshal the configuration
-			var importedConfig struct {
-				BinDir               string            `json:"bin_dir"`
-				EgetEnable           bool              `json:"eget_enable"`
-				EgetStoreFile        string            `json:"eget_store_file"`
-				CheckToolsOnDirenv   bool              `json:"check_tools_on_direnv"`
-				SourceProjectScripts bool              `json:"source_project_scripts"`
-				ShellHooksDir        string            `json:"shell_hooks_dir"`
-				GlobalEnv            map[string]string `json:"global_env"`
-				GlobalPaths          []string          `json:"global_paths"`
-			}
-
-			if err := json.Unmarshal(configData, &importedConfig); err != nil {
-				return fmt.Errorf("failed to unmarshal configuration: %w", err)
-			}
-
-			// Update the current configuration with imported values
-			i.configManager.Config.BinDir = importedConfig.BinDir
-			i.configManager.Config.EgetEnable = importedConfig.EgetEnable
-			i.configManager.Config.EgetStoreFile = importedConfig.EgetStoreFile
-			i.configManager.Config.CheckToolsOnDirenv = importedConfig.CheckToolsOnDirenv
-			i.configManager.Config.SourceProjectScripts = importedConfig.SourceProjectScripts
-			i.configManager.Config.ShellHooksDir = importedConfig.ShellHooksDir
-			i.configManager.Config.GlobalEnv = importedConfig.GlobalEnv
-			i.configManager.Config.GlobalPaths = importedConfig.GlobalPaths
-
-			// For now, we'll store the raw JSON data and handle the conversion later
-			// In a real implementation, we would convert the interface{} values to proper structs
-
-			return nil
+			return i.applyImportedConfig(configData)
 		}
 	}
 
@@ -105,36 +77,28 @@ func (i *Importer) importFromJSON(importPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read configuration file: %w", err)
 	}
+	return i.applyImportedConfig(configData)
+}
 
-	// Unmarshal the configuration
-	var importedConfig struct {
-		BinDir               string            `json:"bin_dir"`
-		EgetEnable           bool              `json:"eget_enable"`
-		EgetStoreFile        string            `json:"eget_store_file"`
-		CheckToolsOnDirenv   bool              `json:"check_tools_on_direnv"`
-		SourceProjectScripts bool              `json:"source_project_scripts"`
-		ShellHooksDir        string            `json:"shell_hooks_dir"`
-		GlobalEnv            map[string]string `json:"global_env"`
-		GlobalPaths          []string          `json:"global_paths"`
-	}
-
-	if err := json.Unmarshal(configData, &importedConfig); err != nil {
+// applyImportedConfig 解析导入数据并更新当前配置
+func (i *Importer) applyImportedConfig(configData []byte) error {
+	var imported models.Configuration
+	if err := json.Unmarshal(configData, &imported); err != nil {
 		return fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
-	// Update the current configuration with imported values
-	i.configManager.Config.BinDir = importedConfig.BinDir
-	i.configManager.Config.EgetEnable = importedConfig.EgetEnable
-	i.configManager.Config.EgetStoreFile = importedConfig.EgetStoreFile
-	i.configManager.Config.CheckToolsOnDirenv = importedConfig.CheckToolsOnDirenv
-	i.configManager.Config.SourceProjectScripts = importedConfig.SourceProjectScripts
-	i.configManager.Config.ShellHooksDir = importedConfig.ShellHooksDir
-	i.configManager.Config.GlobalEnv = importedConfig.GlobalEnv
-	i.configManager.Config.GlobalPaths = importedConfig.GlobalPaths
-
-	// For now, we'll store the raw JSON data and handle the conversion later
-	// In a real implementation, we would convert the interface{} values to proper structs
-
+	cfg := i.configManager.Config
+	cfg.BinDir = imported.BinDir
+	cfg.EgetEnable = imported.EgetEnable
+	cfg.EgetStoreFile = imported.EgetStoreFile
+	cfg.CheckToolsOnDirenv = imported.CheckToolsOnDirenv
+	cfg.SourceProjectScripts = imported.SourceProjectScripts
+	cfg.ShellAliases = imported.ShellAliases
+	cfg.ShellHooksDir = imported.ShellHooksDir
+	cfg.GlobalEnv = imported.GlobalEnv
+	cfg.GlobalPaths = imported.GlobalPaths
+	cfg.AllowUpMatch = imported.AllowUpMatch
+	cfg.SDKs = imported.SDKs
 	return nil
 }
 

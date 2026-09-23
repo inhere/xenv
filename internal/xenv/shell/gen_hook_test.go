@@ -205,6 +205,64 @@ func TestBashAddPathUsesGitBashPathSyntaxOnWindows(t *testing.T) {
 	assertContains(t, script, "export PATH='/d/work/env/devsdk/gosdk/go1.24.6/bin':$PATH")
 }
 
+func TestInstallToProfileWritesHookBlock(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	t.Run("bash", func(t *testing.T) {
+		profilePath, err := NewScriptGenerator(Bash).InstallToProfile("")
+		assert.Require(t, assert.NoErr(t, err))
+		assert.Eq(t, filepath.Join(tempHome, ".bashrc"), profilePath)
+
+		content := readTestProfile(t, profilePath)
+		assert.Contains(t, content, "# >>> xenv hook >>>")
+		assert.Contains(t, content, `eval "$(xenv shell --type bash)"`)
+		assert.Contains(t, content, "# <<< xenv hook <<<")
+
+		// 幂等: 重复安装不会产生第二个托管块
+		_, err = NewScriptGenerator(Bash).InstallToProfile("")
+		assert.Require(t, assert.NoErr(t, err))
+		assert.Eq(t, 1, strings.Count(readTestProfile(t, profilePath), "# >>> xenv hook >>>"))
+	})
+
+	t.Run("zsh keeps existing content", func(t *testing.T) {
+		profilePath := filepath.Join(tempHome, ".zshrc")
+		assert.Require(t, assert.NoErr(t, os.WriteFile(profilePath, []byte("export EDITOR=vim\n"), 0o644)))
+
+		_, err := NewScriptGenerator(Zsh).InstallToProfile("")
+		assert.Require(t, assert.NoErr(t, err))
+
+		content := readTestProfile(t, profilePath)
+		assert.Contains(t, content, "export EDITOR=vim")
+		assert.Contains(t, content, `eval "$(xenv shell --type zsh)"`)
+	})
+
+	t.Run("pwsh needs the profile path", func(t *testing.T) {
+		_, err := NewScriptGenerator(Pwsh).InstallToProfile("")
+		assert.ErrMsgContains(t, err, "pwsh profile path")
+
+		profilePath := filepath.Join(tempHome, "profile.ps1")
+		got, err := NewScriptGenerator(Pwsh).InstallToProfile(profilePath)
+		assert.Require(t, assert.NoErr(t, err))
+		assert.Eq(t, profilePath, got)
+		assert.Contains(t, readTestProfile(t, profilePath), "Invoke-Expression (& xenv shell --type pwsh)")
+	})
+
+	t.Run("cmd is not supported", func(t *testing.T) {
+		_, err := NewScriptGenerator(Cmd).InstallToProfile("")
+		assert.ErrMsgContains(t, err, "not supported")
+	})
+}
+
+func readTestProfile(t *testing.T, filePath string) string {
+	t.Helper()
+
+	data, err := os.ReadFile(filePath)
+	assert.Require(t, assert.NoErr(t, err))
+	return string(data)
+}
+
 func TestPwshUnsetEnvIgnoresMissingVariables(t *testing.T) {
 	script := NewScriptGenerator(Pwsh).GenUnsetEnv("goroot")
 
