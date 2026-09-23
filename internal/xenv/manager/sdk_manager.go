@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -272,9 +271,7 @@ func (m *SDKManager) ListMergedSDKVersions(name string) []models.InstalledSDK {
 	for _, item := range merged {
 		items = append(items, item)
 	}
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Version > items[j].Version
-	})
+	models.SortByVersionDesc(items)
 	return items
 }
 
@@ -293,16 +290,22 @@ func (m *SDKManager) MatchSDKByVersion(localSDKs []models.InstalledSDK, version 
 
 	dotNum := strings.Count(version, ".")
 
-	if dotNum > 1 {
-		for i := range localSDKs {
-			if localSDKs[i].Version == version {
-				return &localSDKs[i]
-			}
+	// 精确匹配优先，且不受末尾 '.' 段数限制，如同时存在 18 与 18.1 时，输入 18 返回 18
+	for i := range localSDKs {
+		if localSDKs[i].Version == version {
+			return &localSDKs[i]
 		}
 	}
 
 	if version == "latest" {
-		return &localSDKs[0]
+		// latest 取比较器意义上的最大版本，不依赖列表顺序
+		latest := &localSDKs[0]
+		for i := 1; i < len(localSDKs); i++ {
+			if models.CompareVersionStrings(localSDKs[i].Version, latest.Version) > 0 {
+				latest = &localSDKs[i]
+			}
+		}
+		return latest
 	}
 
 	for i := range localSDKs {

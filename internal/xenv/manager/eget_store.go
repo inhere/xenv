@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"github.com/inhere/xenv/internal/xenv/models"
 )
@@ -72,9 +71,7 @@ func (s EgetStoreSource) ListSDKVersions(name string) ([]models.InstalledSDK, er
 		})
 	}
 
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Version > items[j].Version
-	})
+	models.SortByVersionDesc(items)
 	return items, nil
 }
 

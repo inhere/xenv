@@ -113,13 +113,8 @@ func NormalizeVersion(version string) string {
 	}
 }
 
-// CompareVersions 比较两个版本号
+// CompareVersions 比较两个版本号，返回 -1/0/1。
+// 与 models.CompareVersionStrings 规则一致：数字段按数值比较，预发布版本小于正式版本。
 func CompareVersions(v1, v2 string) int {
-	if v1 == v2 {
-		return 0
-	}
-	if v1 < v2 {
-		return -1
-	}
-	return 1
+	return models.CompareVersionStrings(v1, v2)
 }

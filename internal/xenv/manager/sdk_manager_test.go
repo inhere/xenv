@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gookit/goutil/x/assert"
 	"github.com/inhere/xenv/internal/xenv/models"
 )
 
@@ -215,4 +216,48 @@ func TestSDKManagerUsesDefaultEgetStoreFileWhenEnabled(t *testing.T) {
 	if mgr.egetSrc.Path != want {
 		t.Fatalf("eget source path = %q, want %q", mgr.egetSrc.Path, want)
 	}
+}
+
+func TestSDKManagerMatchSDKByVersionLatestPicksHighestVersion(t *testing.T) {
+	mgr := NewSDKManager(filepath.Join(t.TempDir(), "sdks.local.json"))
+	list := []models.InstalledSDK{
+		{Name: "go", Version: "1.9.0"},
+		{Name: "go", Version: "1.26.10"},
+		{Name: "go", Version: "1.10.0"},
+		{Name: "go", Version: "1.26.9"},
+		{Name: "go", Version: "1.26.0-rc1"},
+	}
+
+	got := mgr.MatchSDKByVersion(list, "latest")
+
+	assert.Require(t, assert.NotNil(t, got))
+	// latest 取数值意义上的最大版本，且不依赖列表顺序
+	assert.Eq(t, "1.26.10", got.Version)
+}
+
+func TestSDKManagerMatchSDKByVersionExactMatchIgnoresDotNum(t *testing.T) {
+	mgr := NewSDKManager(filepath.Join(t.TempDir(), "sdks.local.json"))
+
+	t.Run("exact match wins over prefix match", func(t *testing.T) {
+		list := []models.InstalledSDK{
+			{Name: "java", Version: "18.1"},
+			{Name: "java", Version: "18"},
+		}
+
+		got := mgr.MatchSDKByVersion(list, "18")
+
+		assert.Require(t, assert.NotNil(t, got))
+		assert.Eq(t, "18", got.Version)
+	})
+
+	t.Run("prefix match stays when version absent", func(t *testing.T) {
+		list := []models.InstalledSDK{
+			{Name: "java", Version: "18.1"},
+		}
+
+		got := mgr.MatchSDKByVersion(list, "18")
+
+		assert.Require(t, assert.NotNil(t, got))
+		assert.Eq(t, "18.1", got.Version)
+	})
 }

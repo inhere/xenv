@@ -2,6 +2,8 @@ package sdk
 
 import (
 	"testing"
+
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestParseVersionSpec(t *testing.T) {
@@ -236,23 +238,29 @@ func TestNormalizeVersion(t *testing.T) {
 
 func TestCompareVersions(t *testing.T) {
 	testCases := []struct {
+		name     string
 		v1       string
 		v2       string
 		expected int
 	}{
-		{"1.21.5", "1.21.5", 0},
-		{"1.21.4", "1.21.5", -1},
-		{"1.21.6", "1.21.5", 1},
-		{"go", "node", -1},
-		{"node", "go", 1},
+		{name: "same version", v1: "1.21.5", v2: "1.21.5", expected: 0},
+		{name: "patch asc", v1: "1.21.4", v2: "1.21.5", expected: -1},
+		{name: "patch desc", v1: "1.21.6", v2: "1.21.5", expected: 1},
+		{name: "minor numeric order", v1: "1.9.0", v2: "1.10.0", expected: -1},
+		{name: "minor numeric order desc", v1: "1.10.0", v2: "1.9.0", expected: 1},
+		{name: "patch numeric order", v1: "1.26.9", v2: "1.26.10", expected: -1},
+		{name: "patch numeric order desc", v1: "1.26.10", v2: "1.26.9", expected: 1},
+		{name: "prerelease less than release", v1: "1.24.0-rc1", v2: "1.24.0", expected: -1},
+		{name: "release greater than prerelease", v1: "1.24.0", v2: "1.24.0-rc1", expected: 1},
+		{name: "prerelease numeric order", v1: "1.24.0-rc1", v2: "1.24.0-rc2", expected: -1},
+		{name: "shorter version is smaller", v1: "18", v2: "18.1", expected: -1},
+		{name: "non numeric fallback", v1: "go", v2: "node", expected: -1},
+		{name: "non numeric fallback desc", v1: "node", v2: "go", expected: 1},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.v1+"_vs_"+tc.v2, func(t *testing.T) {
-			result := CompareVersions(tc.v1, tc.v2)
-			if result != tc.expected {
-				t.Errorf("CompareVersions(%q, %q) = %d, expected %d", tc.v1, tc.v2, result, tc.expected)
-			}
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Eq(t, tc.expected, CompareVersions(tc.v1, tc.v2))
 		})
 	}
 }

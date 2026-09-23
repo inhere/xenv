@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/gookit/goutil/x/assert"
 )
 
 func TestEgetStoreSourceListsSDKs(t *testing.T) {
@@ -63,4 +65,35 @@ func TestDefaultEgetStoreFileUsesHomeConfigDir(t *testing.T) {
 	if got := DefaultEgetStoreFile(); got != want {
 		t.Fatalf("DefaultEgetStoreFile() = %q, want %q", got, want)
 	}
+}
+
+func TestEgetStoreSourceListSDKVersionsSortsByVersionDesc(t *testing.T) {
+	store := filepath.Join(t.TempDir(), "sdk.installed.json")
+	data := []byte(`{
+	  "schema": 1,
+	  "installed": {
+	    "go": {
+	      "versions": {
+	        "1.9.0": {"name": "go", "version": "1.9.0", "path": "D:/eget/go1.9.0"},
+	        "1.26.10": {"name": "go", "version": "1.26.10", "path": "D:/eget/go1.26.10"},
+	        "1.10.0": {"name": "go", "version": "1.10.0", "path": "D:/eget/go1.10.0"},
+	        "1.26.9": {"name": "go", "version": "1.26.9", "path": "D:/eget/go1.26.9"}
+	      }
+	    }
+	  }
+	}`)
+	if err := os.WriteFile(store, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	items, err := EgetStoreSource{Path: store}.ListSDKVersions("go")
+	assert.Require(t, assert.NoErr(t, err))
+
+	versions := make([]string, 0, len(items))
+	for _, item := range items {
+		versions = append(versions, item.Version)
+	}
+
+	// 新 -> 旧，数字段按数值比较而非字典序
+	assert.Eq(t, []string{"1.26.10", "1.26.9", "1.10.0", "1.9.0"}, versions)
 }
