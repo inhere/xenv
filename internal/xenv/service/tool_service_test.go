@@ -19,6 +19,24 @@ import (
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
+func TestUnsetEnvsKeepsGoingWhenOneIsMissing(t *testing.T) {
+	_, _, _, state := newDirenvTestService(t, "test-unset-partial", nil)
+	envSvc := NewEnvService(&models.Configuration{}, state)
+
+	envs := map[string]string{"A": "1", "B": "2"}
+	assert.Require(t, assert.NoErr(t, state.AddEnvs(envs, models.OpFlagGlobal)))
+
+	// 缺失的名字只提示, 其余变量照常删除
+	script, err := envSvc.UnsetEnvs([]string{"A", "NOPE"}, models.OpFlagGlobal)
+	assert.Require(t, assert.NoErr(t, err))
+	assert.Contains(t, script, "A")
+	assert.Eq(t, map[string]string{"B": "2"}, state.Global().Envs)
+
+	// 全部不存在时报错
+	_, err = envSvc.UnsetEnvs([]string{"NOPE1", "NOPE2"}, models.OpFlagGlobal)
+	assert.ErrMsgContains(t, err, "no environment variable was unset")
+}
+
 func TestDirEnvAndPathsFromDirenvState(t *testing.T) {
 	_, _, _, state := newDirenvTestService(t, "test-dir-list", func(projectDir string) {
 		xenvToml := filepath.Join(projectDir, ".xenv.toml")

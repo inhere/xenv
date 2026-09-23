@@ -173,7 +173,7 @@ func EnvUnsetCmd(desc ...string) *gcli.Command {
 			opFlag := opFlagFrom(opts.Global, opts.SaveDirenv)
 			script, err1 := envSvc.UnsetEnvs(names, opFlag)
 			if err1 != nil {
-				return fmt.Errorf("failed to set environment variable: %w", err1)
+				return fmt.Errorf("failed to unset environment variable: %w", err1)
 			}
 
 			// Save configuration if global

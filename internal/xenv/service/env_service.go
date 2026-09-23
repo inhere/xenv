@@ -72,6 +72,8 @@ func (s *EnvService) SetEnvs(envs []string, opFlag models.OpFlag) (script string
 }
 
 // UnsetEnvs unsets multi environment variables
+//
+// 某个变量不存在时只提示, 不阻断其它变量的删除
 func (s *EnvService) UnsetEnvs(names []string, opFlag models.OpFlag) (script string, err error) {
 	var sb strings.Builder
 	// Generate shell eval scripts
@@ -85,21 +87,26 @@ func (s *EnvService) UnsetEnvs(names []string, opFlag models.OpFlag) (script str
 
 	s.state.SetBatchMode(true)
 	defer s.state.SetBatchMode(false)
+
+	unsetNum := 0
 	for _, name := range names {
-		name = strings.ToUpper(name)
-		if val := os.Getenv(name); val == "" {
-			ccolor.Warnf("ENV var not found: %s\n", name)
+		if name, err = normalizeEnvName(name); err != nil {
+			return "", err
 		}
 
-		// 在shell hook环境中, 生成ENV set脚本
+		if err = s.state.UnsetEnv(name, opFlag); err != nil {
+			ccolor.Warnf("WARN: %s is not set in %s state\n", name, opFlag)
+			continue
+		}
+
+		unsetNum++
 		if gen != nil {
 			sb.WriteString(gen.GenUnsetEnv(name))
 		}
+	}
 
-		err = s.state.UnsetEnv(name, opFlag)
-		if err != nil {
-			return "", err
-		}
+	if unsetNum == 0 {
+		return "", fmt.Errorf("no environment variable was unset: %v", names)
 	}
 
 	err = s.state.SaveStateFile()
