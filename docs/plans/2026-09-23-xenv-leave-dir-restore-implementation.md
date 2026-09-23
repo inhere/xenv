@@ -192,6 +192,36 @@ fail-closed 条件（命中即停止并回到 design/plan Gate）：
 - 完成标准: 验收 1-6 全部可复现；`tmp/` 清理完毕。
 - 依赖: T3、T4、T5。
 
+## 实施进度
+
+> 本节是状态与证据记录，不改变计划语义，按 `SR1103`/`SR1211` 不递增版本。
+
+| 任务 | 状态 | 提交 | 证据 |
+|---|---|---|---|
+| T1 应用记录结构 | 完成 | `3735ca2` | `go test ./internal/xenv/models/ -count=1` |
+| T2 记录的环境变量承载 | 完成 | `79424b1` | `TestLoadAndWriteAppliedRecord` |
+| T2b 回退 session 承载 | 完成 | `0237557` | `AppliedDirenv` 无 session/manager 引用；`models`、`manager` 测试通过 |
+| T3 SetupDirenv 撤销+应用+记录 | 完成 | `0237557`、`99e86a6` | `TestSetupDirenvUndoAndRecord`；T7 实测 |
+| T4 `-s` 命令合并记录 | 完成 | `0df376e` | `TestMergeAppliedRecord`、`TestDirenvScopeOpsMergeAppliedRecord`；T7 实测 |
+| T5 status 展示记录 | 完成 | `ca70f04` | `TestFormatAppliedRecordLines`；`xenv status --layers` 实测 |
+| T6 文档 | 完成 | `eb6fbd2` | README 双语新增「离开目录」小节 |
+| T7 端到端验证 | 完成 | 无提交（脚本在 `tmp/`，验证后删除） | 真实二进制 + bash hook 流程五步全绿 |
+
+T7 实测结果（`XENV_HOOK_SHELL=bash`，隔离 `HOME` 与 `XENV_CONFIG_DIR`）：
+
+1. 进入 projA：`projA/bin` 进入 PATH、`APP_ENV=a-local`、记录变量写入。
+2. 进入 projA/sub：输出空脚本（同项目幂等）。
+3. `set -s XENV_E2E_EXTRA=extra`：变量生效且出现在记录中。
+4. 进入 projB：projA 的 PATH 条目被移除、`APP_ENV` 恢复、projB 生效、`set -s` 的值被撤销。
+5. 离开到无配置目录：projB 的 PATH 条目被移除、变量恢复为未设置、记录变量被清除。
+
+实施期发现与处理（均在已批准 owner 内，属 corrective，不改变设计语义）：
+
+- 撤销脚本与应用脚本都基于未撤销的进程环境计算时，应用行会把刚移除的 PATH 条目再加回来；改为在进程内临时模拟撤销结果后再计算应用（`simulateLeaveInProcess`）。
+- `loadAppliedRecord` 反序列化后 `SDKs` 可能为 nil map，合并记录时 panic；改为在读取边界归一化。
+- 应用新目录失败时原先直接丢弃撤销脚本，与设计失败表「WARN + 只输出撤销脚本」不符；改为返回撤销脚本与记录清除，hook 命令同时输出 WARN 与脚本。
+- T4 的 `unset -s` 实现为「记录该变量及其取消设置前的值，离开时恢复」，与本节 T4 原文「从记录中移除该变量」不同；理由是 D2/D5 要求撤销本次命令带来的变更，且同名变量仍保留最早的旧值。
+
 ## 回滚与恢复
 
 - 每个任务一个本地 atomic commit，提交前核对 `git diff --cached --name-only` 与本任务 owner 文件一致。
@@ -231,7 +261,7 @@ fail-closed 条件（命中即停止并回到 design/plan Gate）：
 
 ## 完成 Gate 与剩余工作
 
-完成 Gate（全部满足才可声明完成）：
+完成 Gate（全部满足才可声明完成）：状态：已满足（证据见「实施进度」）。
 
 1. 验收 1-8 均有实测或测试证据。
 2. `go build ./...`、`go vet ./...`、`staticcheck ./...` 通过；`go test -count=1 ./...` 全绿。
