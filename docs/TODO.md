@@ -13,5 +13,5 @@
   - 已实现: `env set/unset`、`path add/rm` 新增 `-S/--system`，写入操作系统用户级环境
     (Windows: `HKCU\Environment`；Linux/macOS: bash/zsh 启动文件中的 xenv 托管块)；
     `env list -S`、`path list -S` 会额外展示这些系统值。
-- [ ] xenv allow_up_match 向上匹配 value=2, 9 还未实现
+- [x] xenv allow_up_match 向上匹配 value=2, 9 还未实现
 - [x] xenv config get 功能完善一下，支持类似 eget config get 可以使用任意key path查询

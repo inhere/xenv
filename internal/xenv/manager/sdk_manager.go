@@ -317,21 +317,50 @@ func (m *SDKManager) MatchSDKByVersion(localSDKs []models.InstalledSDK, version 
 		}
 	}
 
-	if dotNum > 1 && m.config != nil && m.config.AllowUpMatch > 0 {
+	// 仅完整版本号（段数 > 2，如 1.23.1）才按档位向上匹配；
+	// UpMatchNone(0) 及未知档位不做额外向上匹配。
+	if dotNum > 1 && m.config != nil {
 		parts := strings.Split(version, ".")
 
-		if m.config.AllowUpMatch == xenvcom.UpMatchOne {
-			matchVer := strings.Join(parts[:len(parts)-1], ".") + "."
-			for i := range localSDKs {
-				locVersion := localSDKs[i].Version
-				if strings.HasPrefix(locVersion, matchVer) {
-					return &localSDKs[i]
-				}
+		switch m.config.AllowUpMatch {
+		case xenvcom.UpMatchOne:
+			// 同 minor 线内向上匹配，取高于输入的最小版本 eg: 1.23.1 -> 1.23.x
+			if item := pickLowestHigherVersion(localSDKs, version, strings.Join(parts[:len(parts)-1], ".")+"."); item != nil {
+				return item
+			}
+		case xenvcom.UpMatchTwo:
+			// 同 major 线内向上匹配，取高于输入的最小版本 eg: 1.24.5 -> 1.24.x/1.25.x/1.26.x
+			if item := pickLowestHigherVersion(localSDKs, version, parts[0]+"."); item != nil {
+				return item
+			}
+		case xenvcom.UpMatchAll:
+			// 允许任意更高的版本，取高于输入的最小版本
+			if item := pickLowestHigherVersion(localSDKs, version, ""); item != nil {
+				return item
 			}
 		}
 	}
 
 	return nil
+}
+
+// pickLowestHigherVersion 取数值上大于 version 的最小版本，prefix 非空时只考虑该前缀的版本。
+// 传入列表通常按版本降序，故不能依赖列表顺序，必须逐个数值比较。
+func pickLowestHigherVersion(localSDKs []models.InstalledSDK, version, prefix string) *models.InstalledSDK {
+	var found *models.InstalledSDK
+	for i := range localSDKs {
+		item := &localSDKs[i]
+		if prefix != "" && !strings.HasPrefix(item.Version, prefix) {
+			continue
+		}
+		if models.CompareVersionStrings(item.Version, version) <= 0 {
+			continue
+		}
+		if found == nil || models.CompareVersionStrings(item.Version, found.Version) < 0 {
+			found = item
+		}
+	}
+	return found
 }
 
 func (m *SDKManager) LocalIndex() *models.SDKLocalIndex {

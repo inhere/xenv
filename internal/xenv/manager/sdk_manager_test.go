@@ -8,6 +8,7 @@ import (
 
 	"github.com/gookit/goutil/x/assert"
 	"github.com/inhere/xenv/internal/xenv/models"
+	"github.com/inhere/xenv/internal/xenv/xenvcom"
 )
 
 func TestSDKManagerIndexLocalSDKsWritesSDKOnlyIndex(t *testing.T) {
@@ -260,4 +261,59 @@ func TestSDKManagerMatchSDKByVersionExactMatchIgnoresDotNum(t *testing.T) {
 		assert.Require(t, assert.NotNil(t, got))
 		assert.Eq(t, "18.1", got.Version)
 	})
+}
+
+func TestSDKManagerMatchSDKByVersionUpMatchLevels(t *testing.T) {
+	sameMajor := []models.InstalledSDK{
+		{Name: "go", Version: "1.24.5"},
+		{Name: "go", Version: "1.25.0"},
+		{Name: "go", Version: "1.26.10"},
+		{Name: "go", Version: "2.0.0"},
+	}
+	oneLine := []models.InstalledSDK{
+		{Name: "go", Version: "1.23.2"},
+	}
+
+	tests := []struct {
+		name    string
+		level   uint8
+		list    []models.InstalledSDK
+		version string
+		// want 为空表示期望返回 nil
+		want string
+	}{
+		{"level 2 picks lowest higher within same major", xenvcom.UpMatchTwo, sameMajor, "1.24.9", "1.25.0"},
+		{"level 2 stops at major line", xenvcom.UpMatchTwo, sameMajor, "1.27.0", ""},
+		{"level 9 picks lowest higher, not list head", xenvcom.UpMatchAll, sameMajor, "1.24.9", "1.25.0"},
+		{"level 9 crosses major line", xenvcom.UpMatchAll, sameMajor, "1.27.0", "2.0.0"},
+		{"level 9 nil when nothing higher", xenvcom.UpMatchAll, sameMajor[:3], "2.0.0", ""},
+		{"level 1 picks higher within same minor line", xenvcom.UpMatchOne, []models.InstalledSDK{
+			{Name: "go", Version: "1.23.2"},
+			{Name: "go", Version: "1.24.0"},
+		}, "1.23.1", "1.23.2"},
+		{"level 1 skips lower version in same line", xenvcom.UpMatchOne, []models.InstalledSDK{
+			{Name: "go", Version: "1.23.0"},
+		}, "1.23.1", ""},
+		{"level 0 skips up match", xenvcom.UpMatchNone, oneLine, "1.23.1", ""},
+		{"level 0 keeps same line prefix match", xenvcom.UpMatchNone, oneLine, "1.23", "1.23.2"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mgr := NewSDKManager(filepath.Join(t.TempDir(), "sdks.local.json"))
+			if err := mgr.Init(&models.Configuration{AllowUpMatch: tt.level}); err != nil {
+				t.Fatal(err)
+			}
+
+			got := mgr.MatchSDKByVersion(tt.list, tt.version)
+
+			if tt.want == "" {
+				assert.Nil(t, got)
+				return
+			}
+
+			assert.Require(t, assert.NotNil(t, got))
+			assert.Eq(t, tt.want, got.Version)
+		})
+	}
 }
