@@ -213,7 +213,7 @@ func (ts *SDKService) checkActivateSDK(spec *models.VersionSpec) (*models.Instal
 		localSDK = ts.sdks.MatchSDKByVersion(ts.sdks.ListMergedSDKVersions(sdkCfg.Name), spec.Version)
 	}
 	if localSDK == nil {
-		if !strings.ContainsAny(spec.Version, "0123456789") {
+		if isUnsupportedVersionAlias(spec.Version) {
 			return nil, fmt.Errorf("sdk version alias %q is not supported yet, use an explicit version", spec.Version)
 		}
 		return nil, fmt.Errorf("sdk %s is not installed locally", spec.ID())
@@ -222,6 +222,15 @@ func (ts *SDKService) checkActivateSDK(spec *models.VersionSpec) (*models.Instal
 	localSDK.Config = sdkCfg
 	spec.RealVersion = localSDK.Version
 	return localSDK, nil
+}
+
+// isUnsupportedVersionAlias 判断是否为未支持的非数字版本别名 eg: lts, auto
+func isUnsupportedVersionAlias(version string) bool {
+	switch version {
+	case "latest", "stable":
+		return false
+	}
+	return !strings.ContainsAny(version, "0123456789")
 }
 
 func (ts *SDKService) warnTemporaryRuntimeOverride(spec *models.VersionSpec, opFlag models.OpFlag) {
