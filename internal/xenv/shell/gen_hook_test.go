@@ -263,6 +263,42 @@ func readTestProfile(t *testing.T, filePath string) string {
 	return string(data)
 }
 
+func TestGeneratedZshHookLoadsHookFiles(t *testing.T) {
+	params := &models.GenInitScriptParams{ShellHooksDir: "~/.config/xenv/hooks"}
+	script, err := NewScriptGenerator(Zsh).GenHookScripts(params)
+	assert.Require(t, assert.NoErr(t, err))
+
+	// zsh 标量赋值不展开 glob, 必须直接在 for 中使用 glob, 并用 (N) 避免无匹配时报错
+	assertNotContains(t, script, "hook_files=")
+	assertContains(t, script, `if [[ -d "${HOME}/.config/xenv/hooks" ]]; then`)
+	assertContains(t, script, `for file in "${HOME}/.config/xenv/hooks"/*.sh(N); do`)
+}
+
+func TestGeneratedCmdHookLoadsHookFiles(t *testing.T) {
+	params := &models.GenInitScriptParams{ShellHooksDir: `C:\Users\me\.config\xenv\hooks`}
+	script, err := NewScriptGenerator(Cmd).GenHookScripts(params)
+	assert.Require(t, assert.NoErr(t, err))
+
+	assertContains(t, script, "if os.globdirs then")
+	assertContains(t, script, `os.globdirs('C:\\Users\\me\\.config\\xenv\\hooks' .. "/*.lua")`)
+}
+
+func TestGeneratedCmdHookEscapesValues(t *testing.T) {
+	params := &models.GenInitScriptParams{
+		ShellHooksDir: "~/.config/xenv/hooks",
+		Paths:         []string{`C:\Program Files\x`},
+		Envs:          map[string]string{"sdk_home": `C:\sdk`},
+		ShellAliases:  map[string]string{"ll": `dir /a`},
+	}
+
+	script, err := NewScriptGenerator(Cmd).GenHookScripts(params)
+	assert.Require(t, assert.NoErr(t, err))
+
+	assertContains(t, script, `os.setenv('SDK_HOME', 'C:\\sdk')`)
+	assertContains(t, script, `os.setenv('PATH', 'C:\\Program Files\\x;%PATH%')`)
+	assertContains(t, script, `os.execute('doskey ll=dir /a')`)
+}
+
 func TestPwshUnsetEnvIgnoresMissingVariables(t *testing.T) {
 	script := NewScriptGenerator(Pwsh).GenUnsetEnv("goroot")
 

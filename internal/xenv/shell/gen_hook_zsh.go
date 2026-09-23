@@ -15,7 +15,7 @@ func (sg *XenvScriptGenerator) generateZshScripts(ps *models.GenInitScriptParams
 	sg.addCommonForLinuxShell(&sb, ps)
 
 	return strutil.Replaces(ZshHookTemplate, map[string]string{
-		"{{HooksDir}}":    ps.ShellHooksDir,
+		"{{HooksDir}}":    shQuotePathExpr(ps.ShellHooksDir),
 		"{{BinCommand}}":  xenvcom.BinCommand,
 		"{{BinName}}":     xenvcom.BinName,
 		"#{{EnvAliases}}": sb.String(),
@@ -139,12 +139,14 @@ setup_xenv() {
     fi
 
 	# Load custom hooks script files
-	hook_files={{HooksDir}}/*.sh
-	for file in "${hook_files[@]}"; do
-		if [[ -f "$file" && -r "$file" ]]; then
-			source "$file"
-		fi
-	done
+	# 使用 glob(N) 获取匹配的文件(zsh 默认 NOMATCH 会因无匹配报错)
+	if [[ -d {{HooksDir}} ]]; then
+		for file in {{HooksDir}}/*.sh(N); do
+			if [[ -r "$file" ]]; then
+				source "$file"
+			fi
+		done
+	fi
 	if [ "$XENV_DEBUG_MODE" = "true" ]; then
 		echo "✅ xenv zsh script initialize completed"
 	fi

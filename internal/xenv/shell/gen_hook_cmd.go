@@ -16,24 +16,23 @@ func (sg *XenvScriptGenerator) generateCmdScripts(ps *models.GenInitScriptParams
 	if len(ps.Envs) > 0 {
 		sb.WriteString("  -- Add global ENV variables from xenv\n")
 		maputil.EachTypedMap(ps.Envs, func(key, value string) {
-			sb.WriteString(fmt.Sprintf(`os.setenv("%s", "%s")\n`, strings.ToUpper(key), value))
+			sb.WriteString(fmt.Sprintf("  os.setenv('%s', %s)\n", strings.ToUpper(key), luaQuote(value)))
 		})
 	}
 
 	// 添加全局PATH条目
 	if len(ps.Paths) > 0 {
 		sb.WriteString("  -- Add global PATH variables from xenv\n")
-		addPaths := strings.Join(ps.Paths, ";")
-		sb.WriteString(fmt.Sprintf(`os.setenv("PATH", "%s;%%PATH%%")\n`, addPaths))
+		sb.WriteString(fmt.Sprintf("  os.setenv('PATH', %s)\n", luaQuote(strings.Join(ps.Paths, ";")+";%PATH%")))
 	}
 
 	// clink 通过 os.execute('doskey ll=dir /a $*') 实现别名
 	maputil.EachTypedMap(ps.ShellAliases, func(key, value string) {
-		sb.WriteString(fmt.Sprintf(`os.execute("doskey %s=%s")\n`, key, value))
+		sb.WriteString(fmt.Sprintf("  os.execute(%s)\n", luaQuote("doskey "+key+"="+value)))
 	})
 
 	return strutil.Replaces(CmdLuaHookTemplate, map[string]string{
-		"{{HooksDir}}":   ps.ShellHooksDir,
+		"{{HooksDir}}":   luaQuote(ps.ShellHooksDir),
 		"{{BinCommand}}": xenvcom.BinCommand,
 		"{{EnvAliases}}": sb.String(),
 	})
@@ -94,6 +93,13 @@ function setup_xenv()
     end
 
 {{EnvAliases}}
+
+    -- Load custom hooks script files
+    if os.globdirs then
+        for _, file in ipairs(os.globdirs({{HooksDir}} .. "/*.lua")) do
+            dofile(file)
+        end
+    end
 
     -- Define the xenv function to activate tools
     function xenv(command)
