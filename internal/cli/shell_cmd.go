@@ -166,7 +166,7 @@ func ShellDirenvCmd() *gcli.Command {
 			script, err1 := sdkSvc.SetupDirenv()
 			if err1 != nil {
 				if xenvcom.InHookShell() {
-					shell.OutputScriptWithMessage(fmt.Sprintf("WARN: failed to apply xenv direnv state: %v", err1), "")
+					shell.OutputScriptWithMessage(fmt.Sprintf("WARN: failed to apply xenv direnv state: %v", err1), script)
 					return nil
 				}
 				return err1

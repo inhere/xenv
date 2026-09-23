@@ -305,7 +305,8 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 
 	script, rec, err := ts.applyDirenvState(gen, deState)
 	if err != nil {
-		return "", err
+		// 应用失败时仍要撤销上一记录并清除它, 保持 shell 与记录一致
+		return sb.String() + writeAppliedRecord(gen, nil), err
 	}
 	sb.WriteString(script)
 
