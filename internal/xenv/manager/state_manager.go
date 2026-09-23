@@ -10,6 +10,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/jsonutil"
+	"github.com/gookit/goutil/x/ccolor"
 	"github.com/inhere/xenv/internal/xenv/config"
 	"github.com/inhere/xenv/internal/xenv/models"
 	"github.com/inhere/xenv/internal/xenv/xenvcom"
@@ -530,8 +531,9 @@ func (m *StateManager) DirenvOrNew() *models.ActivityState {
 		return m.dirStates[len(m.dirStates)-1]
 	}
 
-	// TODO 输出提示，确认是否创建 .xenv.toml 文件
+	// 目录状态文件不存在时, 提示本次改动将写入的位置
 	de := models.NewActivityState(xenvcom.LocalStateFile)
 	m.dirStates = append(m.dirStates, de)
+	ccolor.Infof("TIP: The change will be saved to project config: %s\n", de.File)
 	return de
 }
