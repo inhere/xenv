@@ -142,6 +142,69 @@ func TestGeneratedHooksEvaluateCommandAliases(t *testing.T) {
 	assertNotContains(t, pwsh, "'list'")
 }
 
+func TestGenSnippetsQuoteShellMetaChars(t *testing.T) {
+	t.Run("bash parses and quotes", func(t *testing.T) {
+		gen := NewScriptGenerator(Bash)
+
+		assert.Eq(t, "export FOO='it'\\''s'\n", gen.GenSetEnv("FOO", "it's"))
+		assert.Eq(t, "export PATH='/opt/my tools/bin':$PATH\n", gen.GenAddPath("/opt/my tools/bin"))
+		assert.Eq(t, "export PATH='/a b'\n", gen.GenSetPath([]string{"/a b"}))
+
+		// 生成的片段必须能被 bash 解析
+		script := gen.GenSetEnv("FOO", "it's") +
+			gen.GenAddPath("/opt/my tools/bin") +
+			gen.GenSetPath([]string{"/a b", "/c"})
+		cmd := exec.Command("bash", "-n")
+		cmd.Stdin = strings.NewReader(script)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("expected generated snippets to parse, err=%v, output=%s, script=%q", err, out, script)
+		}
+	})
+
+	t.Run("zsh quotes", func(t *testing.T) {
+		gen := NewScriptGenerator(Zsh)
+
+		assert.Eq(t, "export FOO='it'\\''s'\n", gen.GenSetEnv("FOO", "it's"))
+
+		// zsh 不做 Git Bash 路径转换, 这里只断言引号包裹与 PATH 前缀
+		script := gen.GenAddPath("/opt/my tools/bin")
+		assert.True(t, strings.HasPrefix(script, "export PATH='"), "unexpected script: %s", script)
+		assert.True(t, strings.HasSuffix(script, "':$PATH\n"), "unexpected script: %s", script)
+		assert.Contains(t, script, "my tools")
+	})
+
+	t.Run("pwsh escapes single quotes and avoids interpolation", func(t *testing.T) {
+		gen := NewScriptGenerator(Pwsh)
+
+		assert.Eq(t, "$Env:FOO='it''s';\n", gen.GenSetEnv("FOO", "it's"))
+		assert.Eq(t, "$Env:PATH='C:\\a$b\\bin;' + $Env:PATH\n", gen.GenAddPath(`C:\a$b\bin`))
+		assert.Eq(t, "$Env:PATH='C:\\a b';\n", gen.GenSetPath([]string{`C:\a b`}))
+	})
+
+	t.Run("cmd escapes lua string", func(t *testing.T) {
+		gen := NewScriptGenerator(Cmd)
+
+		assert.Eq(t, "os.setenv('FOO', 'C:\\\\x')\n\n", gen.GenSetEnv("FOO", `C:\x`))
+		assert.Eq(t, "os.setenv('PATH', 'C:\\\\a b;%PATH%')\n", gen.GenAddPath(`C:\a b`))
+	})
+}
+
+func TestBashAddPathUsesGitBashPathSyntaxOnWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Git Bash path conversion is Windows-specific")
+	}
+
+	oldHookShell := xenvcom.HookShell()
+	xenvcom.SetHookShell("bash")
+	t.Cleanup(func() {
+		xenvcom.SetHookShell(oldHookShell)
+	})
+
+	script := NewScriptGenerator(Bash).GenAddPath(`D:\work\env\devsdk\gosdk\go1.24.6\bin`)
+
+	assertContains(t, script, "export PATH='/d/work/env/devsdk/gosdk/go1.24.6/bin':$PATH")
+}
+
 func TestPwshUnsetEnvIgnoresMissingVariables(t *testing.T) {
 	script := NewScriptGenerator(Pwsh).GenUnsetEnv("goroot")
 

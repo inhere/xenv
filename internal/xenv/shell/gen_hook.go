@@ -94,11 +94,11 @@ func (sg *XenvScriptGenerator) GenSetEnv(name, value string) string {
 	name = strings.ToUpper(name)
 	switch sg.shell {
 	case Bash, Zsh:
-		return fmt.Sprintf("export %s='%s'\n", name, value)
+		return fmt.Sprintf("export %s=%s\n", name, shQuote(value))
 	case Pwsh:
-		return fmt.Sprintf("$Env:%s='%s';\n", name, value)
+		return fmt.Sprintf("$Env:%s=%s;\n", name, pwshQuote(value))
 	default:
-		return fmt.Sprintf("os.setenv('%s', '%s')\n\n", name, value)
+		return fmt.Sprintf("os.setenv('%s', %s)\n\n", name, luaQuote(value))
 	}
 }
 
@@ -117,13 +117,14 @@ func (sg *XenvScriptGenerator) GenUnsetEnv(name string) string {
 
 // GenAddPath 添加 PATH 脚本代码（添加到 PATH 的第一个位置）
 func (sg *XenvScriptGenerator) GenAddPath(path string) string {
+	fmtPath := util.FormatShellPathFor(path, string(sg.shell))
 	switch sg.shell {
 	case Bash, Zsh:
-		return fmt.Sprintf("export PATH=%s:$PATH\n", path)
+		return fmt.Sprintf("export PATH=%s:$PATH\n", shQuote(fmtPath))
 	case Pwsh:
-		return fmt.Sprintf("$Env:PATH=\"%s;$Env:PATH\"\n", path)
+		return fmt.Sprintf("$Env:PATH=%s + $Env:PATH\n", pwshQuote(fmtPath+";"))
 	default:
-		return fmt.Sprintf("os.setenv('PATH', '%s;%%PATH%%')\n", path)
+		return fmt.Sprintf("os.setenv('PATH', %s)\n", luaQuote(fmtPath+";%PATH%"))
 	}
 }
 
@@ -132,12 +133,11 @@ func (sg *XenvScriptGenerator) GenAddPaths(paths []string) string {
 	newPath := util.JoinPaths(paths)
 	switch sg.shell {
 	case Bash, Zsh:
-		return fmt.Sprintf("export PATH=%s:$PATH\n", newPath)
+		return fmt.Sprintf("export PATH=%s:$PATH\n", shQuote(newPath))
 	case Pwsh:
-		// pwsh "" 支持变量插值和表达式求值
-		return fmt.Sprintf("$Env:PATH=\"%s;$Env:PATH\"\n", newPath)
+		return fmt.Sprintf("$Env:PATH=%s + $Env:PATH\n", pwshQuote(newPath+";"))
 	default:
-		return fmt.Sprintf("os.setenv('PATH', '%s;%%PATH%%')\n", newPath)
+		return fmt.Sprintf("os.setenv('PATH', %s)\n", luaQuote(newPath+";%PATH%"))
 	}
 }
 
@@ -146,11 +146,11 @@ func (sg *XenvScriptGenerator) GenSetPath(paths []string) string {
 	newPath := util.JoinPaths(paths)
 	switch sg.shell {
 	case Bash, Zsh:
-		return fmt.Sprintf("export PATH='%s'\n", newPath)
+		return fmt.Sprintf("export PATH=%s\n", shQuote(newPath))
 	case Pwsh:
-		return fmt.Sprintf("$Env:PATH='%s';\n", newPath)
+		return fmt.Sprintf("$Env:PATH=%s;\n", pwshQuote(newPath))
 	default:
-		return fmt.Sprintf("os.setenv('PATH', '%s')\n\n", newPath)
+		return fmt.Sprintf("os.setenv('PATH', %s)\n\n", luaQuote(newPath))
 	}
 }
 
@@ -218,6 +218,17 @@ func (sg *XenvScriptGenerator) addCommonForLinuxShell(sb *strings.Builder, ps *m
 
 func shQuote(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
+}
+
+// pwshQuote 生成 PowerShell 单引号字符串, 内部单引号使用 ” 转义
+func pwshQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+}
+
+// luaQuote 生成 clink(lua) 单引号字符串, 转义反斜杠与单引号
+func luaQuote(value string) string {
+	value = strings.ReplaceAll(value, `\`, `\\`)
+	return "'" + strings.ReplaceAll(value, "'", `\'`) + "'"
 }
 
 func shQuotePathExpr(path string) string {

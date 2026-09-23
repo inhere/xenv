@@ -246,7 +246,7 @@ func TestSetupDirenvGeneratesPwshPathWithSpaces(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(script, `$Env:PATH="C:/Program Files (x86)/NSIS;$Env:PATH"`) {
+	if !strings.Contains(script, `$Env:PATH='C:/Program Files (x86)/NSIS;' + $Env:PATH`) {
 		t.Fatalf("expected setup direnv script to add NSIS path, got %q", script)
 	}
 }
