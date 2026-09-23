@@ -12,6 +12,7 @@ import (
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/x/assert"
 	"github.com/gookit/goutil/x/ccolor"
+	"github.com/inhere/xenv/internal/util"
 	"github.com/inhere/xenv/internal/xenv/config"
 	"github.com/inhere/xenv/internal/xenv/manager"
 	"github.com/inhere/xenv/internal/xenv/models"
@@ -382,6 +383,71 @@ func TestSetupDirenvWarnsMissingToolsWhenEnabled(t *testing.T) {
 	assert.Require(t, assert.NoErr(t, err))
 }
 
+func TestSetupDirenvUndoAndRecord(t *testing.T) {
+	_, projectDir, svc, _ := newDirenvTestService(t, "test-undo-record", func(projectDir string) {
+		assert.Require(t, assert.NoErr(t, os.MkdirAll(filepath.Join(projectDir, "bin"), 0o755)))
+
+		data := "paths = [\"./bin\"]\n\n[sdks]\n  go = \"1.24\"\n\n[envs]\nAPP_ENV = \"local\"\n"
+		assert.Require(t, assert.NoErr(t, os.WriteFile(filepath.Join(projectDir, ".xenv.toml"), []byte(data), 0o644)))
+	})
+	dirFile := filepath.Join(projectDir, ".xenv.toml")
+
+	t.Run("first enter applies and records", func(t *testing.T) {
+		t.Setenv(xenvcom.AppliedDirenvEnvName, "")
+
+		script, err := svc.SetupDirenv()
+		assert.Require(t, assert.NoErr(t, err))
+		assert.Contains(t, script, "APP_ENV")
+		assert.Contains(t, script, "XENV_APPLIED_DIRENV")
+		assert.NotContains(t, script, "unset XENV_APPLIED_DIRENV")
+	})
+
+	t.Run("same project is idempotent", func(t *testing.T) {
+		rec := models.NewAppliedDirenv(dirFile)
+		rec.AddAppliedPath(filepath.Join(projectDir, "bin"))
+		t.Setenv(xenvcom.AppliedDirenvEnvName, mustRecordJSON(t, rec))
+
+		script, err := svc.SetupDirenv()
+		assert.Require(t, assert.NoErr(t, err))
+		assert.Eq(t, "", script)
+	})
+
+	t.Run("leaving another project restores values and PATH", func(t *testing.T) {
+		fakeBin := filepath.Join(t.TempDir(), "fakebin")
+		t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+		rec := models.NewAppliedDirenv("/other/.xenv.toml")
+		rec.AddAppliedPath(util.NormalizePath(fakeBin))
+		rec.AddAppliedEnv("APP_ENV", "", false)
+		t.Setenv(xenvcom.AppliedDirenvEnvName, mustRecordJSON(t, rec))
+
+		script, err := svc.SetupDirenv()
+		assert.Require(t, assert.NoErr(t, err))
+
+		// 撤销: 移除记录的 PATH 条目, 取消设置原先未定义的变量
+		assert.NotContains(t, script, util.NormalizePath(fakeBin))
+		assert.Contains(t, script, "Remove-Item Env:APP_ENV")
+		// 随后应用当前目录并写入新记录
+		assert.Contains(t, script, "XENV_APPLIED_DIRENV")
+	})
+
+	t.Run("corrupt record is ignored", func(t *testing.T) {
+		t.Setenv(xenvcom.AppliedDirenvEnvName, "{not json")
+
+		script, err := svc.SetupDirenv()
+		assert.Require(t, assert.NoErr(t, err))
+		assert.Contains(t, script, "XENV_APPLIED_DIRENV")
+	})
+}
+
+func mustRecordJSON(t *testing.T, rec *models.AppliedDirenv) string {
+	t.Helper()
+
+	data, err := json.Marshal(rec)
+	assert.Require(t, assert.NoErr(t, err))
+	return string(data)
+}
+
 func TestSetupDirenvSourcesEnvrcWhenEnabled(t *testing.T) {
 	_, projectDir, svc, state := newDirenvTestService(t, "test-envrc-source", func(projectDir string) {
 		if err := os.WriteFile(filepath.Join(projectDir, ".envrc"), []byte("export FROM_ENVRC=1\n"), 0o644); err != nil {
@@ -396,7 +462,7 @@ func TestSetupDirenvSourcesEnvrcWhenEnabled(t *testing.T) {
 	// 未开启 source_project_scripts 时不 source .envrc
 	script, err := svc.SetupDirenv()
 	assert.Require(t, assert.NoErr(t, err))
-	assert.Eq(t, "", script)
+	assert.NotContains(t, script, ".envrc")
 
 	svc.config.SourceProjectScripts = true
 	script, err = svc.SetupDirenv()

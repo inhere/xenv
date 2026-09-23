@@ -60,8 +60,6 @@ type ActivityState struct {
 	// 当前会话关联的所有目录状态数据. 用于跳转目录时，销毁之前的目录state
 	//  - key: state file path, value: state data
 	DirStates map[string]*ActivityState `json:"dir_states,omitempty" toml:"-"`
-	// AppliedDirenv 最近一次 direnv 应用带来的可撤销变更(仅 session 有效)
-	AppliedDirenv *AppliedDirenv `json:"applied_direnv,omitempty" toml:"-"`
 	// 创建时间
 	CreatedAt time.Time `json:"created_at,omitempty" toml:"-"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" toml:"-"`
@@ -286,27 +284,6 @@ func (as *ActivityState) IsEmpty() bool {
 		len(as.Envs) == 0 &&
 		len(as.Paths) == 0 &&
 		len(as.ToolRequirements) == 0
-}
-
-// SetAppliedDirenv 记录最近一次 direnv 应用
-func (as *ActivityState) SetAppliedDirenv(rec *AppliedDirenv) {
-	as.AppliedDirenv = rec
-	as.HasUpdate = true
-}
-
-// ClearAppliedDirenv 清除 direnv 应用记录
-func (as *ActivityState) ClearAppliedDirenv() {
-	if as.AppliedDirenv == nil {
-		return
-	}
-
-	as.AppliedDirenv = nil
-	as.HasUpdate = true
-}
-
-// HasAppliedDirenv 是否存在 direnv 应用记录
-func (as *ActivityState) HasAppliedDirenv() bool {
-	return as.AppliedDirenv != nil
 }
 
 // AddDirState 添加目录状态数据

@@ -282,7 +282,7 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	}
 
 	// 同一项目(含子目录)已应用过: 不重复应用, 也不撤销
-	applied := ts.state.AppliedDirenv()
+	applied := ts.loadAppliedRecord()
 	if applied != nil && dirFile != "" && applied.File == dirFile {
 		return "", nil
 	}
@@ -290,6 +290,10 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	var sb strutil.Builder
 	if applied != nil {
 		sb.WriteString(buildLeaveScript(gen, applied))
+
+		// 应用脚本必须基于撤销后的环境计算, 否则会把刚移除的 PATH 条目再加回来
+		restoreEnv := simulateLeaveInProcess(applied)
+		defer restoreEnv()
 	}
 
 	script, rec, err := ts.applyDirenvState(gen, deState)
@@ -298,9 +302,8 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	}
 	sb.WriteString(script)
 
-	if err = ts.saveAppliedDirenv(rec); err != nil {
-		ccolor.Warnf("WARN: failed to save direnv state record: %v\n", err)
-	}
+	// 记录随脚本写入 shell 环境, 供下一次 cd 读取
+	sb.WriteString(ts.writeAppliedRecord(gen, rec))
 
 	if sb.Len() > 0 {
 		return sb.String(), nil
@@ -424,12 +427,46 @@ func buildLeaveScript(gen *shell.XenvScriptGenerator, rec *models.AppliedDirenv)
 	return sb.String()
 }
 
-// saveAppliedDirenv 保存或清除 direnv 应用记录
-func (ts *SDKService) saveAppliedDirenv(rec *models.AppliedDirenv) error {
-	if rec == nil || rec.IsEmpty() {
-		return ts.state.ClearAppliedDirenv()
+// simulateLeaveInProcess 在进程内临时模拟撤销结果, 供应用脚本基于撤销后的环境计算
+//
+// 返回的函数用于恢复进程环境
+func simulateLeaveInProcess(rec *models.AppliedDirenv) func() {
+	var restores []func()
+	restoreEnv := func(name string, value string, had bool) {
+		restores = append(restores, func() {
+			if had {
+				_ = os.Setenv(name, value)
+				return
+			}
+			_ = os.Unsetenv(name)
+		})
 	}
-	return ts.state.SetAppliedDirenv(rec)
+
+	if len(rec.Paths) > 0 {
+		oldPath, hadPath := os.LookupEnv("PATH")
+		pathList := sessionPath()
+		for _, path := range rec.Paths {
+			pathList, _ = withoutPath(pathList, path)
+		}
+		_ = os.Setenv("PATH", strings.Join(pathList, xenvcom.PathSep()))
+		restoreEnv("PATH", oldPath, hadPath)
+	}
+
+	for _, item := range rec.Envs {
+		old, had := os.LookupEnv(item.Name)
+		if item.HadPrev {
+			_ = os.Setenv(item.Name, item.Prev)
+		} else {
+			_ = os.Unsetenv(item.Name)
+		}
+		restoreEnv(item.Name, old, had)
+	}
+
+	return func() {
+		for i := len(restores) - 1; i >= 0; i-- {
+			restores[i]()
+		}
+	}
 }
 
 // inSessionPath 检查路径是否已在当前 shell 会话的 PATH 中

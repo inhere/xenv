@@ -31,34 +31,24 @@ func TestAppliedDirenvRecord(t *testing.T) {
 	assert.Eq(t, 1, len(rec.Envs))
 }
 
-func TestActivityStateAppliedDirenvIsNotContent(t *testing.T) {
-	state := NewActivityState("session.json")
-	state.Shell = "bash"
+func TestAppliedDirenvJSONRoundTrip(t *testing.T) {
+	rec := NewAppliedDirenv("/proj/.xenv.toml")
+	rec.AddAppliedPath("/proj/bin")
+	rec.AddAppliedEnv("APP_ENV", "dev", true)
+	rec.AddAppliedSDK("go", "1.24.13")
 
-	// 记录不参与 IsEmpty 判断
-	state.SetAppliedDirenv(NewAppliedDirenv("/proj/.xenv.toml"))
-	assert.True(t, state.IsEmpty())
-	assert.True(t, state.HasUpdate)
-	assert.True(t, state.HasAppliedDirenv())
-
-	// JSON 往返保持记录内容
-	data, err := json.Marshal(state)
+	data, err := json.Marshal(rec)
 	assert.Require(t, assert.NoErr(t, err))
 
-	var decoded ActivityState
+	var decoded AppliedDirenv
 	assert.Require(t, assert.NoErr(t, json.Unmarshal(data, &decoded)))
-	assert.Require(t, assert.True(t, decoded.HasAppliedDirenv()))
-	assert.Eq(t, "/proj/.xenv.toml", decoded.AppliedDirenv.File)
 
-	state.ClearAppliedDirenv()
-	assert.True(t, !state.HasAppliedDirenv())
-	assert.Eq(t, "null", string(mustJSON(t, state.AppliedDirenv)))
-}
+	assert.Eq(t, rec.File, decoded.File)
+	assert.Eq(t, rec.Paths, decoded.Paths)
+	assert.Eq(t, rec.Envs, decoded.Envs)
+	assert.Eq(t, rec.SDKs, decoded.SDKs)
+	assert.True(t, !decoded.IsEmpty())
 
-func mustJSON(t *testing.T, v any) []byte {
-	t.Helper()
-
-	data, err := json.Marshal(v)
-	assert.Require(t, assert.NoErr(t, err))
-	return data
+	empty := NewAppliedDirenv("/proj/.xenv.toml")
+	assert.True(t, empty.IsEmpty())
 }
