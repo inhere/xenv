@@ -306,10 +306,34 @@ func (ts *SDKService) SetupDirenv() (string, error) {
 	if envrcScript := ts.genEnvrcScript(gen); envrcScript != "" {
 		sb.WriteString(envrcScript)
 	}
+
+	// 配置开启时, 进入目录顺带检查 [tools] 要求(只提示, 不阻断)
+	for _, warning := range ts.direnvToolWarnings(deState) {
+		ccolor.Warnf("WARN: %s\n", warning)
+	}
+
 	if sb.Len() > 0 {
 		return sb.String(), nil
 	}
 	return "", nil
+}
+
+// direnvToolWarnings 返回 direnv 状态中工具要求的告警
+//
+// 进入目录时只检查是否存在, 版本比较仍由 `xenv check tools` 完成
+func (ts *SDKService) direnvToolWarnings(deState *models.ActivityState) []string {
+	if !ts.config.CheckToolsOnDirenv || deState == nil || len(deState.ToolRequirements) == 0 {
+		return nil
+	}
+
+	var warnings []string
+	for _, result := range NewCheckService(ts).CheckTools(deState, false) {
+		if result.Status == CheckStatusOK {
+			continue
+		}
+		warnings = append(warnings, fmt.Sprintf("tool %s: %s", result.Name, result.Message))
+	}
+	return warnings
 }
 
 // genEnvrcScript 生成 source .envrc / .envrc.ps1 的脚本

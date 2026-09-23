@@ -291,6 +291,29 @@ func TestSetupDirenvKeepsDirenvPathsBeforeSDKPaths(t *testing.T) {
 	}
 }
 
+func TestSetupDirenvWarnsMissingToolsWhenEnabled(t *testing.T) {
+	_, _, svc, state := newDirenvTestService(t, "test-direnv-tools", func(projectDir string) {
+		xenvToml := filepath.Join(projectDir, ".xenv.toml")
+		data := "paths = []\n\n[envs]\n\n[tools]\n  xenv-no-such-tool = \"*\"\n"
+		assert.Require(t, assert.NoErr(t, os.WriteFile(xenvToml, []byte(data), 0o644)))
+	})
+
+	deState := state.Nearest()
+	assert.Require(t, assert.NotNil(t, deState))
+
+	// 默认不检查工具要求
+	assert.Eq(t, 0, len(svc.direnvToolWarnings(deState)))
+
+	svc.config.CheckToolsOnDirenv = true
+	warnings := svc.direnvToolWarnings(deState)
+	assert.Eq(t, 1, len(warnings))
+	assert.Contains(t, warnings[0], "xenv-no-such-tool")
+
+	// SetupDirenv 也必须能跑通(告警只打印, 不影响脚本)
+	_, err := svc.SetupDirenv()
+	assert.Require(t, assert.NoErr(t, err))
+}
+
 func TestSetupDirenvSourcesEnvrcWhenEnabled(t *testing.T) {
 	_, projectDir, svc, state := newDirenvTestService(t, "test-envrc-source", func(projectDir string) {
 		if err := os.WriteFile(filepath.Join(projectDir, ".envrc"), []byte("export FROM_ENVRC=1\n"), 0o644); err != nil {
