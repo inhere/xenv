@@ -29,8 +29,22 @@ func TestEnvrcFileName(t *testing.T) {
 	}
 }
 
+// resolvedTempDir 返回解析软链接后的临时目录
+//
+// macOS 的 t.TempDir() 返回 /var/... , 而 os.Getwd() 返回解析后的 /private/var/...,
+// 状态文件路径来自后者, 测试期望必须使用同一形式
+func resolvedTempDir(t *testing.T) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+		return resolved
+	}
+	return dir
+}
+
 func TestLoadDirEnvStatePrefersLocalToml(t *testing.T) {
-	projectDir := t.TempDir()
+	projectDir := resolvedTempDir(t)
 	chdirForTest(t, projectDir)
 
 	err := os.WriteFile(filepath.Join(projectDir, ".xenv.toml"), []byte("[envs]\n  SOURCE = \"shared\"\n"), 0o644)
@@ -47,7 +61,7 @@ func TestLoadDirEnvStatePrefersLocalToml(t *testing.T) {
 }
 
 func TestLoadDirEnvStateKeepsNearestDirectoryFirst(t *testing.T) {
-	projectDir := t.TempDir()
+	projectDir := resolvedTempDir(t)
 	subDir := filepath.Join(projectDir, "pkg")
 	err := os.MkdirAll(subDir, 0o755)
 	assert.Require(t, assert.NoErr(t, err))
@@ -67,7 +81,7 @@ func TestLoadDirEnvStateKeepsNearestDirectoryFirst(t *testing.T) {
 }
 
 func TestLoadDirEnvStateErrorIncludesStateFilePath(t *testing.T) {
-	projectDir := t.TempDir()
+	projectDir := resolvedTempDir(t)
 	stateFile := filepath.Join(projectDir, ".xenv.toml")
 	chdirForTest(t, projectDir)
 

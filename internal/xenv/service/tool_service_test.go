@@ -484,13 +484,14 @@ func TestSetupDirenvWarnsMissingToolsWhenEnabled(t *testing.T) {
 }
 
 func TestSetupDirenvUndoAndRecord(t *testing.T) {
-	_, projectDir, svc, _ := newDirenvTestService(t, "test-undo-record", func(projectDir string) {
+	_, projectDir, svc, state := newDirenvTestService(t, "test-undo-record", func(projectDir string) {
 		assert.Require(t, assert.NoErr(t, os.MkdirAll(filepath.Join(projectDir, "bin"), 0o755)))
 
 		data := "paths = [\"./bin\"]\n\n[sdks]\n  go = \"1.24\"\n\n[envs]\nAPP_ENV = \"local\"\n"
 		assert.Require(t, assert.NoErr(t, os.WriteFile(filepath.Join(projectDir, ".xenv.toml"), []byte(data), 0o644)))
 	})
-	dirFile := filepath.Join(projectDir, ".xenv.toml")
+	dirFile := state.Nearest().File
+	assert.Eq(t, filepath.Join(projectDir, ".xenv.toml"), dirFile)
 
 	t.Run("first enter applies and records", func(t *testing.T) {
 		t.Setenv(xenvcom.AppliedDirenvEnvName, "")
@@ -962,6 +963,14 @@ func newDirenvTestService(t *testing.T, sessionID string, setupProject func(proj
 
 	tempHome = t.TempDir()
 	projectDir = t.TempDir()
+	// macOS 的 t.TempDir() 返回 /var/... , 而 os.Getwd()/目录遍历返回解析后的 /private/var/...;
+	// 统一解析, 避免测试期望路径与代码产物路径不一致
+	if resolved, err := filepath.EvalSymlinks(tempHome); err == nil {
+		tempHome = resolved
+	}
+	if resolved, err := filepath.EvalSymlinks(projectDir); err == nil {
+		projectDir = resolved
+	}
 	installDir := filepath.Join(tempHome, "tools", "go", "1.24.0")
 
 	t.Setenv("HOME", tempHome)
