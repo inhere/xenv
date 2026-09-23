@@ -7,6 +7,8 @@ const (
 	SessIdEnvName = "XENV_SESSION_ID"
 	// XenvDebugEnvName debug环境变量名称
 	XenvDebugEnvName = "XENV_DEBUG_MODE"
+	// AppliedDirenvEnvName 承载 direnv 应用记录(JSON)的环境变量名称
+	AppliedDirenvEnvName = "XENV_APPLIED_DIRENV"
 )
 
 const (

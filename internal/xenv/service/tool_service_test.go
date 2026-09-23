@@ -321,6 +321,44 @@ func TestSetupDirenvKeepsDirenvPathsBeforeSDKPaths(t *testing.T) {
 	}
 }
 
+func TestLoadAndWriteAppliedRecord(t *testing.T) {
+	svc := NewSDKService(&models.Configuration{}, manager.NewStateManager(), nil)
+
+	t.Run("no record variable", func(t *testing.T) {
+		t.Setenv(xenvcom.AppliedDirenvEnvName, "")
+		assert.Nil(t, svc.loadAppliedRecord())
+	})
+
+	t.Run("valid record", func(t *testing.T) {
+		t.Setenv(xenvcom.AppliedDirenvEnvName, `{"file":"/proj/.xenv.toml","paths":["/proj/bin"]}`)
+
+		rec := svc.loadAppliedRecord()
+		assert.Require(t, assert.NotNil(t, rec))
+		assert.Eq(t, "/proj/.xenv.toml", rec.File)
+		assert.Eq(t, []string{"/proj/bin"}, rec.Paths)
+	})
+
+	t.Run("invalid record is ignored", func(t *testing.T) {
+		t.Setenv(xenvcom.AppliedDirenvEnvName, "{not json")
+		assert.Nil(t, svc.loadAppliedRecord())
+	})
+
+	t.Run("write and clear script lines", func(t *testing.T) {
+		gen := shell.NewScriptGenerator(shell.Bash)
+
+		rec := models.NewAppliedDirenv("/proj/.xenv.toml")
+		rec.AddAppliedPath("/proj/bin")
+
+		line := svc.writeAppliedRecord(gen, rec)
+		assert.Contains(t, line, "export XENV_APPLIED_DIRENV=")
+		assert.Contains(t, line, "/proj/bin")
+
+		assert.Contains(t, svc.writeAppliedRecord(gen, nil), "unset XENV_APPLIED_DIRENV")
+		assert.Contains(t, svc.writeAppliedRecord(gen, models.NewAppliedDirenv("/proj/.xenv.toml")),
+			"unset XENV_APPLIED_DIRENV")
+	})
+}
+
 func TestSetupDirenvWarnsMissingToolsWhenEnabled(t *testing.T) {
 	_, _, svc, state := newDirenvTestService(t, "test-direnv-tools", func(projectDir string) {
 		xenvToml := filepath.Join(projectDir, ".xenv.toml")

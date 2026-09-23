@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -435,6 +436,37 @@ func (ts *SDKService) saveAppliedDirenv(rec *models.AppliedDirenv) error {
 func inSessionPath(path string) bool {
 	_, found := withoutPath(sessionPath(), path)
 	return found
+}
+
+// loadAppliedRecord 读取当前 shell 的 direnv 应用记录
+//
+// 记录由应用脚本写入 XENV_APPLIED_DIRENV, 内容损坏时视为无记录
+func (ts *SDKService) loadAppliedRecord() *models.AppliedDirenv {
+	raw := os.Getenv(xenvcom.AppliedDirenvEnvName)
+	if raw == "" {
+		return nil
+	}
+
+	rec := &models.AppliedDirenv{}
+	if err := json.Unmarshal([]byte(raw), rec); err != nil {
+		ccolor.Warnf("WARN: invalid %s, ignore the previous direnv record: %v\n", xenvcom.AppliedDirenvEnvName, err)
+		return nil
+	}
+	return rec
+}
+
+// writeAppliedRecord 生成写入或清除 direnv 应用记录的脚本代码
+func (ts *SDKService) writeAppliedRecord(gen *shell.XenvScriptGenerator, rec *models.AppliedDirenv) string {
+	if rec == nil || rec.IsEmpty() {
+		return gen.GenUnsetEnv(xenvcom.AppliedDirenvEnvName)
+	}
+
+	data, err := json.Marshal(rec)
+	if err != nil {
+		ccolor.Warnf("WARN: failed to encode the direnv record: %v\n", err)
+		return gen.GenUnsetEnv(xenvcom.AppliedDirenvEnvName)
+	}
+	return gen.GenSetEnv(xenvcom.AppliedDirenvEnvName, string(data))
 }
 
 // direnvToolWarnings 返回 direnv 状态中工具要求的告警
