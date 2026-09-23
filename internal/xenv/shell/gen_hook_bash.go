@@ -32,8 +32,6 @@ func (sg *XenvScriptGenerator) generateBashScripts(ps *models.GenInitScriptParam
 // Usage, .bashrc or .bash_profile add：
 //
 //	eval "$(xenv shell --type bash)"
-//
-// Test: . internal/xenv/testdata/hook_bash.sh
 var BashHookTemplate = `#!/usr/bin/env bash
 #
 # xenv bash hook
