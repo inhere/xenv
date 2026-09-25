@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/goccy/go-json v0.10.6
 	github.com/goccy/go-yaml v1.19.2
-	github.com/gookit/cliui v0.3.2-0.20260624120656-906827b77d7b
+	github.com/gookit/cliui v0.4.0
 	github.com/gookit/color v1.6.2-0.20260604125953-289d54c4470a
 	github.com/gookit/config/v2 v2.2.9
 	github.com/gookit/ext v0.1.2
