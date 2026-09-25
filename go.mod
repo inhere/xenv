@@ -1,8 +1,6 @@
 module github.com/inhere/xenv
 
-go 1.24
-
-toolchain go1.24.6
+go 1.26.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
@@ -14,7 +12,7 @@ require (
 	github.com/gookit/ext v0.1.2
 	github.com/gookit/gcli/v3 v3.8.3
 	github.com/gookit/goutil v0.8.0
-	golang.org/x/sys v0.32.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
